@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Hash;
 
 class UsuarioController extends Controller
 {
+    public function verificarApodo($apodo)
+    {
+    $existe = Usuario::where('usuario_apodo', $apodo)->exists();
+
+        return response()->json([
+            'disponible' => !$existe
+        ]);
+    }
+
     public function register(Request $request)
 {
     try {
@@ -17,11 +26,19 @@ class UsuarioController extends Controller
             'usuario_apellido' => 'required|string|max:255',
             'usuario_apodo' => 'required|string|max:100|unique:usuario,usuario_apodo',
             'usuario_email' => 'required|email|unique:usuario,usuario_email',
-            'usuario_password' => 'required|min:6',
+            'usuario_password' => [
+                'required',
+                'min:8',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'regex:/[^A-Za-z0-9]/'
+            ],
             'usuario_rol' => 'required|in:explorador,lider'
         ], [
             'usuario_email.unique' => 'Este correo ya está registrado',
-            'usuario_apodo.unique' => 'Este apodo ya está en uso'
+            'usuario_apodo.unique' => 'Este apodo ya está en uso',
+            'usuario_password.regex' => 'La contraseña debe tener al menos una mayúscula, un número y un carácter especial',
+            'usuario_password.min' => 'La contraseña debe tener mínimo 8 caracteres'
         ]);
 
         $usuario = Usuario::create([

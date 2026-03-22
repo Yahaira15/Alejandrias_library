@@ -13,6 +13,8 @@ class Usuario extends Model
 
     protected $fillable = [
         'usuario_nombre',
+        'usuario_apellido',
+        'usuario_apodo',
         'usuario_email',
         'usuario_password',
         'usuario_rol',

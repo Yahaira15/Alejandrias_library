@@ -1,0 +1,71 @@
+<div class="img-fondo">
+    <img src="fondoLogin.jpeg" alt="Fondo de login">
+</div>
+<div class="login">
+    <h1>REGISTRO</h1>
+    <form #form="ngForm" (ngSubmit)="registrar(form)" novalidate>
+        <div class="input-group">
+            <input type="text" [(ngModel)]="usuario.usuario_nombre" id="nombre" name="nombre" required placeholder="Nombre">
+        </div>
+        <div class="input-group">
+            <input type="text" [(ngModel)]="usuario.usuario_apellido" id="apellido" name="apellido" required placeholder="Apellido">
+        </div>
+        <div class="input-group">
+            <input type="text" [(ngModel)]="usuario.usuario_apodo" id="apodo" name="apodo" required placeholder="Apodo" (input)="verificarApodo()">
+        </div>
+        <div *ngIf="apodoDisponible === false" style="color:red;">
+            Este apodo ya está en uso
+        </div>
+        <div *ngIf="apodoDisponible === true" style="color:green;">
+            Apodo disponible
+        </div>
+        <div class="input-group">
+            <input type="email" [(ngModel)]="usuario.usuario_email" id="email" name="email" required placeholder="Email" email #emailRef="ngModel">
+        </div>
+        <div *ngIf="emailRef.invalid && emailRef.touched" style="color: red; font-size: 14px;">
+            <div *ngIf="emailRef.errors?.['required']">
+                El correo es obligatorio
+            </div>
+            <div *ngIf="emailRef.errors?.['email']">
+                El formato del correo es inválido
+            </div>
+        </div>
+        <div class="input-group">
+            <input [type]="mostrarPassword ? 'text' : 'password'" [(ngModel)]="usuario.usuario_password" id="password" name="password" required placeholder="Contraseña" #passwordRef="ngModel" pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$">
+            <label class="checkbox-container">
+                <input 
+                    type="checkbox" 
+                    [(ngModel)]="mostrarPassword" 
+                    name="mostrarPassword">
+                <span class="checkmark"></span>
+                Mostrar contraseña
+            </label>
+        </div>
+        <div *ngIf="passwordRef.invalid && passwordRef.touched" style="color:red; font-size:14px;">
+        <div *ngIf="passwordRef.errors?.['required']">
+            La contraseña es obligatoria
+        </div>
+            <div *ngIf="passwordRef.errors?.['pattern']">
+                <ul style="font-size:13px; color:#333;">
+                <li [style.color]="usuario.usuario_password.length >= 8 ? 'green' : 'red'">
+                    Mínimo 8 caracteres
+                </li>
+                <li [style.color]="/[A-Z]/.test(usuario.usuario_password) ? 'green' : 'red'">
+                    Una mayúscula
+                </li>
+                <li [style.color]="/[0-9]/.test(usuario.usuario_password) ? 'green' : 'red'">
+                    Un número
+                </li>
+                <li [style.color]="/[^A-Za-z0-9]/.test(usuario.usuario_password) ? 'green' : 'red'">
+                    Un carácter especial
+                </li>
+                </ul>
+            </div>
+        </div>
+        <div class="input-group">
+            <input type="password" [(ngModel)]="usuario.confirmPassword" id="confirmPassword" name="confirmPassword" required placeholder="Confirmar Contraseña">
+        </div>
+        <a href="/login">¿Ya tienes una cuenta? Inicia sesión</a>
+        <button type="submit" [disabled]="form.invalid">Registrarse</button>
+    </form>
+</div>
