@@ -1,0 +1,49 @@
+<div class="img-fondo">
+    <img src="fondoLogin.png" alt="Fondo de login">
+</div>
+
+<div class="login-form">
+    <h1>INICIO DE <br> SESIÓN</h1>
+
+    <form #form="ngForm" (ngSubmit)="iniciarSesion(form)">
+
+        <div class="input-group">
+            <input 
+            type="text"
+            [(ngModel)]="loginData.login"
+            (input)="errorMensaje = ''"
+            name="login"
+            required
+            placeholder="Apodo o correo electrónico">
+        </div>
+
+        <div class="input-group">
+            <input 
+                [type]="mostrarPassword ? 'text' : 'password'"
+                [(ngModel)]="loginData.usuario_password"
+                name="usuario_password"
+                required
+                placeholder="Contraseña">
+
+            <label class="checkbox-container">
+                <input 
+                    type="checkbox" 
+                    [(ngModel)]="mostrarPassword"
+                    name="mostrarPassword">
+                <span class="checkmark"></span>
+                Mostrar contraseña
+            </label>
+        </div>
+
+        <div *ngIf="errorMensaje" class="error-msg">
+            {{ errorMensaje }}
+        </div>
+
+        <a routerLink="/register">¿No tienes una cuenta? Regístrate</a>
+
+        <button type="submit" [disabled]="form.invalid">
+            Iniciar sesión
+        </button>
+
+    </form>
+</div>
