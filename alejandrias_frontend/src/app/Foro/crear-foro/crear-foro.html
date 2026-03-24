@@ -1,0 +1,48 @@
+<div class="img-fondo">
+    <img src="fondo_crear_foro.png" alt="Fondo de login">
+</div>
+
+<div class="crear_foro">
+
+  
+  <div class="left-bg"></div>
+
+
+  <div class="back">
+    ← Regresar
+  </div>
+
+  <div class="card">
+
+    <h2>Crear foro</h2>
+
+    <div class="form-grid">
+
+      <form [formGroup]="foroForm">
+
+        <input type="text" placeholder="Nombre" formControlName="foro_titulo"/>
+
+        <select formControlName="foro_categoria_id">
+          <option value="">Selecciona categoría</option>
+          <option *ngFor="let cat of categorias" [value]="cat.categoria_id">
+            {{ cat.categoria_nombre }}
+          </option>
+        </select>
+
+        <textarea placeholder="Descripción" formControlName="foro_descripcion"></textarea>
+
+        <div class="options">
+          <button type="button" (click)="setPrivado(false)">Público</button>
+          <button type="button" (click)="setPrivado(true)">Privado</button>
+        </div>
+
+      </form>
+
+
+    </div>
+
+  </div>
+
+  <button class="save-btn" (click)="crearForo()">Guardar</button>
+
+</div>

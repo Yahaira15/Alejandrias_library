@@ -1,0 +1,49 @@
+.main {
+  padding: 30px;
+  background: #ffffff;
+  height: 100vh;
+}
+
+h2 {
+  color: #306289;
+  margin-bottom: 20px;
+}
+
+.foros-container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* CARD */
+.foro-card {
+  width: 250px;
+  height: 140px;
+  background: #6695C6;
+  border-radius: 12px;
+  padding: 15px;
+  color: #FAEDD9;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+/* HOVER */
+.foro-card:hover {
+  transform: translateY(-5px);
+  background: #5C799D;
+}
+
+.foro-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.categoria {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.descripcion {
+  font-size: 13px;
+  margin-top: 8px;
+}
