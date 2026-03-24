@@ -14,7 +14,7 @@
     object-fit: cover;
 }
 
-.login{
+.register-form {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -23,13 +23,13 @@
     padding: 50px;
     border-radius: 20px;
     width: 35%;
-    height: 70%;
+    height: fit-content;
     align-items: center;
     display: flex;
     flex-direction: column;
 }
 
-.login h1{
+.register-form h1{
     text-align: center;
     margin-bottom: 30px;
     margin-top: 0;
@@ -38,20 +38,20 @@
     font-family: 'Lora', serif;
 }
 
-.login form{
+.register-form form{
     display: flex;
     flex-direction: column;
     width: 90%;
 }
 
-.login .input-group{
+.register-form .input-group{
     display: flex;
     flex-direction: column;
     margin-bottom: 20px;
     width: 100%;
 }
 
-.login .input-group input{
+.register-form .input-group input{
     height: 35px;
     border: none;
     border-radius: 5px;
@@ -62,7 +62,7 @@
     font-size: 20px;
 }
 
-.login .input-group input::placeholder{
+.register-form .input-group input::placeholder{
     color: white;
     font-family: 'Lora', serif;
     font-size: 20px;
@@ -70,13 +70,13 @@
     display: flex;
 }
 
-.login .input-group input:focus{
+.register-form .input-group input:focus{
     outline: none;
     box-shadow: 0 0 5px #306289;
     transition: 0.1s;
 }
 
-.login a{
+.register-form a{
     color: white;
     font-family: 'Lora', serif;
     font-size: 20px;
@@ -85,7 +85,7 @@
     margin-bottom: 20px;
 }
 
-.login button{
+.register-form button{
     height: 40px;
     border: none;
     border-radius: 5px;

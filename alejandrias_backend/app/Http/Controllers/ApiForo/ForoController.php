@@ -11,28 +11,34 @@ class ForoController extends Controller
     public function index() {
         $foros = Foro::with(['usuario', 'categoria'])->get();
 
-        return response()->json($foros, 200);
+        return response()->json($foros, 200)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
     public function store(Request $request)
 {
     $request->validate([
-        'foro_titulo' => 'required|string|max:255',
+        'foro_titulo' => 'required|string',
         'foro_descripcion' => 'required|string',
         'foro_categoria_id' => 'required|exists:categoria,categoria_id',
-        'foro_creador_id' => 'required|exists:usuario,usuario_id',
-        'foro_privado' => 'required|boolean'
     ]);
 
-    $foro = Foro::create([
-        'foro_titulo' => $request->foro_titulo,
-        'foro_descripcion' => $request->foro_descripcion,
-        'foro_categoria_id' => $request->foro_categoria_id,
-        'foro_creador_id' => $request->foro_creador_id,
-        'foro_privado' => $request->foro_privado
-    ]);
+    $foro = new Foro();
+    $foro->foro_titulo = $request->foro_titulo;
+    $foro->foro_descripcion = $request->foro_descripcion;
+    $foro->foro_categoria_id = $request->foro_categoria_id;
 
-    return response()->json($foro, 201);
+    
+    $foro->foro_creador_id = auth()->id();
+
+    $foro->save();
+
+    return response()->json($foro, 201)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 }
 
     public function show($id) {
@@ -42,7 +48,10 @@ class ForoController extends Controller
             return response()->json(['message' => 'Foro no encontrado'], 404);
         }
 
-        return response()->json($foro, 200);
+        return response()->json($foro, 200)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
     public function update(Request $request, $id) {
@@ -62,7 +71,10 @@ class ForoController extends Controller
 
         $foro->update($request->only(['foro_titulo', 'foro_descripcion', 'foro_categoria_id', 'foro_privado']));
 
-        return response()->json($foro, 200);
+        return response()->json($foro, 200)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
     public function destroy($id) {
@@ -74,6 +86,9 @@ class ForoController extends Controller
 
         $foro->delete();
 
-        return response()->json(['message' => 'Foro eliminado'], 200);
+        return response()->json(['message' => 'Foro eliminado'], 200)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 }

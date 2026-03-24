@@ -11,18 +11,27 @@ class CategoriaController extends Controller
 {
     public function index()
     {
-        return Categoria::all();
+        return response()->json(Categoria::all(), 200)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
     public function show($id)
     {
-        return Categoria::find($id);
+        return response()->json(Categoria::find($id), 200)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
     public function foros($id)
     {
         $categoria = Categoria::with('foros')->find($id);
-        return $categoria->foros;
+        return response()->json($categoria->foros, 200)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
     public function store(Request $request)
@@ -40,7 +49,10 @@ class CategoriaController extends Controller
         return response()->json([
             'message' => 'Categoría creada correctamente',
             'data' => $categoria
-        ], 201);
+        ], 201)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+            ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
 }

@@ -47,3 +47,25 @@ h2 {
   font-size: 13px;
   margin-top: 8px;
 }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.crear-btn {
+  background: #306289;
+  color: #FAEDD9;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.crear-btn:hover {
+  background: #5C799D;
+}

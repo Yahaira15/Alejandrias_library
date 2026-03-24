@@ -1,6 +1,13 @@
 <div class="main">
 
-  <h2>Tus foros</h2>
+  <div class="header">
+    <h2 *ngIf="foros.length > 0">Tus foros</h2>
+    <h2 *ngIf="foros.length === 0">Aún no tienes foros</h2>
+
+    <button class="crear-btn" (click)="irACrearForo()">
+        + Crear foro
+    </button>
+  </div>
 
   <div class="foros-container">
 
@@ -15,6 +22,11 @@
       <p class="descripcion">
         {{ foro.foro_descripcion }}
       </p>
+
+      <div class="buttons">
+        <button (click)="editarForo(foro.foro_id)">✏️ Editar</button>
+        <button (click)="eliminarForo(foro.foro_id)">🗑️ Eliminar</button>
+      </div>
 
     </div>
 

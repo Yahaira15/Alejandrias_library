@@ -23,4 +23,17 @@ export class ForoService {
   getForos() {
   return this.http.get(`${this.apiUrl}/foros`);
   }
+
+getForo(id: number) {
+  return this.http.get(`http://127.0.0.1:8000/api/foros/${id}`);
+}
+
+
+actualizarForo(id: number, data: any) {
+  return this.http.put(`http://127.0.0.1:8000/api/foros/${id}`, data);
+}
+
+deleteForo(id: number): Observable<any> {
+  return this.http.delete(`${this.apiUrl}/foros/${id}`);
+}
 }

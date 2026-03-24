@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { ForoService } from '../../services/foro';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-crear-foro',
@@ -9,7 +10,7 @@ import { ForoService } from '../../services/foro';
   imports: [
     CommonModule,
     FormsModule,
-    ReactiveFormsModule 
+    ReactiveFormsModule
   ],
   templateUrl: './crear-foro.html',
   styleUrls: ['./crear-foro.scss'], 
@@ -21,14 +22,15 @@ export class CrearForo implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private foroService: ForoService
+    private foroService: ForoService,
+    private router: Router
   ) {
     this.foroForm = this.fb.group({
-      foro_titulo: [''],
-      foro_descripcion: [''],
-      foro_categoria_id: [''],
-      foro_privado: [false]
-    });
+    foro_titulo: ['', Validators.required],
+    foro_descripcion: ['', Validators.required],
+    foro_categoria_id: ['', Validators.required],
+    foro_privado: [false]
+});
   }
 
   ngOnInit(): void {
@@ -46,27 +48,40 @@ export class CrearForo implements OnInit {
     });
   }
 
-  crearForo() {
+    crearForo() {
 
-    const usuario_id = 1; 
+   
+    if (this.foroForm.invalid) {
+      alert("Por favor completa todos los campos");
+      return;
+    }
 
     const data = {
       ...this.foroForm.value,
-      foro_categoria_id: Number(this.foroForm.value.foro_categoria_id),
-      foro_creador_id: usuario_id
+      foro_categoria_id: Number(this.foroForm.value.foro_categoria_id)
     };
 
     this.foroService.crearForo(data).subscribe({
       next: (res) => {
         console.log('Foro creado', res);
+
+        alert("Foro creado correctamente");
+
+        this.router.navigate(['/foros']);
       },
       error: (err) => {
-        console.error('Error', err);
+        console.error('Error completo:', err.error);
+
+        alert("Error al crear el foro");
       }
     });
   }
 
   setPrivado(valor: boolean) {
     this.foroForm.patchValue({ foro_privado: valor });
+  }
+
+  regresar() {
+    this.router.navigate(['/foros']);
   }
 }
