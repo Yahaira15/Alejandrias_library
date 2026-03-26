@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { ForoService } from '../../services/foro';
 import { ActivatedRoute, Router } from '@angular/router';
+
 
 @Component({
   selector: 'app-editar-foro',
@@ -14,6 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
   ],
   templateUrl: './editar-foro.html',
   styleUrls: ['./editar-foro.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EditarForo implements OnInit {
 
@@ -99,4 +101,8 @@ export class EditarForo implements OnInit {
   setPrivado(valor: boolean) {
     this.foroForm.patchValue({ foro_privado: valor });
   }
+
+  volver() {
+  this.router.navigate(['/foros']);
+}
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ForoService } from '../../services/foro';
 import { Router } from '@angular/router';
@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
   imports: [ CommonModule],
   templateUrl: './lista-foros.html',
   styleUrls: ['./lista-foros.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ListaForos implements OnInit{
     foros: any[] = [];
@@ -20,16 +21,17 @@ export class ListaForos implements OnInit{
   }
 
   cargarForos() {
-    this.foroService.getForos().subscribe({
-      next: (res: any) => {
-        this.foros = res;
-        console.log('Foros:', res);
-      },
-      error: (err) => {
-        console.error('Error cargando foros', err);
-      }
-    });
-  }
+  this.foroService.getForos().subscribe({
+    next: (res: any) => {
+      console.log('Foros:', res);
+
+      this.foros = res.data ?? res;
+    },
+    error: (err) => {
+      console.error('Error cargando foros', err);
+    }
+  });
+}
 
    irACrearForo() {
     this.router.navigate(['/crear_foro']); 

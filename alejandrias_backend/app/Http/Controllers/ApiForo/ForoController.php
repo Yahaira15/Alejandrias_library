@@ -18,28 +18,24 @@ class ForoController extends Controller
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        'foro_titulo' => 'required|string',
-        'foro_descripcion' => 'required|string',
-        'foro_categoria_id' => 'required|exists:categoria,categoria_id',
-    ]);
+    {
+        $request->validate([
+            'foro_titulo' => 'required|string',
+            'foro_descripcion' => 'required|string',
+            'foro_categoria_id' => 'required|exists:categoria,categoria_id',
+        ]);
 
-    $foro = new Foro();
-    $foro->foro_titulo = $request->foro_titulo;
-    $foro->foro_descripcion = $request->foro_descripcion;
-    $foro->foro_categoria_id = $request->foro_categoria_id;
+        $foro = new Foro();
+        $foro->foro_titulo = $request->foro_titulo;
+        $foro->foro_descripcion = $request->foro_descripcion;
+        $foro->foro_categoria_id = $request->foro_categoria_id;
 
-    
-    $foro->foro_creador_id = auth()->id();
+        $foro->foro_creador_id = auth()->id() ?? 9;
 
-    $foro->save();
+        $foro->save();
 
-    return response()->json($foro, 201)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-}
+        return response()->json($foro, 201);
+    }
 
     public function show($id) {
         $foro = Foro::with(['usuario', 'categoria'])->find($id);
