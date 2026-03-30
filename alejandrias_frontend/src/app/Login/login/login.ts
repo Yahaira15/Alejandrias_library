@@ -3,10 +3,11 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, RouterModule],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -39,6 +40,7 @@ export class Login {
           console.log(res);
 
           localStorage.setItem('usuario', JSON.stringify(res.usuario));
+          const id = res.usuario.usuario_id;
 
           this.router.navigate(['/foros']);
         },

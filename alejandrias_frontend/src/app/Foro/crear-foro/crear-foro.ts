@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { ForoService } from '../../services/foro';
 import { Router } from '@angular/router';
@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
   ],
   templateUrl: './crear-foro.html',
   styleUrls: ['./crear-foro.scss'], 
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CrearForo implements OnInit {
 

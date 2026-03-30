@@ -9,7 +9,7 @@ import { authGuard } from './guards/auth-guard';
 export const routes: Routes = [
     {path: 'login', component: Login },
     {path: 'register', component: Register },
-    {path: 'crear_foro', component: CrearForo, canActivate: [authGuard]},
+    {path: 'foros/crear', component: CrearForo},
     { path: '', redirectTo: 'login', pathMatch: 'full'},
     { path: 'foros', component: ListaForos, canActivate: [authGuard] },
     { path: 'foros/editar/:id', component: EditarForo, canActivate: [authGuard] }

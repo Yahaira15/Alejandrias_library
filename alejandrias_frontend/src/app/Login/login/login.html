@@ -39,7 +39,7 @@
             {{ errorMensaje }}
         </div>
 
-        <a routerLink="/register">¿No tienes una cuenta? Regístrate</a>
+        <a [routerLink]="['/register']">¿No tienes una cuenta? Regístrate</a>
 
         <button type="submit" [disabled]="form.invalid">
             Iniciar sesión

@@ -1,35 +1,52 @@
-<div class="main">
+<div class="layout">
 
-  <div class="header">
-    <h2 *ngIf="foros.length > 0">Tus foros</h2>
-    <h2 *ngIf="foros.length === 0">Aún no tienes foros</h2>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h2 class="logo">Alejandría's Library</h2>
 
-    <button class="crear-btn" (click)="irACrearForo()">
-        + Crear foro
-    </button>
-  </div>
+    <nav>
+      <button><img src="iconos/home.png" alt="home" width="20px"> Inicio</button>
+      <button><img src="iconos/mis_foros.png" alt="mis_foros" width="20px"> Mis foros</button>
+      <button><img src="iconos/logros.png" alt="logros" width="20px"> Logros</button>
+      <button (click)="irACrearForo()"><img src="iconos/crear_foro.png" alt="crear_foro" width="20px"> Crear foro</button>
+    </nav>
 
-  <div class="foros-container">
-
-    <div class="foro-card" *ngFor="let foro of foros">
-
-      <h3>{{ foro.foro_titulo }}</h3>
-
-      <p class="categoria">
-        {{ foro.categoria?.categoria_nombre }}
-      </p>
-
-      <p class="descripcion">
-        {{ foro.foro_descripcion }}
-      </p>
-
-      <div class="buttons">
-        <button (click)="editarForo(foro.foro_id)">✏️ Editar</button>
-        <button (click)="eliminarForo(foro.foro_id)">🗑️ Eliminar</button>
-      </div>
-
+    <div class="logout">
+      <img src="iconos/salida.png" alt="salida" width="30px">
+      <button (click)="logout()" class="logout">Cerrar<br>sesión</button>
     </div>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <div class="content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <input type="text" placeholder="Buscar" />
+      <div class="user">
+        <img src="iconos/notificaciones.png" alt="notificaciones" width="35px">
+         Apodo 
+         <img src="iconos/foto_perfil.png" alt="Foto de perfil" width="35px">
+      </div>
+    </header>
+
+    <!-- SECCIÓN -->
+    <section>
+      <h2>Tus foros</h2>
+
+      <div class="foros-container">
+        <div class="foro-card" *ngFor="let foro of foros">
+          <h3>{{ foro.foro_titulo }}</h3>
+          <p>{{ foro.categoria?.categoria_nombre }}</p>
+          <p>{{ foro.foro_descripcion }}</p>
+
+          <div class="buttons">
+            <button (click)="editarForo(foro.foro_id)">Editar</button>
+            <button (click)="eliminarForo(foro.foro_id)">Eliminar</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
   </div>
-
 </div>

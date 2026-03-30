@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -9,31 +9,64 @@ export class ForoService {
 
   private apiUrl = 'http://127.0.0.1:8000/api';
 
+  // 🔥 Cache en memoria
+  private cacheForos: any[] | null = null;
+  private cacheCategorias: any[] | null = null;
+
   constructor(private http: HttpClient) {}
 
   crearForo(data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/foros`, data);
+    return this.http.post(`${this.apiUrl}/foros`, data).pipe(
+      tap(() => this.cacheForos = null) 
+    );
   }
 
   getCategorias(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/categorias`);
+    if (this.cacheCategorias) {
+      return of(this.cacheCategorias);
+    }
+
+    return this.http.get(`${this.apiUrl}/categorias`).pipe(
+      tap((res: any) => {
+        this.cacheCategorias = res?.data ?? res;
+      })
+    );
   }
 
+  getForos(): Observable<any> {
+    if (this.cacheForos) {
+      return of(this.cacheForos);
+    }
 
-  getForos() {
-  return this.http.get(`${this.apiUrl}/foros`);
+    return this.http.get(`${this.apiUrl}/foros`).pipe(
+      tap((res: any) => {
+        this.cacheForos = res?.data ?? res;
+      })
+    );
   }
 
-getForo(id: number) {
-  return this.http.get(`http://127.0.0.1:8000/api/foros/${id}`);
+  getForo(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/foros/${id}`);
+  }
+
+  getMisForos(): Observable<any> {
+
+  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+  const id = usuario.usuario_id;
+  console.log('USUARIO:', usuario);
+
+  return this.http.get(`${this.apiUrl}/mis-foros/${id}`);
 }
 
+  actualizarForo(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/foros/${id}`, data).pipe(
+      tap(() => this.cacheForos = null) // limpiar cache
+    );
+  }
 
-actualizarForo(id: number, data: any) {
-  return this.http.put(`http://127.0.0.1:8000/api/foros/${id}`, data);
-}
-
-deleteForo(id: number): Observable<any> {
-  return this.http.delete(`${this.apiUrl}/foros/${id}`);
-}
-}
+  deleteForo(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/foros/${id}`).pipe(
+      tap(() => this.cacheForos = null) // limpiar cache
+    );
+  }
+} 

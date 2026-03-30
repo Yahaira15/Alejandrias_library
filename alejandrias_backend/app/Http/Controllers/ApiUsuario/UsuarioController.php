@@ -104,14 +104,7 @@ class UsuarioController extends Controller
 
         return response()->json([
             'mensaje' => 'Login exitoso',
-            'usuario' => [
-                'id' => $usuario->usuario_id,
-                'nombre' => $usuario->usuario_nombre,
-                'apellido' => $usuario->usuario_apellido,
-                'apodo' => $usuario->usuario_apodo,
-                'email' => $usuario->usuario_email,
-                'rol' => $usuario->usuario_rol
-            ]
+            'usuario' => $usuario
         ], 200)
             ->header('Access-Control-Allow-Origin', '*')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')

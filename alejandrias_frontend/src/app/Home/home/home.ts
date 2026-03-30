@@ -8,10 +8,5 @@ import { Router } from '@angular/router';
   styleUrl: './home.scss',
 })
 export class Home {
-  constructor(private router: Router) {}
 
-  logout() {
-  localStorage.removeItem('usuario');
-  this.router.navigate(['/login']);
-}
 }
