@@ -33,15 +33,13 @@ export class ListaForos implements OnInit {
 
   cargarForos(): void {
     this.cargando = true;
-
-    this.foroService.getForos().subscribe({
+    this.foroService.getMisForos().subscribe({
       next: (res: any) => {
-        console.log('Foros:', res);
+        console.log('Mis Foros:', res);
 
         this.foros = res?.data ?? res ?? [];
 
         this.cargando = false;
-
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -56,7 +54,7 @@ export class ListaForos implements OnInit {
   }
 
   irACrearForo(): void {
-    this.router.navigate(['/crear_foro']);
+    this.router.navigate(['/foros/crear']);
   }
 
   editarForo(id: number): void {
@@ -69,9 +67,7 @@ export class ListaForos implements OnInit {
 
     this.foroService.deleteForo(id).subscribe({
       next: () => {
-        // 🚀 OPTIMIZACIÓN: no llamar a la API otra vez
         this.foros = this.foros.filter(f => f.foro_id !== id);
-
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -83,4 +79,10 @@ export class ListaForos implements OnInit {
   trackByForoId(index: number, foro: any): number {
     return foro.foro_id;
   }
-} 
+
+  logout() {
+    localStorage.removeItem('usuario');
+    localStorage.removeItem('token'); 
+    this.router.navigate(['/login']);
+  }
+}

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap'); 
+
 .layout {
   display: flex;
   height: 100vh;
@@ -6,7 +8,7 @@
   /* SIDEBAR */
   .sidebar {
     width: 220px;
-    background: #d8e2ec;
+    background: #afcbe6c3;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -15,19 +17,24 @@
     .logo {
       font-size: 20px;
       margin-bottom: 30px;
+      font-weight: bold;
+      color: #306289;
+      font-family: 'Lora', serif;
     }
 
     nav {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 30px;
 
-      a {
+      button {
         text-decoration: none;
-        color: #2f4f6f;
+        color: #306289;
         font-weight: 500;
         cursor: pointer;
         transition: 0.2s;
+        border: none;
+        background: #afcbe6c3;
 
         &:hover {
           color: #1b3a57;
@@ -71,8 +78,9 @@
 
     /* TITULOS */
     h2 {
-      color: #5a7fa3;
+      color: #306289;
       margin-bottom: 15px;
+      font-weight: bold;
     }
 
     /* CONTENEDOR FOROS */
@@ -146,4 +154,19 @@
       font-weight: bold;
     }
   }
+}
+
+.logout{
+    border: none;
+    background-color: #d8e2ec;
+    color: #306289;
+    font-family: 'Lora', serif;
+    font-size: 20px;
+    cursor: pointer;
+    text-align: center;
+    height: 50px; 
+    width: 80%;
+    align-self: center;
+    margin-top: 15px;
+    font-weight: bold;
 }

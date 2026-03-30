@@ -1,14 +1,18 @@
 <div class="crear_foro">
-
   <div class="card">
     <h2>Editar foro</h2>
+<<<<<<< HEAD
     <div class="back" (click)="volver()">
     ← Regresar
+=======
+    
+    <div class="back" (click)="volver()">
+      ← Regresar
+>>>>>>> feature-foros
     </div>
 
     <form [formGroup]="foroForm">
-
-      <input type="text" placeholder="Nombre" formControlName="foro_titulo"/>
+      <input type="text" placeholder="Nombre" formControlName="foro_titulo" />
 
       <select formControlName="foro_categoria_id">
         <option value="">Selecciona categoría</option>
@@ -20,14 +24,22 @@
       <textarea placeholder="Descripción" formControlName="foro_descripcion"></textarea>
 
       <div class="options">
-        <button type="button" (click)="setPrivado(false)">Público</button>
-        <button type="button" (click)="setPrivado(true)">Privado</button>
-      </div>
+        <button 
+          type="button" 
+          (click)="setEstado(false)" 
+          [class.selected]="esPublico">
+          Público
+        </button>
 
+        <button 
+          type="button" 
+          (click)="setEstado(true)" 
+          [class.selected]="!esPublico">
+          Privado
+        </button>
+      </div>
     </form>
 
     <button class="save-btn" (click)="actualizarForo()">Actualizar</button>
-
   </div>
-
 </div>

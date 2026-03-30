@@ -17,7 +17,7 @@ export class ForoService {
 
   crearForo(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/foros`, data).pipe(
-      tap(() => this.cacheForos = null) // limpiar cache
+      tap(() => this.cacheForos = null) 
     );
   }
 
@@ -48,6 +48,15 @@ export class ForoService {
   getForo(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/foros/${id}`);
   }
+
+  getMisForos(): Observable<any> {
+
+  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+  const id = usuario.usuario_id;
+  console.log('USUARIO:', usuario);
+
+  return this.http.get(`${this.apiUrl}/mis-foros/${id}`);
+}
 
   actualizarForo(id: number, data: any): Observable<any> {
     return this.http.put(`${this.apiUrl}/foros/${id}`, data).pipe(

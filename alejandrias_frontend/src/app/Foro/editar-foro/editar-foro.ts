@@ -1,5 +1,9 @@
 import { CommonModule } from '@angular/common';
+<<<<<<< HEAD
 import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+=======
+import { ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef } from '@angular/core'; // Añadimos ChangeDetectorRef
+>>>>>>> feature-foros
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { ForoService } from '../../services/foro';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -27,13 +31,14 @@ export class EditarForo implements OnInit {
     private fb: FormBuilder,
     private foroService: ForoService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef 
   ) {
     this.foroForm = this.fb.group({
       foro_titulo: ['', Validators.required],
       foro_descripcion: ['', Validators.required],
       foro_categoria_id: ['', Validators.required],
-      foro_privado: [false]
+      foro_privado: [false] 
     });
   }
 
@@ -47,10 +52,15 @@ export class EditarForo implements OnInit {
     }
   }
 
+  get esPublico(): boolean {
+    return !this.foroForm.get('foro_privado')?.value;
+  }
+
   cargarCategorias() {
     this.foroService.getCategorias().subscribe({
       next: (res: any) => {
         this.categorias = res;
+        this.cdr.markForCheck(); 
       },
       error: (err) => {
         console.error('Error cargando categorías', err);
@@ -67,6 +77,7 @@ export class EditarForo implements OnInit {
           foro_categoria_id: res.foro_categoria_id,
           foro_privado: res.foro_privado
         });
+        this.cdr.markForCheck(); 
       },
       error: (err) => {
         console.error("Error cargando foro", err);
@@ -75,7 +86,6 @@ export class EditarForo implements OnInit {
   }
 
   actualizarForo() {
-
     if (this.foroForm.invalid) {
       alert("⚠️ Completa todos los campos");
       return;
@@ -98,11 +108,19 @@ export class EditarForo implements OnInit {
     });
   }
 
-  setPrivado(valor: boolean) {
-    this.foroForm.patchValue({ foro_privado: valor });
+
+  setEstado(privado: boolean) {
+    this.foroForm.patchValue({ foro_privado: privado });
+    this.cdr.markForCheck(); 
   }
 
   volver() {
+<<<<<<< HEAD
   this.router.navigate(['/foros']);
 }
 }
+=======
+    this.router.navigate(['/foros']);
+  }
+}
+>>>>>>> feature-foros
