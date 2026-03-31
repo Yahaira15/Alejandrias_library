@@ -15,27 +15,6 @@ class ForoController extends Controller
         return response()->json($foros, 200);
     }
 
-<<<<<<< HEAD
-    public function store(Request $request)
-    {
-        $request->validate([
-            'foro_titulo' => 'required|string',
-            'foro_descripcion' => 'required|string',
-            'foro_categoria_id' => 'required|exists:categoria,categoria_id',
-        ]);
-
-        $foro = new Foro();
-        $foro->foro_titulo = $request->foro_titulo;
-        $foro->foro_descripcion = $request->foro_descripcion;
-        $foro->foro_categoria_id = $request->foro_categoria_id;
-
-        $foro->foro_creador_id = auth()->id() ?? 9;
-
-        $foro->save();
-
-        return response()->json($foro, 201);
-    }
-=======
     public function misForos($id) {
     $foros = Foro::where('foro_creador_id', $id)
         ->with(['usuario', 'categoria'])
@@ -43,7 +22,6 @@ class ForoController extends Controller
 
     return response()->json($foros, 200);
 }
->>>>>>> feature-foros
 
     // 🔹 CREAR FORO
     public function store(Request $request)

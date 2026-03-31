@@ -1,9 +1,5 @@
 import { CommonModule } from '@angular/common';
-<<<<<<< HEAD
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-=======
 import { ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef } from '@angular/core'; // Añadimos ChangeDetectorRef
->>>>>>> feature-foros
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
 import { ForoService } from '../../services/foro';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -115,12 +111,6 @@ export class EditarForo implements OnInit {
   }
 
   volver() {
-<<<<<<< HEAD
-  this.router.navigate(['/foros']);
-}
-}
-=======
     this.router.navigate(['/foros']);
   }
 }
->>>>>>> feature-foros

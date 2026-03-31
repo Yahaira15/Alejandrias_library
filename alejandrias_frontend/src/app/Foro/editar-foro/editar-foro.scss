@@ -32,10 +32,7 @@
   font-size: 18px;
   cursor: pointer;
   z-index: 2;
-<<<<<<< HEAD
-=======
   transition: opacity 0.3s;
->>>>>>> feature-foros
 }
 
 .card {
@@ -69,10 +66,7 @@ input, textarea, select {
   color: #ffffff;
   font-size: 14px;
   outline: none;
-<<<<<<< HEAD
-=======
   box-sizing: border-box;
->>>>>>> feature-foros
 }
 
 textarea {
@@ -86,14 +80,6 @@ textarea {
 }
 
 .options button {
-<<<<<<< HEAD
-  padding: 10px;
-  border-radius: 10px;
-  border: none;
-  background: #6695C6;
-  color: #ffffff;
-  cursor: pointer;
-=======
   padding: 10px 20px;
   border-radius: 10px;
   border: none;
@@ -112,7 +98,6 @@ textarea {
   &:hover {
     opacity: 0.9;
   }
->>>>>>> feature-foros
 }
 
 .save-btn {
@@ -125,15 +110,9 @@ textarea {
   color: #306289;
   font-weight: bold;
   cursor: pointer;
-<<<<<<< HEAD
-}
-
-.options button:hover,
-=======
   transition: opacity 0.3s;
 }
 
->>>>>>> feature-foros
 .save-btn:hover,
 .back:hover {
   opacity: 0.85;
