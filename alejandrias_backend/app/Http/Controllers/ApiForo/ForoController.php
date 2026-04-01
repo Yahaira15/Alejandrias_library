@@ -36,9 +36,7 @@ class ForoController extends Controller
         $foro->foro_titulo = $request->foro_titulo;
         $foro->foro_descripcion = $request->foro_descripcion;
         $foro->foro_categoria_id = $request->foro_categoria_id;
-
-        // 🔥 IMPORTANTE: usar usuario autenticado
-        $foro->foro_creador_id = auth()->id();
+        $foro->foro_creador_id = $request->foro_creador_id;
 
         $foro->save();
 
