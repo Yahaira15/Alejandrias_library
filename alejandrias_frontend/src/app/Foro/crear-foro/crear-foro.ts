@@ -20,6 +20,7 @@ export class CrearForo implements OnInit {
 
   foroForm: FormGroup;
   categorias: any[] = [];
+  id: number = 0;
 
   constructor(
     private fb: FormBuilder,
@@ -47,6 +48,9 @@ export class CrearForo implements OnInit {
         console.error('Error cargando categorías', err);
       }
     });
+
+    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+    this.id = usuario.usuario_id;
   }
 
     crearForo() {
@@ -59,7 +63,8 @@ export class CrearForo implements OnInit {
 
     const data = {
       ...this.foroForm.value,
-      foro_categoria_id: Number(this.foroForm.value.foro_categoria_id)
+      foro_categoria_id: Number(this.foroForm.value.foro_categoria_id),
+      foro_creador_id: this.id
     };
 
     this.foroService.crearForo(data).subscribe({
@@ -80,9 +85,21 @@ export class CrearForo implements OnInit {
 
   setPrivado(valor: boolean) {
     this.foroForm.patchValue({ foro_privado: valor });
+    this.indicatorStyle(valor);
   }
 
   regresar() {
     this.router.navigate(['/foros']);
+  }
+
+  indicatorStyle(privado: boolean) {
+    const indicator = document.getElementById('indicator');
+    if (indicator) {
+      if (privado) {
+        indicator.style.backgroundColor = '#FF6347'; // Rojo para privado
+      } else {
+        indicator.style.backgroundColor = '#7edd8a'; // Azul para público
+      }
+    }
   }
 }
