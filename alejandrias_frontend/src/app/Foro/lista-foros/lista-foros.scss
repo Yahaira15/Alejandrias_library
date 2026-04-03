@@ -4,10 +4,15 @@
   display: flex;
   height: 100vh;
   font-family: Arial, sans-serif;
+  margin-left: 260px;
 
-  /* SIDEBAR */
+  // Menú lateral
   .sidebar {
-    width: 220px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 210px;
+    height: 100vh;
     background: #afcbe6c3;
     padding: 20px;
     display: flex;
@@ -15,8 +20,8 @@
     justify-content: space-between;
 
     .logo {
-      font-size: 20px;
-      margin-bottom: 30px;
+      font-size: 28px;
+      margin-bottom: 50px;
       font-weight: bold;
       color: #306289;
       font-family: 'Lora', serif;
@@ -25,26 +30,41 @@
     nav {
       display: flex;
       flex-direction: column;
-      gap: 30px;
+      gap: 40px;
+      align-items: flex-start;
 
       button {
+        font-family: 'Lora', serif;
         text-decoration: none;
+        font-size: 16px;
         color: #306289;
-        font-weight: 500;
+        font-weight: 600;
         cursor: pointer;
         transition: 0.2s;
         border: none;
-        background: #afcbe6c3;
+        background: #afcbe600;
+        margin-left: 10px;
+        
 
         &:hover {
-          color: #1b3a57;
+          color: #284358;
         }
+      }
+
+      button img {
+        padding-right: 10px;
       }
     }
 
+    // Botón de cerrar sesión
     .logout {
       margin-top: auto;
       cursor: pointer;
+      margin-bottom: 70px;
+    }
+
+    .logout:hover {
+      color: #284358;
     }
   }
 
@@ -52,7 +72,7 @@
   .content {
     flex: 1;
     padding: 20px 40px;
-    background: #f5f7fa;
+    background: #ffffff;
 
     /* TOPBAR */
     .topbar {
@@ -76,12 +96,7 @@
       }
     }
 
-    /* TITULOS */
-    h2 {
-      color: #306289;
-      margin-bottom: 15px;
-      font-weight: bold;
-    }
+
 
     /* CONTENEDOR FOROS */
     .foros-container {
@@ -158,15 +173,16 @@
 
 .logout{
     border: none;
-    background-color: #d8e2ec;
+    background-color: #d8e2ec00;
     color: #306289;
     font-family: 'Lora', serif;
     font-size: 20px;
     cursor: pointer;
-    text-align: center;
+    text-align: left;
     height: 50px; 
-    width: 80%;
-    align-self: center;
+    width: 75%;
+    align-self: left;
     margin-top: 15px;
     font-weight: bold;
 }
+

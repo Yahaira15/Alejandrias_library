@@ -8,7 +8,6 @@ use App\Models\Foro;
 
 class ForoController extends Controller
 {
-    // 🔹 TODOS LOS FOROS
     public function index() {
         $foros = Foro::with(['usuario', 'categoria'])->get();
 
@@ -23,7 +22,7 @@ class ForoController extends Controller
     return response()->json($foros, 200);
 }
 
-    // 🔹 CREAR FORO
+    
     public function store(Request $request)
     {
         $request->validate([
@@ -43,7 +42,7 @@ class ForoController extends Controller
         return response()->json($foro, 201);
     }
 
-    // 🔹 VER FORO
+    
     public function show($id) {
         $foro = Foro::with(['usuario', 'categoria'])->find($id);
 
@@ -54,7 +53,7 @@ class ForoController extends Controller
         return response()->json($foro, 200);
     }
 
-    // 🔹 ACTUALIZAR
+    
     public function update(Request $request, $id) {
         $foro = Foro::find($id);
 
@@ -79,7 +78,7 @@ class ForoController extends Controller
         return response()->json($foro, 200);
     }
 
-    // 🔹 ELIMINAR
+    
     public function destroy($id) {
         $foro = Foro::find($id);
 
