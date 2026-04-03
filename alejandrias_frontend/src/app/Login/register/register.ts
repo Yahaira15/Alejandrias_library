@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
+import { OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-register',
@@ -11,11 +13,20 @@ import { Router } from '@angular/router';
   styleUrl: './register.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class Register {
-  constructor(private http: HttpClient, private router: Router) {}
+export class Register implements OnInit{
+  constructor(private http: HttpClient, private router: Router, private route: ActivatedRoute) {}
+
+  ngOnInit() {
+  this.route.queryParams.subscribe(params => {
+    if (params['rol']) {
+      this.rol = params['rol'];
+    }
+  });
+}
 
   errores: any = {};
   mostrarPassword: boolean = false;
+  rol: string = 'explorador';
 
   usuario = {
     usuario_nombre: '',
@@ -56,7 +67,7 @@ export class Register {
       usuario_apodo: this.usuario.usuario_apodo,
       usuario_email: this.usuario.usuario_email,
       usuario_password: this.usuario.usuario_password,
-      usuario_rol: this.usuario.usuario_rol
+      usuario_rol: this.rol
     };
 
     this.http.post('http://127.0.0.1:8000/api/register', body)

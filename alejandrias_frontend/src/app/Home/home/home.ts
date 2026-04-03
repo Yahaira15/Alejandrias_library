@@ -8,5 +8,9 @@ import { Router } from '@angular/router';
   styleUrl: './home.scss',
 })
 export class Home {
+  constructor(private router: Router) {}
 
+  irARegistro(rol: string) {
+  this.router.navigate(['/register'], { queryParams: { rol } });
+}
 }

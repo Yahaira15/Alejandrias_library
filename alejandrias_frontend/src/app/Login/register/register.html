@@ -2,7 +2,7 @@
     <img src="fondoLogin.png" alt="Fondo de login">
 </div>
 <div class="register-form">
-    <h1>REGISTRO</h1>
+    <h1>Registro como {{ rol }}</h1>
     <form #form="ngForm" (ngSubmit)="registrar(form)" novalidate>
         <div class="input-group">
             <input type="text" [(ngModel)]="usuario.usuario_nombre" id="nombre" name="nombre" required placeholder="Nombre">
