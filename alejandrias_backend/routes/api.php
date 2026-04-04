@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiUsuario\UsuarioController;
 use App\Http\Controllers\ApiForo\ForoController;
 use App\Http\Controllers\ApiCategoria\CategoriaController;
+use App\Http\Controllers\ApiForo\PublicacionController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -22,3 +23,10 @@ Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/categorias/{categoria_id}', [CategoriaController::class, 'show']);
 Route::post('/categorias', [CategoriaController::class, 'store']);
 Route::get('/categorias/{categoria_id}/foros', [CategoriaController::class, 'foros']);
+
+Route::get('/foros/{foroId}/publicaciones', [PublicacionController::class, 'index']);
+Route::post('/foros/{foroId}/publicaciones', [PublicacionController::class, 'store']);
+Route::get('/publicaciones/{id}', [PublicacionController::class, 'show']);
+Route::put('/publicaciones/{id}', [PublicacionController::class, 'update']);
+Route::delete('/publicaciones/{id}', [PublicacionController::class, 'destroy']);
+
