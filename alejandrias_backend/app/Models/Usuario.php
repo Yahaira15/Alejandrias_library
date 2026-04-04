@@ -25,4 +25,14 @@ class Usuario extends Model
         'usuario_experiencia',
         'usuario_puntos'
     ];
+
+    public function comentarios()
+    {
+        return $this->hasMany(Comentario::class, 'comentario_usuario_id');
+    }
+
+    public function publicaciones()
+    {
+        return $this->hasMany(Publicacion::class, 'publicacion_usuario_id');
+    }
 }

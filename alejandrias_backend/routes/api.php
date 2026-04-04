@@ -5,6 +5,7 @@ use App\Http\Controllers\ApiUsuario\UsuarioController;
 use App\Http\Controllers\ApiForo\ForoController;
 use App\Http\Controllers\ApiCategoria\CategoriaController;
 use App\Http\Controllers\ApiForo\PublicacionController;
+use App\Http\Controllers\ApiForo\ComentarioController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -30,3 +31,8 @@ Route::get('/publicaciones/{id}', [PublicacionController::class, 'show']);
 Route::put('/publicaciones/{id}', [PublicacionController::class, 'update']);
 Route::delete('/publicaciones/{id}', [PublicacionController::class, 'destroy']);
 
+Route::get('/publicaciones/{publicacionId}/comentarios', [ComentarioController::class, 'index']);
+Route::post('/publicaciones/{publicacionId}/comentarios', [ComentarioController::class, 'store']);
+Route::get('/comentarios/{id}', [ComentarioController::class, 'show']);
+Route::put('/comentarios/{id}', [ComentarioController::class, 'update']);
+Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy']);

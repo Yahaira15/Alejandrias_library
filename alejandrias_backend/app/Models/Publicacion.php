@@ -20,8 +20,6 @@ class Publicacion extends Model
         'publicacion_fecha_actualizacion'
     ];
 
-    // 🔗 RELACIONES
-
     public function foro()
     {
         return $this->belongsTo(Foro::class, 'publicacion_foro_id', 'foro_id');
@@ -30,5 +28,10 @@ class Publicacion extends Model
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'publicacion_usuario_id', 'usuario_id');
+    }
+
+    public function comentarios()
+    {
+        return $this->hasMany(Comentario::class, 'comentario_publicacion_id');
     }
 }
