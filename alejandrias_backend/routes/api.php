@@ -11,6 +11,7 @@ Route::post('/login', [UsuarioController::class, 'login']);
 Route::get('/verificar-apodo/{apodo}', [UsuarioController::class, 'verificarApodo']);
 
 Route::get('/mis-foros/{id}', [ForoController::class, 'misForos']);
+Route::get('/foros-publicos', [ForoController::class, 'forosPublicos']);
 Route::post('/foros', [ForoController::class, 'store']);
 Route::get('/foros', [ForoController::class, 'index']);
 Route::get('/foros/{foro_id}', [ForoController::class, 'show']);

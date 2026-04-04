@@ -30,4 +30,9 @@ class Foro extends Model
     {
         return $this->belongsTo(Categoria::class, 'foro_categoria_id', 'categoria_id');
     }
+
+    public function miembros()
+    {
+        return $this->belongsToMany(Usuario::class, 'foro_usuario', 'foro_id', 'usuario_id');
+    }
 }

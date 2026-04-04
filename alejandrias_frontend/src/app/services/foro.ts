@@ -58,15 +58,30 @@ export class ForoService {
   return this.http.get(`${this.apiUrl}/mis-foros/${id}`);
 }
 
-  actualizarForo(id: number, data: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/foros/${id}`, data).pipe(
-      tap(() => this.cacheForos = null) // limpiar cache
-    );
+  getForosPublicos(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/foros-publicos`);
   }
 
-  deleteForo(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/foros/${id}`).pipe(
-      tap(() => this.cacheForos = null) // limpiar cache
-    );
-  }
+  actualizarForo(id: number, data: any): Observable<any> {
+  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+
+  const payload = {
+    ...data,
+    usuario_id: usuario.usuario_id
+  };
+
+  return this.http.put(`${this.apiUrl}/foros/${id}`, payload).pipe(
+    tap(() => this.cacheForos = null)
+  );
+}
+
+  deleteForo(id: number) {
+  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+
+  return this.http.delete(`${this.apiUrl}/foros/${id}`, {
+    body: {
+      usuario_id: usuario.usuario_id
+    }
+  });
+}
 } 

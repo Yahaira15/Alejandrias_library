@@ -20,6 +20,8 @@ export class ListaForos implements OnInit {
 
   foros: any[] = [];
   cargando: boolean = false;
+  usuario: any;
+  rol: string = '';
 
   constructor(
     private foroService: ForoService,
@@ -28,30 +30,43 @@ export class ListaForos implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+    this.rol = this.usuario.usuario_rol;
+
     this.cargarForos();
   }
 
   cargarForos(): void {
-    this.cargando = true;
+  this.cargando = true;
+
+  if (this.rol === 'lider') {
+
     this.foroService.getMisForos().subscribe({
       next: (res: any) => {
-        console.log('Mis Foros:', res);
-
         this.foros = res?.data ?? res ?? [];
-
         this.cargando = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error cargando foros', err);
-
-        this.foros = [];
+        console.error(err);
         this.cargando = false;
-
         this.cdr.detectChanges();
       }
     });
+
+  } else {
+      this.foroService.getForosPublicos().subscribe({
+      next: (res: any) => {
+        console.log('FOROS PUBLICOS:', res);
+        this.foros = res ?? [];
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('ERROR FOROS PUBLICOS:', err);
+      }
+    });
   }
+}
 
   irACrearForo(): void {
     this.router.navigate(['/foros/crear']);

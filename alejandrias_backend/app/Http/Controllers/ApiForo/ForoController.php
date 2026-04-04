@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ApiForo;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Foro;
+use App\Models\Usuario;
 
 class ForoController extends Controller
 {
@@ -20,11 +21,32 @@ class ForoController extends Controller
         ->get();
 
     return response()->json($foros, 200);
-}
+    }
 
-    
-    public function store(Request $request)
+    public function forosPublicos()
     {
+        $foros = Foro::where('foro_privado', false)
+            ->orWhereNull('foro_privado') 
+            ->with(['usuario', 'categoria'])
+            ->get();
+
+        return response()->json($foros, 200);
+    }
+
+    public function store(Request $request)
+{
+    try {
+
+        $usuario = Usuario::find($request->foro_creador_id);
+
+        if (!$usuario) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        if ($usuario->usuario_rol !== 'lider') {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
         $request->validate([
             'foro_titulo' => 'required|string',
             'foro_descripcion' => 'required|string',
@@ -35,13 +57,21 @@ class ForoController extends Controller
         $foro->foro_titulo = $request->foro_titulo;
         $foro->foro_descripcion = $request->foro_descripcion;
         $foro->foro_categoria_id = $request->foro_categoria_id;
-        $foro->foro_creador_id = $request->foro_creador_id;
+        $foro->foro_creador_id = $usuario->usuario_id;
 
         $foro->save();
 
         return response()->json($foro, 201);
-    }
 
+    } catch (\Exception $e) {
+        logger('ERROR:', [$e->getMessage()]);
+
+        return response()->json([
+            'error' => 'Error interno',
+            'detalle' => $e->getMessage()
+        ], 500);
+    }
+}
     
     public function show($id) {
         $foro = Foro::with(['usuario', 'categoria'])->find($id);
@@ -54,40 +84,90 @@ class ForoController extends Controller
     }
 
     
-    public function update(Request $request, $id) {
+   public function update(Request $request, $id)
+{
+    try {
+
+        $usuario = Usuario::find($request->usuario_id);
+
+        if (!$usuario) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        if ($usuario->usuario_rol !== 'lider') {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
         $foro = Foro::find($id);
 
         if (!$foro) {
-            return response()->json(['message' => 'Foro no encontrado'], 404);
+            return response()->json(['error' => 'Foro no encontrado'], 404);
+        }
+
+        if ($foro->foro_creador_id != $usuario->usuario_id) {
+            return response()->json(['error' => 'No puedes editar este foro'], 403);
         }
 
         $request->validate([
-            'foro_titulo' => 'sometimes|required|string|max:255',
-            'foro_descripcion' => 'sometimes|required|string',
-            'foro_categoria_id' => 'sometimes|required|exists:categoria,categoria_id',
-            'foro_privado' => 'sometimes|required|boolean'
+            'foro_titulo' => 'required|string',
+            'foro_descripcion' => 'required|string',
+            'foro_categoria_id' => 'required|exists:categoria,categoria_id',
         ]);
 
-        $foro->update($request->only([
-            'foro_titulo',
-            'foro_descripcion',
-            'foro_categoria_id',
-            'foro_privado'
-        ]));
+        $foro->foro_titulo = $request->foro_titulo;
+        $foro->foro_descripcion = $request->foro_descripcion;
+        $foro->foro_categoria_id = $request->foro_categoria_id;
 
-        return response()->json($foro, 200);
+        $foro->save();
+
+        return response()->json([
+            'mensaje' => 'Foro actualizado',
+            'foro' => $foro
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Error interno',
+            'detalle' => $e->getMessage()
+        ], 500);
     }
-
+}
     
-    public function destroy($id) {
+    public function destroy(Request $request, $id)
+{
+    try {
+
+        $usuario = Usuario::find($request->usuario_id);
+
+        if (!$usuario) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        if ($usuario->usuario_rol !== 'lider') {
+            return response()->json(['error' => 'No autorizado'], 403);
+        }
+
         $foro = Foro::find($id);
 
         if (!$foro) {
-            return response()->json(['message' => 'Foro no encontrado'], 404);
+            return response()->json(['error' => 'Foro no encontrado'], 404);
+        }
+
+        if ($foro->foro_creador_id != $usuario->usuario_id) {
+            return response()->json(['error' => 'No puedes eliminar este foro'], 403);
         }
 
         $foro->delete();
 
-        return response()->json(['message' => 'Foro eliminado'], 200);
+        return response()->json([
+            'mensaje' => 'Foro eliminado correctamente'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Error interno',
+            'detalle' => $e->getMessage()
+        ], 500);
     }
+}
 }
