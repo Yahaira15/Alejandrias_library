@@ -1,0 +1,247 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap'); 
+
+.layout {
+    display: block;
+    font-family: Arial, sans-serif;
+
+    //Barra de navegación
+    .navbar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        padding: 10px 40px;
+        font-family: 'Lora', serif;
+        margin: 0;
+    }
+    
+    .logo {
+        color: #306289;
+        font-weight: 800;
+        font-size: 30px;
+        margin: 12px;
+    }
+
+    .sections {
+        padding-top: 30px;
+
+        a {
+            text-decoration: none;
+            padding: 15px;
+            font-size: 20px;
+            color: #306289;
+            font-weight: 800;
+        }
+    }
+
+    .login {
+        padding-top: 20px;
+
+        button {
+            padding: 15px 25px;
+            border-radius: 16px;
+            font-family: 'Lora', serif;
+            text-decoration: none;
+            font-size: 18px;
+            color: #5C799D;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            border: none;
+            background: #FAEDD9;
+            margin-left: 10px;
+
+            &:hover {
+            color: #415670;
+            background-color: #fadeb4;
+            }
+
+        }
+    }
+
+
+    //Bienvenida
+    .hero{
+        height: 300px;
+        background-image: url('/fondo_home.png'); 
+        background-size: cover;
+        background-position: center;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        align-items:center;
+        text-align:center;
+        color:white;
+        position: relative;
+        font-family: 'Lora', serif;
+    }
+
+    
+    .hero::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:rgba(140, 161, 176, 0.45);
+    }
+
+    .hero h1, .hero p{
+        position:relative;
+    }
+
+    .hero h1{
+        font-family:'Lora', serif;
+        font-size:40px;
+    }
+
+    .hero p{
+        font-size:18px;
+    }
+
+
+    // Selección del rol
+    section{
+        text-align:center;
+    }
+
+    section h1{
+        font-family:'Lora', serif;
+        color:#306289;
+        margin:40px 0;
+    }
+
+    .inicio{
+        display:flex;
+        justify-content:center;
+        gap:280px;
+        margin-bottom:60px;
+    }
+
+    .card{
+        width:320px;
+        background:#6695C6;
+        border-radius:12px;
+        padding:10px 30px;
+        text-align:center;
+        box-shadow:0 4px 10px rgba(0,0,0,0.1);
+        font-family: 'Lora', serif;
+        height: 100%;
+    }
+
+    .card img{
+        width:250px;
+        margin-top:-80px;
+    }
+
+    .contenido{
+        color:white;
+    }
+
+    .contenido p{
+        font: size 16px;
+        margin:30px 0;
+    }
+
+    .card button{
+        padding:10px 25px;
+        font-family: 'Lora', serif;
+        border-radius:10px;
+        border:none;
+        background:#FAEDD9;
+        color:#306289;
+        font-weight:600;
+        cursor:pointer;
+    }
+
+    .card button:hover{
+        background:#f7dfb8;
+    }
+
+    // Cards de información
+    .definicion{
+        text-align: center;
+        margin: 80px 0;
+    }
+
+    .definicion h1{
+        font-family: 'Lora', serif;
+        color:#306289;
+        margin-bottom:50px;
+    }
+
+    .contenedor{
+        display:flex;
+        justify-content:center;
+        gap:40px;
+    }
+
+    .cards{
+        background:#9fb8d1;
+        width:260px;
+        padding:25px;
+        border-radius:12px;
+        text-align:left;
+        transition:0.3s;
+        font-family: 'Lora', serif;
+    }
+
+    .cards img{
+        width:35px;
+        margin-bottom:10px;
+    }
+
+    .img{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        margin-bottom:10px;
+    }
+
+    .img img{
+        width:30px;
+    }
+
+    .img h4{
+        font-family:'Lora', serif;
+        color:#2e5577;
+        font-size:20px;
+        margin:0;
+    }
+
+    .cards h4{
+        font-family:'Lora', serif;
+        color:#2e5577;
+        font-size:20px;
+        margin-bottom:10px;
+    }
+
+    .cards p{
+        color:#2e5577;
+        font-size:16px;
+        line-height:1.4;
+        font-family: 'Lora', serif;
+    }
+
+    //Ultima sección - Nostros
+    .nosotros{
+        display:flex;
+        justify-content:center;
+        gap:100px;
+        background:#7fa0c0;
+        padding:60px;
+        color:white;
+        text-align:center;
+    }
+
+    .historia, .mision{
+        width:350px;
+    }
+
+    .nosotros h3{
+        font-family:'Lora', serif;
+        font-size:24px;
+        margin-bottom:15px;
+    }
+
+    .nosotros p {
+        font-family: 'Lora', serif;
+    }
+}
