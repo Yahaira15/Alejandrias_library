@@ -12,5 +12,9 @@ export class Home {
 
   irARegistro(rol: string) {
   this.router.navigate(['/register'], { queryParams: { rol } });
-}
+  }
+
+  irALogin() {
+    this.router.navigate(['/login']);
+  }
 }
