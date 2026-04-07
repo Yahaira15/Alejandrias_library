@@ -84,27 +84,37 @@ class UsuarioController extends Controller
             'usuario_password' => 'required'
         ]);
 
+        // 🔍 Buscar por email o apodo
         if (filter_var($request->login, FILTER_VALIDATE_EMAIL)) {
             $usuario = Usuario::where('usuario_email', $request->login)->first();
         } else {
             $usuario = Usuario::where('usuario_apodo', $request->login)->first();
         }
 
+        // ❌ Credenciales incorrectas
         if (!$usuario || !Hash::check($request->usuario_password, $usuario->usuario_password)) {
             return response()->json([
                 'mensaje' => 'Credenciales incorrectas'
             ], 401);
         }
 
+        // 🚫 Usuario bloqueado
         if ($usuario->usuario_bloqueado) {
             return response()->json([
                 'mensaje' => 'Usuario bloqueado'
             ], 403);
         }
 
+        // 🔥 ELIMINAR TOKENS ANTERIORES (opcional pero recomendado)
+        $usuario->tokens()->delete();
+
+        // 🔐 CREAR TOKEN
+        $token = $usuario->createToken('auth_token')->plainTextToken;
+
         return response()->json([
             'mensaje' => 'Login exitoso',
-            'usuario' => $usuario
+            'usuario' => $usuario,
+            'token' => $token // 🔥 AQUÍ ESTÁ LA CLAVE
         ], 200)
             ->header('Access-Control-Allow-Origin', '*')
             ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')

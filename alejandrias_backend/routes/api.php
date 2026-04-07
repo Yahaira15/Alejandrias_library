@@ -12,13 +12,15 @@ Route::post('/register', [UsuarioController::class, 'register']);
 Route::post('/login', [UsuarioController::class, 'login']);
 Route::get('/verificar-apodo/{apodo}', [UsuarioController::class, 'verificarApodo']);
 
-Route::get('/mis-foros/{id}', [ForoController::class, 'misForos']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/foros', [ForoController::class, 'store']);
+    Route::put('/foros/{id}', [ForoController::class, 'update']);
+    Route::delete('/foros/{id}', [ForoController::class, 'destroy']);
+    Route::get('/mis-foros', [ForoController::class, 'misForos']);
+});
 Route::get('/foros-publicos', [ForoController::class, 'forosPublicos']);
-Route::post('/foros', [ForoController::class, 'store']);
 Route::get('/foros', [ForoController::class, 'index']);
 Route::get('/foros/{foro_id}', [ForoController::class, 'show']);
-Route::put('/foros/{foro_id}', [ForoController::class, 'update']);
-Route::delete('/foros/{foro_id}', [ForoController::class, 'destroy']);
 
 Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/categorias/{categoria_id}', [CategoriaController::class, 'show']);
