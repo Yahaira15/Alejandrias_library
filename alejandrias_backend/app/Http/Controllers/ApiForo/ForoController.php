@@ -15,13 +15,20 @@ class ForoController extends Controller
         return response()->json($foros, 200);
     }
 
-    public function misForos($id) {
-    $foros = Foro::where('foro_creador_id', $id)
+    public function misForos()
+{
+    $usuario = auth()->user();
+
+    if (!$usuario) {
+        return response()->json(['error' => 'No autenticado'], 401);
+    }
+
+    $foros = Foro::where('foro_creador_id', $usuario->usuario_id)
         ->with(['usuario', 'categoria'])
         ->get();
 
     return response()->json($foros, 200);
-    }
+}
 
     public function forosPublicos()
     {
@@ -37,10 +44,10 @@ class ForoController extends Controller
 {
     try {
 
-        $usuario = Usuario::find($request->foro_creador_id);
+        $usuario = auth()->user();
 
         if (!$usuario) {
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
+            return response()->json(['error' => 'No autenticado'], 401);
         }
 
         if ($usuario->usuario_rol !== 'lider') {
@@ -64,8 +71,6 @@ class ForoController extends Controller
         return response()->json($foro, 201);
 
     } catch (\Exception $e) {
-        logger('ERROR:', [$e->getMessage()]);
-
         return response()->json([
             'error' => 'Error interno',
             'detalle' => $e->getMessage()
@@ -88,10 +93,10 @@ class ForoController extends Controller
 {
     try {
 
-        $usuario = Usuario::find($request->usuario_id);
+        $usuario = auth()->user();
 
         if (!$usuario) {
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
+            return response()->json(['error' => 'No autenticado'], 401);
         }
 
         if ($usuario->usuario_rol !== 'lider') {
@@ -108,17 +113,11 @@ class ForoController extends Controller
             return response()->json(['error' => 'No puedes editar este foro'], 403);
         }
 
-        $request->validate([
-            'foro_titulo' => 'required|string',
-            'foro_descripcion' => 'required|string',
-            'foro_categoria_id' => 'required|exists:categoria,categoria_id',
-        ]);
-
-        $foro->foro_titulo = $request->foro_titulo;
-        $foro->foro_descripcion = $request->foro_descripcion;
-        $foro->foro_categoria_id = $request->foro_categoria_id;
-
-        $foro->save();
+        $foro->update($request->only([
+            'foro_titulo',
+            'foro_descripcion',
+            'foro_categoria_id'
+        ]));
 
         return response()->json([
             'mensaje' => 'Foro actualizado',
@@ -133,14 +132,14 @@ class ForoController extends Controller
     }
 }
     
-    public function destroy(Request $request, $id)
+    public function destroy($id)
 {
     try {
 
-        $usuario = Usuario::find($request->usuario_id);
+        $usuario = auth()->user();
 
         if (!$usuario) {
-            return response()->json(['error' => 'Usuario no encontrado'], 404);
+            return response()->json(['error' => 'No autenticado'], 401);
         }
 
         if ($usuario->usuario_rol !== 'lider') {

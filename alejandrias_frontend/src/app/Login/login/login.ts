@@ -37,9 +37,10 @@ export class Login {
     this.http.post<any>('http://localhost:8000/api/login', this.loginData)
       .subscribe({
         next: (res) => {
-          console.log(res);
+          console.log(res.token);
 
           localStorage.setItem('usuario', JSON.stringify(res.usuario));
+          localStorage.setItem('token', res.token);
           const id = res.usuario.usuario_id;
 
           this.router.navigate(['/foros']);

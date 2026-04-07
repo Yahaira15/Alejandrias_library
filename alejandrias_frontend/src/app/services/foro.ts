@@ -9,18 +9,19 @@ export class ForoService {
 
   private apiUrl = 'http://127.0.0.1:8000/api';
 
-  // 🔥 Cache en memoria
   private cacheForos: any[] | null = null;
   private cacheCategorias: any[] | null = null;
 
   constructor(private http: HttpClient) {}
 
+  // 🔹 CREAR
   crearForo(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/foros`, data).pipe(
-      tap(() => this.cacheForos = null) 
+      tap(() => this.cacheForos = null)
     );
   }
 
+  // 🔹 CATEGORÍAS
   getCategorias(): Observable<any> {
     if (this.cacheCategorias) {
       return of(this.cacheCategorias);
@@ -33,6 +34,7 @@ export class ForoService {
     );
   }
 
+  // 🔹 TODOS LOS FOROS
   getForos(): Observable<any> {
     if (this.cacheForos) {
       return of(this.cacheForos);
@@ -45,43 +47,32 @@ export class ForoService {
     );
   }
 
+  // 🔹 UN FORO
   getForo(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/foros/${id}`);
   }
 
+  // 🔹 MIS FOROS (🔐 interceptor se encarga)
   getMisForos(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/mis-foros`);
+  }
 
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-  const id = usuario.usuario_id;
-  console.log('USUARIO:', usuario);
-
-  return this.http.get(`${this.apiUrl}/mis-foros/${id}`);
-}
-
+  // 🔹 FOROS PÚBLICOS
   getForosPublicos(): Observable<any> {
     return this.http.get(`${this.apiUrl}/foros-publicos`);
   }
 
+  // 🔹 ACTUALIZAR
   actualizarForo(id: number, data: any): Observable<any> {
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+    return this.http.put(`${this.apiUrl}/foros/${id}`, data).pipe(
+      tap(() => this.cacheForos = null)
+    );
+  }
 
-  const payload = {
-    ...data,
-    usuario_id: usuario.usuario_id
-  };
-
-  return this.http.put(`${this.apiUrl}/foros/${id}`, payload).pipe(
-    tap(() => this.cacheForos = null)
-  );
+  // 🔹 ELIMINAR
+  deleteForo(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/foros/${id}`).pipe(
+      tap(() => this.cacheForos = null)
+    );
+  }
 }
-
-  deleteForo(id: number) {
-  const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-
-  return this.http.delete(`${this.apiUrl}/foros/${id}`, {
-    body: {
-      usuario_id: usuario.usuario_id
-    }
-  });
-}
-} 
