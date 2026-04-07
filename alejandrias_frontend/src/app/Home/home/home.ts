@@ -15,6 +15,6 @@ export class Home {
   }
 
   irALogin() {
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'])
   }
 }
