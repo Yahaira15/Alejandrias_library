@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap');
+
+.perfil-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.perfil-card {
+  width: 350px;
+  background: #6b8fb3;
+  color: white;
+  border-radius: 12px;
+  padding: 20px;
+  font-family: 'Lora', serif;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.perfil-card h2 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* TEXTO */
+.perfil-card p {
+  margin: 8px 0;
+}
+
+/* INPUTS */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edit-form input {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+}
+
+/* CHECKBOX */
+.checkbox {
+  font-size: 13px;
+}
+
+/* BOTONES */
+button {
+  margin-top: 10px;
+  background: #f2e9d8;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Lora', serif;
+}
+
+button:hover {
+  background: #e4d7c3;
+}
+
+/* BOTONES AGRUPADOS */
+.buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* ERROR */
+.error {
+  color: #ffdede;
+  font-size: 13px;
+}
+
+/* MENSAJE */
+.mensaje {
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* ELIMINAR */
+.delete-btn {
+  width: 100%;
+  background: #e74c3c;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #c0392b;
+}

@@ -1,53 +1,61 @@
-<h2>Mi Perfil</h2>
+<div class="perfil-container">
 
-<div *ngIf="!modoEdicion">
+  <div class="perfil-card">
 
-  <p><strong>Nombre:</strong> {{ perfil.usuario_nombre }}</p>
-  <p><strong>Apodo:</strong> {{ perfil.usuario_apodo }}</p>
-  <p><strong>Email:</strong> {{ perfil.usuario_email }}</p>
+    <h2>Mi Perfil</h2>
 
-  <button (click)="toggleEditar()">Editar perfil</button>
+    <!-- MODO LECTURA -->
+    <div *ngIf="!modoEdicion">
+
+      <p><strong>Nombre:</strong> {{ perfil.usuario_nombre }}</p>
+      <p><strong>Apodo:</strong> {{ perfil.usuario_apodo }}</p>
+      <p><strong>Email:</strong> {{ perfil.usuario_email }}</p>
+
+      <button (click)="toggleEditar()">Editar perfil</button>
+
+    </div>
+
+    <!-- MODO EDICIÓN -->
+    <div *ngIf="modoEdicion" class="edit-form">
+
+      <input [(ngModel)]="perfil.usuario_nombre" placeholder="Nombre">
+      <input [(ngModel)]="perfil.usuario_apodo" placeholder="Apodo">
+      <input [(ngModel)]="perfil.usuario_email" placeholder="Email">
+
+      <input 
+        [type]="mostrarPassword ? 'text' : 'password'"
+        [(ngModel)]="passwordNueva"
+        placeholder="Nueva contraseña">
+
+      <input 
+        [type]="mostrarPassword ? 'text' : 'password'"
+        [(ngModel)]="confirmarPassword"
+        placeholder="Confirmar contraseña">
+
+      <label class="checkbox">
+        <input type="checkbox" [(ngModel)]="mostrarPassword">
+        Mostrar contraseña
+      </label>
+
+      <p class="error" *ngIf="errorPassword">
+        {{ errorPassword }}
+      </p>
+
+      <div class="buttons">
+        <button (click)="actualizar()">Guardar</button>
+        <button (click)="toggleEditar()">Cancelar</button>
+      </div>
+
+    </div>
+
+    <!-- MENSAJE -->
+    <p class="mensaje">{{ mensaje }}</p>
+
+    <!-- ELIMINAR -->
+    <button class="delete-btn" (click)="eliminarCuenta()">
+      Eliminar cuenta
+    </button>
+
+  </div>
 
 </div>
-
-<div *ngIf="modoEdicion">
-
-  <input [(ngModel)]="perfil.usuario_nombre" placeholder="Nombre">
-  <input [(ngModel)]="perfil.usuario_apodo" placeholder="Apodo">
-  <input [(ngModel)]="perfil.usuario_email" placeholder="Email">
-
-  <!-- 🔐 PASSWORD -->
-  <input 
-    [type]="mostrarPassword ? 'text' : 'password'"
-    [(ngModel)]="passwordNueva"
-    placeholder="Nueva contraseña">
-
-  <!-- 🔐 CONFIRMAR -->
-  <input 
-    [type]="mostrarPassword ? 'text' : 'password'"
-    [(ngModel)]="confirmarPassword"
-    placeholder="Confirmar contraseña">
-
-  <!-- 👁️ MOSTRAR -->
-  <label>
-    <input type="checkbox" [(ngModel)]="mostrarPassword">
-    Mostrar contraseña
-  </label>
-
-  <!-- ❌ ERROR -->
-  <p style="color:red;" *ngIf="errorPassword">
-    {{ errorPassword }}
-  </p>
-
-  <button (click)="actualizar()">Guardar</button>
-  <button (click)="toggleEditar()">Cancelar</button>
-
-</div>
-
-<!-- MENSAJE -->
-<p>{{ mensaje }}</p>
-
-<!-- ELIMINAR -->
-<button (click)="eliminarCuenta()" style="color:red; margin-top:20px;">
-  Eliminar cuenta
-</button>
