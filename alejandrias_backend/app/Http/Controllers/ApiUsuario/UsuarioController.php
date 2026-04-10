@@ -127,4 +127,74 @@ class UsuarioController extends Controller
         ], 500);
     }
 }
+
+// 🔹 VER PERFIL
+    public function perfil()
+    {
+        return response()->json(auth()->user(), 200);
+    }
+
+    // 🔹 ACTUALIZAR PERFIL
+    public function update(Request $request)
+    {
+        try {
+
+            $usuario = auth()->user();
+
+            $request->validate([
+                'usuario_nombre' => 'required|string',
+                'usuario_apellido' => 'nullable|string',
+                'usuario_apodo' => 'required|string',
+                'usuario_email' => 'required|email',
+                'usuario_password' => 'nullable|min:6'
+            ]);
+
+            $usuario->usuario_nombre = $request->usuario_nombre;
+            $usuario->usuario_apellido = $request->usuario_apellido;
+            $usuario->usuario_apodo = $request->usuario_apodo;
+            $usuario->usuario_email = $request->usuario_email;
+
+            // 🔐 Si quiere cambiar contraseña
+            if ($request->filled('usuario_password')) {
+                $usuario->usuario_password = Hash::make($request->usuario_password);
+            }
+
+            $usuario->save();
+
+            return response()->json([
+                'mensaje' => 'Perfil actualizado',
+                'usuario' => $usuario
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error interno',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // 🔹 ELIMINAR CUENTA
+    public function destroy()
+    {
+        try {
+
+            $usuario = auth()->user();
+
+            // 🔥 eliminar tokens
+            $usuario->tokens()->delete();
+
+            $usuario->delete();
+
+            return response()->json([
+                'mensaje' => 'Cuenta eliminada'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error interno',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -11,6 +11,12 @@ use App\Http\Controllers\ApiForo\ComentarioController;
 Route::post('/register', [UsuarioController::class, 'register']);
 Route::post('/login', [UsuarioController::class, 'login']);
 Route::get('/verificar-apodo/{apodo}', [UsuarioController::class, 'verificarApodo']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/perfil', [UsuarioController::class, 'perfil']);
+    Route::put('/perfil', [UsuarioController::class, 'update']);
+    Route::delete('/perfil', [UsuarioController::class, 'destroy']);
+
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/foros', [ForoController::class, 'store']);

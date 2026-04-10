@@ -6,12 +6,12 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ForoService } from '../../services/foro';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-lista-foros',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './lista-foros.html',
   styleUrls: ['./lista-foros.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -21,6 +21,7 @@ export class ListaForos implements OnInit {
   foros: any[] = [];
   cargando: boolean = false;
   usuario: any;
+  apodoUsuario: string = '';
   rol: string = '';
 
   constructor(
@@ -32,6 +33,7 @@ export class ListaForos implements OnInit {
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     this.rol = this.usuario.usuario_rol;
+    this.apodoUsuario = this.usuario.usuario_apodo;
 
     this.cargarForos();
   }

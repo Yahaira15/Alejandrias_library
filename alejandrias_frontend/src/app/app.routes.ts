@@ -6,6 +6,7 @@ import { ListaForos } from './Foro/lista-foros/lista-foros';
 import { EditarForo } from './Foro/editar-foro/editar-foro';
 import { authGuard } from './guards/auth-guard';
 import { Home } from './Home/home/home';
+import { Perfil } from './perfil/perfil';
  
 export const routes: Routes = [
     {path: 'home',component:Home},
@@ -14,5 +15,6 @@ export const routes: Routes = [
     {path: 'foros/crear', component: CrearForo},
     { path: '', redirectTo: 'home', pathMatch: 'full'},
     { path: 'foros', component: ListaForos, canActivate: [authGuard] },
-    { path: 'foros/editar/:id', component: EditarForo, canActivate: [authGuard] }
+    { path: 'foros/editar/:id', component: EditarForo, canActivate: [authGuard] },
+    { path: 'perfil', component: Perfil, canActivate: [authGuard] }
 ];
