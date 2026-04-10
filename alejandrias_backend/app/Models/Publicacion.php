@@ -15,7 +15,7 @@ class Publicacion extends Model
         'publicacion_usuario_id',
         'publicacion_titulo',
         'publicacion_contenido',
-        'publicacion_destacado',
+        'publicacion_destacada',
         'publicacion_fecha_creacion',
         'publicacion_fecha_actualizacion'
     ];

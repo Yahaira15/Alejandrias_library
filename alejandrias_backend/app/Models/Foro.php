@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Usuario;
 use App\Models\Categoria;
+use App\Models\Publicacion;
 
 class Foro extends Model
 {
@@ -34,5 +35,10 @@ class Foro extends Model
     public function miembros()
     {
         return $this->belongsToMany(Usuario::class, 'foro_usuario', 'foro_id', 'usuario_id');
+    }
+
+    public function publicaciones()
+    {
+        return $this->hasMany(Publicacion::class, 'publicacion_foro_id', 'foro_id');
     }
 }

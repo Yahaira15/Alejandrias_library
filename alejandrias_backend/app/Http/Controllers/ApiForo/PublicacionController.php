@@ -8,42 +8,58 @@ use App\Models\Publicacion;
 
 class PublicacionController extends Controller
 {
-    // 🔹 GET /foros/{foroId}/publicaciones
     public function index($foroId)
     {
         $publicaciones = Publicacion::where('publicacion_foro_id', $foroId)
             ->with('usuario')
+            ->withCount('comentarios')
+            ->orderBy('publicacion_destacada', 'desc')
             ->orderBy('publicacion_fecha_creacion', 'desc')
             ->get();
 
         return response()->json($publicaciones, 200);
     }
 
-    // 🔹 POST /foros/{foroId}/publicaciones
     public function store(Request $request, $foroId)
     {
-        $request->validate([
-            'publicacion_usuario_id' => 'required|exists:usuario,usuario_id',
-            'publicacion_titulo' => 'required|string|max:255',
-            'publicacion_contenido' => 'required|string',
-        ]);
+        try {
+            $usuario = auth('sanctum')->user();
 
-        $publicacion = new Publicacion();
-        $publicacion->publicacion_foro_id = $foroId; // 🔥 clave
-        $publicacion->publicacion_usuario_id = $request->publicacion_usuario_id;
-        $publicacion->publicacion_titulo = $request->publicacion_titulo;
-        $publicacion->publicacion_contenido = $request->publicacion_contenido;
-        $publicacion->publicacion_destacada = $request->publicacion_destacada ?? false;
+            if (!$usuario) {
+                return response()->json(['error' => 'No autenticado'], 401);
+            }
 
-        $publicacion->save();
+            $request->validate([
+                'publicacion_titulo' => 'required|string|max:255',
+                'publicacion_contenido' => 'required|string',
+                'publicacion_destacada' => 'nullable|boolean'
+            ]);
 
-        return response()->json($publicacion, 201);
+            $publicacion = new Publicacion();
+            $publicacion->publicacion_foro_id = $foroId;
+            $publicacion->publicacion_usuario_id = $usuario->usuario_id;
+            $publicacion->publicacion_titulo = $request->publicacion_titulo;
+            $publicacion->publicacion_contenido = $request->publicacion_contenido;
+            $publicacion->publicacion_destacada = $request->boolean('publicacion_destacada');
+            $publicacion->publicacion_fecha_creacion = now();
+            $publicacion->publicacion_fecha_actualizacion = now();
+
+            $publicacion->save();
+
+            return response()->json($publicacion->load('usuario'), 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error interno',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    // 🔹 GET /publicaciones/{id}
     public function show($id)
     {
-        $publicacion = Publicacion::with(['usuario', 'foro'])->find($id);
+        $publicacion = Publicacion::with(['usuario', 'foro'])
+            ->withCount('comentarios')
+            ->find($id);
 
         if (!$publicacion) {
             return response()->json(['error' => 'No encontrada'], 404);
@@ -52,46 +68,74 @@ class PublicacionController extends Controller
         return response()->json($publicacion, 200);
     }
 
-        // 🔹 PUT /publicaciones/{id}
     public function update(Request $request, $id)
     {
-        $publicacion = Publicacion::find($id);
+        try {
+            $usuario = auth('sanctum')->user();
 
-        if (!$publicacion) {
-            return response()->json(['error' => 'No encontrada'], 404);
+            if (!$usuario) {
+                return response()->json(['error' => 'No autenticado'], 401);
+            }
+
+            $publicacion = Publicacion::find($id);
+
+            if (!$publicacion) {
+                return response()->json(['error' => 'No encontrada'], 404);
+            }
+
+            if ($publicacion->publicacion_usuario_id != $usuario->usuario_id) {
+                return response()->json(['error' => 'No autorizado'], 403);
+            }
+
+            $request->validate([
+                'publicacion_titulo' => 'required|string|max:255',
+                'publicacion_contenido' => 'required|string',
+                'publicacion_destacada' => 'nullable|boolean'
+            ]);
+
+            $publicacion->update([
+                'publicacion_titulo' => $request->publicacion_titulo,
+                'publicacion_contenido' => $request->publicacion_contenido,
+                'publicacion_destacada' => $request->boolean('publicacion_destacada'),
+                'publicacion_fecha_actualizacion' => now()
+            ]);
+
+            return response()->json($publicacion, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error interno',
+                'detalle' => $e->getMessage()
+            ], 500);
         }
-
-        if ($publicacion->publicacion_usuario_id != $request->publicacion_usuario_id) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-
-        // 🔥 ASIGNACIÓN MANUAL (CLAVE)
-        $publicacion->publicacion_titulo = $request->publicacion_titulo;
-        $publicacion->publicacion_contenido = $request->publicacion_contenido;
-        $publicacion->publicacion_destacada = $request->publicacion_destacada ? true : false;
-        $publicacion->publicacion_fecha_actualizacion = now();
-
-        $publicacion->save();
-
-        return response()->json($publicacion, 200);
     }
 
-    // 🔹 DELETE /publicaciones/{id}
-    public function destroy(Request $request, $id)
+    public function destroy($id)
     {
-        $publicacion = Publicacion::find($id);
+        try {
+            $usuario = auth('sanctum')->user();
 
-        if (!$publicacion) {
-            return response()->json(['error' => 'No encontrada'], 404);
+            if (!$usuario) {
+                return response()->json(['error' => 'No autenticado'], 401);
+            }
+
+            $publicacion = Publicacion::find($id);
+
+            if (!$publicacion) {
+                return response()->json(['error' => 'No encontrada'], 404);
+            }
+
+            if ($publicacion->publicacion_usuario_id != $usuario->usuario_id) {
+                return response()->json(['error' => 'No autorizado'], 403);
+            }
+
+            $publicacion->delete();
+
+            return response()->json(['mensaje' => 'Eliminada correctamente'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error interno',
+                'detalle' => $e->getMessage()
+            ], 500);
         }
-
-        // 🔥 validar dueño
-        if ($publicacion->publicacion_usuario_id != $request->publicacion_usuario_id) {
-            return response()->json(['error' => 'No autorizado'], 403);
-        }
-
-        $publicacion->delete();
-
-        return response()->json(['mensaje' => 'Eliminada'], 200);
     }
 }

@@ -6,56 +6,52 @@ use App\Http\Controllers\Controller;
 use App\Models\Comentario;
 use App\Models\Publicacion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ComentarioController extends Controller
 {
-    /**
-     * Listar comentarios de una publicación
-     */
     public function index($publicacionId)
     {
-        // Validar que la publicación exista
         $publicacion = Publicacion::find($publicacionId);
 
         if (!$publicacion) {
-            return response()->json(['message' => 'Publicación no encontrada'], 404);
+            return response()->json(['message' => 'Publicacion no encontrada'], 404);
         }
 
         $comentarios = Comentario::where('comentario_publicacion_id', $publicacionId)
             ->with('usuario')
+            ->orderBy('comentario_id', 'asc')
             ->get();
 
         return response()->json($comentarios, 200);
     }
 
-    /**
-     * Crear comentario en una publicación
-     */
     public function store(Request $request, $publicacionId)
     {
-        // Validar que la publicación exista
         $publicacion = Publicacion::find($publicacionId);
 
         if (!$publicacion) {
-            return response()->json(['message' => 'Publicación no encontrada'], 404);
+            return response()->json(['message' => 'Publicacion no encontrada'], 404);
+        }
+
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
         }
 
         $data = $request->validate([
-            'comentario_usuario_id' => 'required|exists:usuario,usuario_id',
-            'comentario_contenido' => 'required|string'
+            'comentario_contenido' => 'required|string|max:2000',
         ]);
 
-        // Asignar automáticamente la publicación
         $data['comentario_publicacion_id'] = $publicacionId;
+        $data['comentario_usuario_id'] = $usuario->usuario_id;
 
         $comentario = Comentario::create($data);
 
-        return response()->json($comentario, 201);
+        return response()->json($comentario->load('usuario'), 201);
     }
 
-    /**
-     * Mostrar un comentario específico
-     */
     public function show($id)
     {
         $comentario = Comentario::with(['usuario', 'publicacion'])->find($id);
@@ -67,9 +63,6 @@ class ComentarioController extends Controller
         return response()->json($comentario, 200);
     }
 
-    /**
-     * Actualizar comentario
-     */
     public function update(Request $request, $id)
     {
         $comentario = Comentario::find($id);
@@ -78,24 +71,22 @@ class ComentarioController extends Controller
             return response()->json(['message' => 'Comentario no encontrado'], 404);
         }
 
-        // 🔥 Verificación de propietario
-        if ($comentario->comentario_usuario_id != $request->comentario_usuario_id) {
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario || $comentario->comentario_usuario_id != $usuario->usuario_id) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
         $data = $request->validate([
-            'comentario_contenido' => 'sometimes|string'
+            'comentario_contenido' => 'required|string|max:2000'
         ]);
 
         $comentario->update($data);
 
-        return response()->json($comentario, 200);
+        return response()->json($comentario->load('usuario'), 200);
     }
 
-    /**
-     * Eliminar comentario
-     */
-    public function destroy(Request $request, $id)
+    public function destroy($id)
     {
         $comentario = Comentario::find($id);
 
@@ -103,8 +94,9 @@ class ComentarioController extends Controller
             return response()->json(['message' => 'Comentario no encontrado'], 404);
         }
 
-        // 🔥 Verificación de propietario
-        if ($comentario->comentario_usuario_id != $request->comentario_usuario_id) {
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario || $comentario->comentario_usuario_id != $usuario->usuario_id) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 

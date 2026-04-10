@@ -100,8 +100,7 @@
     section h1{
         font-family:'Lora', serif;
         color:#306289;
-        margin-top: 50px;
-        margin-bottom: 150px;
+        margin:40px 0;
     }
 
     .inicio{
@@ -119,10 +118,12 @@
         text-align:center;
         box-shadow:0 4px 10px rgba(0,0,0,0.1);
         font-family: 'Lora', serif;
+        height: 100%;
     }
 
     .card img{
-        opacity: 0.85;
+        width:250px;
+        margin-top:-80px;
     }
 
     .contenido{

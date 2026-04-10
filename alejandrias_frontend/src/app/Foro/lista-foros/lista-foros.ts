@@ -1,28 +1,22 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnInit,
-  ChangeDetectorRef
-} from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ForoService } from '../../services/foro';
-import { Router, RouterModule } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-lista-foros',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './lista-foros.html',
   styleUrls: ['./lista-foros.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ListaForos implements OnInit {
-
   foros: any[] = [];
-  cargando: boolean = false;
+  cargando = false;
   usuario: any;
-  apodoUsuario: string = '';
-  rol: string = '';
+  rol = '';
 
   constructor(
     private foroService: ForoService,
@@ -33,42 +27,69 @@ export class ListaForos implements OnInit {
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     this.rol = this.usuario.usuario_rol;
-    this.apodoUsuario = this.usuario.usuario_apodo;
-
     this.cargarForos();
   }
 
   cargarForos(): void {
-  this.cargando = true;
+    this.cargando = true;
 
-  if (this.rol === 'lider') {
-
-    this.foroService.getMisForos().subscribe({
-      next: (res: any) => {
-        this.foros = res?.data ?? res ?? [];
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error(err);
-        this.cargando = false;
-        this.cdr.detectChanges();
-      }
-    });
-
-  } else {
+    if (this.rol === 'lider') {
+      this.foroService.getMisForos().subscribe({
+        next: (res: any) => this.enriquecerForos(res?.data ?? res ?? []),
+        error: (err) => {
+          console.error(err);
+          this.cargando = false;
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
       this.foroService.getForosPublicos().subscribe({
-      next: (res: any) => {
-        console.log('FOROS PUBLICOS:', res);
-        this.foros = res ?? [];
+        next: (res: any) => this.enriquecerForos(res ?? []),
+        error: (err) => {
+          console.error('ERROR FOROS PUBLICOS:', err);
+          this.cargando = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  enriquecerForos(foros: any[]): void {
+    if (!foros.length) {
+      this.foros = [];
+      this.cargando = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const solicitudes = foros.map(foro => this.foroService.getPublicaciones(foro.foro_id));
+
+    forkJoin(solicitudes).subscribe({
+      next: (resultados) => {
+        this.foros = foros.map((foro, index) => {
+          const publicaciones = Array.isArray(resultados[index]) ? resultados[index] : [];
+          const comentariosCount = publicaciones.reduce(
+            (total: number, publicacion: any) => total + (publicacion.comentarios_count || 0),
+            0
+          );
+
+          return {
+            ...foro,
+            publicaciones_count: publicaciones.length,
+            comentarios_count_total: comentariosCount
+          };
+        });
+        this.cargando = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('ERROR FOROS PUBLICOS:', err);
+        console.error('Error contando comentarios por foro:', err);
+        this.foros = foros;
+        this.cargando = false;
+        this.cdr.detectChanges();
       }
     });
   }
-}
 
   irACrearForo(): void {
     this.router.navigate(['/foros/crear']);
@@ -79,7 +100,7 @@ export class ListaForos implements OnInit {
   }
 
   eliminarForo(id: number): void {
-    const confirmar = confirm('¿Estás seguro de que quieres eliminar este foro?');
+    const confirmar = confirm('�Estas seguro de que quieres eliminar este foro?');
     if (!confirmar) return;
 
     this.foroService.deleteForo(id).subscribe({
@@ -97,9 +118,9 @@ export class ListaForos implements OnInit {
     return foro.foro_id;
   }
 
-  logout() {
+  logout(): void {
     localStorage.removeItem('usuario');
-    localStorage.removeItem('token'); 
+    localStorage.removeItem('token');
     this.router.navigate(['/login']);
   }
 }

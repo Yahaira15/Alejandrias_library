@@ -1,0 +1,146 @@
+<div class="publication-page">
+  <div *ngIf="feedbackMensaje" class="feedback-banner" [class.feedback-success]="feedbackTipo === 'success'" [class.feedback-error]="feedbackTipo === 'error'">
+    <span>{{ feedbackMensaje }}</span>
+    <button type="button" class="feedback-close" (click)="cerrarFeedback()">Cerrar</button>
+  </div>
+
+  <div class="back-links" *ngIf="publicacion?.foro?.foro_id">
+    <a [routerLink]="['/foros', publicacion.foro.foro_id]" class="back-link">&#8592;</a>
+  </div>
+
+  <div *ngIf="loading" class="loading">Cargando publicacion...</div>
+
+  <div *ngIf="publicacion && !loading" class="publication-shell">
+    <section class="publication-hero">
+      <p class="page-title">Publicacion</p>
+
+      <div class="publication-card">
+        <div class="publication-meta-top">
+          <span class="publication-forum">{{ publicacion.foro?.foro_titulo }}</span>
+          <span class="publication-time">{{ tiempoRelativo(publicacion.publicacion_fecha_creacion) }}</span>
+        </div>
+
+        <h1>{{ publicacion.publicacion_titulo }}</h1>
+
+        <div class="publication-author-row">
+          <span>{{ publicacion.usuario?.usuario_nombre }} {{ publicacion.usuario?.usuario_apellido }}</span>
+          <span>{{ publicacion.comentarios_count || comentarios.length }} comentarios</span>
+        </div>
+
+        <p class="publication-body">{{ publicacion.publicacion_contenido }}</p>
+      </div>
+    </section>
+
+    <section class="comments-panel">
+      <div class="section-header">
+        <h2>Comentarios</h2>
+        <span *ngIf="loadingComentarios" class="section-state">Cargando...</span>
+      </div>
+
+      <div *ngIf="!loadingComentarios && comentarios.length > 0" class="comments-summary">
+        {{ comentarios.length }} comentario{{ comentarios.length === 1 ? '' : 's' }}
+      </div>
+
+      <div class="new-comment-card">
+        <div *ngIf="!usuario" class="login-hint">
+          Inicia sesion para comentar esta publicacion.
+        </div>
+
+        <div *ngIf="usuario" class="comment-form">
+          <textarea
+            [(ngModel)]="nuevoComentario"
+            rows="4"
+            class="comment-textarea"
+            placeholder="Escribe un comentario"
+          ></textarea>
+          <div class="attachment-panel">
+            <input
+              #adjuntosComentarioInput
+              type="file"
+              multiple
+              class="file-input-hidden"
+              (change)="onAdjuntosComentarioSeleccionados($event)"
+            />
+
+            <button
+              type="button"
+              class="btn btn-secondary attachment-button"
+              (click)="adjuntosComentarioInput.click()"
+            >
+              Adjuntar fotos o archivos
+            </button>
+
+            <p class="attachment-hint">
+              Por ahora la interfaz los muestra, pero el backend aun no los guarda.
+            </p>
+
+            <div class="attachment-list" *ngIf="archivosComentario.length > 0">
+              <div class="attachment-chip" *ngFor="let archivo of archivosComentario; let i = index">
+                <span>{{ archivo.name }}</span>
+                <button type="button" class="attachment-remove" (click)="quitarAdjuntoComentario(i)">x</button>
+              </div>
+            </div>
+          </div>
+          <div class="comment-submit">
+            <button
+              (click)="crearComentario()"
+              [disabled]="!puedeCrearComentario"
+              class="btn btn-primary"
+            >
+              {{ creandoComentario ? 'Publicando...' : 'Publicar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!loadingComentarios && comentarios.length === 0" class="empty-state">
+        Todavia no hay comentarios en esta publicacion.
+      </div>
+
+      <div class="comments-list">
+        <article *ngFor="let comentario of comentariosVisibles; trackBy: trackByComentarioId" class="comment-card">
+          <div *ngIf="comentarioEditando?.comentario_id !== comentario.comentario_id; else editarComentarioBlock">
+            <div class="comment-header">
+              <div>
+                <p class="comment-author">{{ comentario.usuario?.usuario_nombre }} {{ comentario.usuario?.usuario_apellido }}</p>
+              </div>
+              <span class="comment-date">{{ tiempoRelativo(comentario.created_at) }}</span>
+            </div>
+
+            <p class="comment-content">{{ comentario.comentario_contenido }}</p>
+
+            <div class="comment-actions" *ngIf="esComentarioPropio(comentario)">
+              <button (click)="iniciarEdicionComentario(comentario)" class="btn btn-secondary">Editar comentario</button>
+              <button (click)="eliminarComentario(comentario.comentario_id)" class="btn btn-danger" [disabled]="eliminandoComentarioId === comentario.comentario_id">
+                {{ eliminandoComentarioId === comentario.comentario_id ? 'Eliminando...' : 'Eliminar comentario' }}
+              </button>
+            </div>
+          </div>
+
+          <ng-template #editarComentarioBlock>
+            <div class="comment-form">
+              <textarea
+                [(ngModel)]="comentarioEditando.comentario_contenido"
+                rows="4"
+                class="comment-textarea"
+              ></textarea>
+
+              <div class="comment-actions">
+                <button (click)="guardarEdicionComentario()" class="btn btn-primary" [disabled]="guardandoComentario">
+                  {{ guardandoComentario ? 'Guardando...' : 'Guardar comentario' }}
+                </button>
+                <button (click)="cancelarEdicionComentario()" class="btn btn-neutral" [disabled]="guardandoComentario">Cancelar</button>
+              </div>
+            </div>
+          </ng-template>
+        </article>
+      </div>
+
+      <div class="load-more-wrap" *ngIf="tieneMasComentarios">
+        <button type="button" class="btn btn-secondary" (click)="cargarMasComentarios()">
+          Cargar mas comentarios
+        </button>
+      </div>
+    </section>
+  </div>
+</div>

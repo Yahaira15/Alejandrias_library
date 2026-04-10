@@ -1,0 +1,196 @@
+<div class="forum-container">
+  <div *ngIf="feedbackMensaje" class="feedback-banner" [class.feedback-success]="feedbackTipo === 'success'" [class.feedback-error]="feedbackTipo === 'error'">
+    <span>{{ feedbackMensaje }}</span>
+    <button type="button" class="feedback-close" (click)="cerrarFeedback()">Cerrar</button>
+  </div>
+
+  <a [routerLink]="['/foros']" class="back-link">&#8592;</a>
+
+  <div *ngIf="loading" class="loading">Cargando foro...</div>
+
+  <div *ngIf="error && !loading" class="error-message">
+    {{ error }}
+  </div>
+
+  <div *ngIf="foro && !loading" class="forum-shell">
+    <header class="foro-header">
+      <div class="foro-heading">
+        <p class="foro-kicker">Informacion del Foro</p>
+        <div class="foro-header-top">
+          <div>
+            <p class="foro-category">{{ foro.categoria?.categoria_nombre || 'Foro' }}</p>
+            <h1>{{ foro.foro_titulo }}</h1>
+          </div>
+          <span class="foro-badge" *ngIf="foro.foro_privado">Privado</span>
+        </div>
+      </div>
+
+      <p class="foro-description">{{ foro.foro_descripcion }}</p>
+
+      <div class="foro-meta">
+        <span>Creador: {{ foro.usuario?.usuario_nombre }} {{ foro.usuario?.usuario_apellido }}</span>
+        <span>Publicaciones: {{ publicaciones.length }}</span>
+      </div>
+    </header>
+
+    <div class="new-publication">
+      <div class="section-header">
+        <h2>Nueva publicacion</h2>
+      </div>
+
+      <div *ngIf="!usuario" class="login-hint">
+        Inicia sesion para crear una publicacion en este foro.
+      </div>
+
+      <div *ngIf="usuario" class="publication-form">
+        <input
+          type="text"
+          [(ngModel)]="nuevaPublicacion.publicacion_titulo"
+          placeholder="Titulo de la publicacion"
+          class="publication-input"
+        />
+
+        <textarea
+          [(ngModel)]="nuevaPublicacion.publicacion_contenido"
+          placeholder="Comparte tu idea, pregunta o aporte"
+          rows="5"
+          class="publication-textarea"
+        ></textarea>
+        <div class="attachment-panel">
+          <input
+            #adjuntosPublicacionInput
+            type="file"
+            multiple
+            class="file-input-hidden"
+            (change)="onAdjuntosPublicacionSeleccionados($event)"
+          />
+
+          <button
+            type="button"
+            class="btn btn-secondary attachment-button"
+            (click)="adjuntosPublicacionInput.click()"
+          >
+            Adjuntar fotos o archivos
+          </button>
+
+          <p class="attachment-hint">
+            Por ahora la interfaz los muestra, pero el backend aun no los guarda.
+          </p>
+
+          <div class="attachment-list" *ngIf="archivosPublicacion.length > 0">
+            <div class="attachment-chip" *ngFor="let archivo of archivosPublicacion; let i = index">
+              <span>{{ archivo.name }}</span>
+              <button type="button" class="attachment-remove" (click)="quitarAdjuntoPublicacion(i)">x</button>
+            </div>
+          </div>
+        </div>
+        <button
+          (click)="crearPublicacion()"
+          [disabled]="!puedeCrearPublicacion"
+          class="btn btn-primary"
+        >
+          {{ creandoPublicacion ? 'Publicando...' : 'Crear publicacion' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="publicaciones-section">
+      <div class="section-header">
+        <h2>Publicaciones del Foro</h2>
+        <span *ngIf="loadingPublicaciones" class="section-state">Cargando...</span>
+      </div>
+
+      <div *ngIf="!loadingPublicaciones && publicaciones.length === 0" class="empty-state">
+        Aun no hay publicaciones en este foro.
+      </div>
+
+      <div class="publicaciones-list">
+        <article
+          *ngFor="let publicacion of publicaciones; trackBy: trackByPublicacionId"
+          class="publication-card"
+        >
+          <div *ngIf="publicacionEditando?.publicacion_id !== publicacion.publicacion_id; else editarPublicacionBlock">
+            <a [routerLink]="['/publicaciones', publicacion.publicacion_id]" class="publication-main-link">
+              <div class="publication-card-header">
+                <div class="publication-user">
+                  <div class="publication-avatar">
+                    {{ (publicacion.usuario?.usuario_nombre || 'U').charAt(0) | uppercase }}
+                  </div>
+                  <div>
+                    <h3>{{ publicacion.publicacion_titulo }}</h3>
+                    <p class="publication-author">
+                      {{ publicacion.usuario?.usuario_nombre }} {{ publicacion.usuario?.usuario_apellido }}
+                    </p>
+                    <p class="publication-date">{{ tiempoRelativo(publicacion.publicacion_fecha_creacion) }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <p class="publication-content">{{ resumenContenido(publicacion.publicacion_contenido, 240) }}</p>
+
+              <div class="publication-stats">
+                <span class="stats-pill">{{ publicacion.comentarios_count || 0 }} Comentarios</span>
+              </div>
+            </a>
+
+            <div class="publication-actions">
+              <a [routerLink]="['/publicaciones', publicacion.publicacion_id]" class="btn btn-primary">
+                Ver publicacion y comentar
+              </a>
+
+              <ng-container *ngIf="esPropietarioDePublicacion(publicacion)">
+                <button
+                  (click)="iniciarEdicionPublicacion(publicacion)"
+                  class="btn btn-secondary"
+                >
+                  Editar publicacion
+                </button>
+                <button
+                  (click)="eliminarPublicacion(publicacion.publicacion_id)"
+                  class="btn btn-danger"
+                  [disabled]="eliminandoPublicacionId === publicacion.publicacion_id"
+                >
+                  {{ eliminandoPublicacionId === publicacion.publicacion_id ? 'Eliminando...' : 'Eliminar publicacion' }}
+                </button>
+              </ng-container>
+            </div>
+          </div>
+
+          <ng-template #editarPublicacionBlock>
+            <div class="publication-form">
+              <input
+                type="text"
+                [(ngModel)]="publicacionEditando.publicacion_titulo"
+                placeholder="Titulo de la publicacion"
+                class="publication-input"
+              />
+
+              <textarea
+                [(ngModel)]="publicacionEditando.publicacion_contenido"
+                rows="5"
+                class="publication-textarea"
+              ></textarea>
+
+              <div class="publication-actions">
+                <button
+                  (click)="guardarEdicionPublicacion()"
+                  class="btn btn-primary"
+                  [disabled]="guardandoPublicacion"
+                >
+                  {{ guardandoPublicacion ? 'Guardando...' : 'Guardar cambios' }}
+                </button>
+                <button
+                  (click)="cancelarEdicionPublicacion()"
+                  class="btn btn-neutral"
+                  [disabled]="guardandoPublicacion"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </ng-template>
+        </article>
+      </div>
+    </div>
+  </div>
+</div>

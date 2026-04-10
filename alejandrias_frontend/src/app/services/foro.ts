@@ -14,65 +14,97 @@ export class ForoService {
 
   constructor(private http: HttpClient) {}
 
-  // 🔹 CREAR
   crearForo(data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/foros`, data).pipe(
       tap(() => this.cacheForos = null)
     );
   }
 
-  // 🔹 CATEGORÍAS
   getCategorias(): Observable<any> {
-    if (this.cacheCategorias) {
-      return of(this.cacheCategorias);
-    }
-
+    if (this.cacheCategorias) return of(this.cacheCategorias);
     return this.http.get(`${this.apiUrl}/categorias`).pipe(
-      tap((res: any) => {
-        this.cacheCategorias = res?.data ?? res;
-      })
+      tap((res: any) => this.cacheCategorias = res?.data ?? res)
     );
   }
 
-  // 🔹 TODOS LOS FOROS
   getForos(): Observable<any> {
-    if (this.cacheForos) {
-      return of(this.cacheForos);
-    }
-
+    if (this.cacheForos) return of(this.cacheForos);
     return this.http.get(`${this.apiUrl}/foros`).pipe(
-      tap((res: any) => {
-        this.cacheForos = res?.data ?? res;
-      })
+      tap((res: any) => this.cacheForos = res?.data ?? res)
     );
   }
 
-  // 🔹 UN FORO
   getForo(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/foros/${id}`);
   }
 
-  // 🔹 MIS FOROS (🔐 interceptor se encarga)
+  getPublicacion(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/publicaciones/${id}`);
+  }
+
+  getPublicaciones(foroId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/foros/${foroId}/publicaciones`);
+  }
+
+  crearPublicacion(foroId: number, data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/foros/${foroId}/publicaciones`, data);
+  }
+
+  actualizarPublicacion(id: number, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/publicaciones/${id}`, data);
+  }
+
+  eliminarPublicacion(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/publicaciones/${id}`);
+  }
+
+  getComentariosPublicacion(publicacionId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/publicaciones/${publicacionId}/comentarios`);
+  }
+
+  crearComentarioPublicacion(publicacionId: number, contenido: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/publicaciones/${publicacionId}/comentarios`, {
+      comentario_contenido: contenido
+    });
+  }
+
+  getComentarios(foroId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/foros/${foroId}/comentarios`);
+  }
+
   getMisForos(): Observable<any> {
     return this.http.get(`${this.apiUrl}/mis-foros`);
   }
 
-  // 🔹 FOROS PÚBLICOS
   getForosPublicos(): Observable<any> {
     return this.http.get(`${this.apiUrl}/foros-publicos`);
   }
 
-  // 🔹 ACTUALIZAR
   actualizarForo(id: number, data: any): Observable<any> {
     return this.http.put(`${this.apiUrl}/foros/${id}`, data).pipe(
       tap(() => this.cacheForos = null)
     );
   }
 
-  // 🔹 ELIMINAR
   deleteForo(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/foros/${id}`).pipe(
       tap(() => this.cacheForos = null)
     );
+  }
+
+  crearComentario(foroId: number, contenido: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/foros/${foroId}/comentarios`, {
+      comentario_contenido: contenido
+    });
+  }
+
+  actualizarComentario(id: number, contenido: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/comentarios/${id}`, {
+      comentario_contenido: contenido
+    });
+  }
+
+  eliminarComentario(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/comentarios/${id}`);
   }
 }
