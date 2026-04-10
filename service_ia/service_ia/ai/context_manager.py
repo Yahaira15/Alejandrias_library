@@ -1,7 +1,9 @@
 def construir_contexto(data):
+    data = data or {}
+    contenido = data.get("data") if isinstance(data.get("data"), dict) else data
+
     return {
-        "intereses": data.get("intereses"),
-        "foros": data.get("foros"),
-        "historial": data.get("historial", [])
-        #Agregar más funciones ("logros")
+        "intereses": contenido.get("intereses") or [],
+        "foros": contenido.get("foros") or [],
+        "historial": contenido.get("historial", []),
     }

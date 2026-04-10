@@ -1,0 +1,50 @@
+<section class="chat-shell">
+  <header class="chat-header">
+    <div>
+      <p class="chat-kicker">AlejandrIA</p>
+      <h1>Bienvenido a AlejandrIA</h1>
+      <p class="chat-subtitle">Base funcional para conversaciones de texto dentro del proyecto.</p>
+    </div>
+
+    <div class="chat-actions">
+      <a routerLink="/foros" class="btn btn-secondary">Volver</a>
+      <button type="button" class="btn btn-ghost" (click)="limpiarChat()">Limpiar</button>
+    </div>
+  </header>
+
+  <section class="chat-board">
+    <div class="chat-messages">
+      <article
+        *ngFor="let mensaje of mensajes; trackBy: trackByIndex"
+        class="chat-message"
+        [class.chat-message-user]="mensaje.rol === 'usuario'"
+        [class.chat-message-ai]="mensaje.rol === 'asistente'">
+        <p class="chat-role">{{ mensaje.rol === 'usuario' ? 'Tu' : 'IA' }}</p>
+        <p class="chat-text">{{ mensaje.texto }}</p>
+      </article>
+
+      <article *ngIf="cargando" class="chat-message chat-message-ai chat-message-loading">
+        <p class="chat-role">IA</p>
+        <p class="chat-text">...</p>
+      </article>
+    </div>
+
+    <p *ngIf="error" class="chat-error">{{ error }}</p>
+
+    <div class="chat-input">
+      <textarea
+        [(ngModel)]="mensajeActual"
+        rows="2"
+        placeholder="Escribe tu mensaje..."
+        (keydown)="onKeydown($event)"></textarea>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="cargando || !mensajeActual.trim()"
+        (click)="enviarMensaje()">
+        <img src="iconos/send.png" alt="Enviar">
+      </button>
+    </div>
+  </section>
+</section>

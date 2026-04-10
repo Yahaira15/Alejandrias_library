@@ -15,10 +15,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+<<<<<<< HEAD
 from django.urls import path
 from ai.views import ia_handler
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('ia/', ia_handler, name='ia_handler'),
+=======
+from django.urls import include, path
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/ia/', include('ai.urls')),
+>>>>>>> 4c544b3 (feat: creacion_del_chat_en_tiempo_real)
 ]

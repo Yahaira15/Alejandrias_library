@@ -1,56 +1,60 @@
-def construir_prompt(tarea, contexto):
-    builders = {
-        "recomendar_foros": construir_prompt_recomendador,
-    }
-
-    builder = builders.get(tarea)
-    if builder is None:
-        raise ValueError(f"Tarea no soportada: {tarea}")
-
-    return builder(contexto)
+import json
 
 
 def construir_prompt_recomendador(contexto):
+    intereses = contexto.get("intereses") or []
+    foros = contexto.get("foros") or []
 
     return f"""
-    Eres una IA educativa dentro de Alejandría’s Library.
+Eres una IA educativa dentro de Alejandrias Library.
 
-    TAREA:
-    Recomendar foros relevantes.
+TAREA:
+Recomendar foros relevantes.
 
-    REGLAS:
-    - Debes recomendar EXACTAMENTE 3 foros
-    - No repitas foros
-    - Prioriza coincidencias con intereses
-    - Si un foro coincide directamente con un interés, asígnale coincidencia "alta" y priorízalo
-    - Explica en máximo 15 palabras
-    - Asigna un nivel a cada foro
+REGLAS:
+- Debes recomendar EXACTAMENTE 3 foros si existen al menos 3.
+- No repitas foros.
+- Prioriza coincidencias con intereses.
+- Si un foro coincide directamente con un interes, asigna coincidencia \"alta\".
+- Explica cada razon en maximo 15 palabras.
+- Asigna un nivel a cada foro: basico, intermedio o avanzado.
+- Responde SOLO con JSON valido.
+- No uses markdown ni bloques de codigo.
 
-    NIVELES DISPONIBLES:
-    - básico
-    - intermedio
-    - avanzado
+INTERESES:
+{json.dumps(intereses, ensure_ascii=False)}
 
-    COINCIDENCIA:
-    - alta: coincide directamente con los intereses
-    - media: relacionado indirectamente
-    - baja: poco relacionado pero útil
+FOROS DISPONIBLES:
+{json.dumps(foros, ensure_ascii=False)}
 
-    Si no hay intereses, recomienda foros populares.
+FORMATO ESPERADO:
+[
+  {{
+    \"titulo\": \"string\",
+    \"nivel\": \"basico|intermedio|avanzado\",
+    \"coincidencia\": \"alta|media|baja\",
+    \"razon\": \"string\"
+  }}
+]
+""".strip()
 
-    INTERESES:
-    {contexto.get('intereses')}
 
-    FOROS DISPONIBLES:
-    {contexto.get('foros')}
+def construir_prompt_chat(contexto):
+    historial = contexto.get("historial") or []
+    mensaje = contexto.get("mensaje") or ""
 
-    Responde SOLO en JSON válido:
-    [
-      {{
-        "titulo": "...",
-        "nivel": "...",
-        "coincidencia": "...",
-        "razon": "..."
-      }}
-    ]
-    """
+    return f"""
+Eres el asistente de Alejandrias Library.
+
+OBJETIVO:
+- Responder de forma clara, breve y util.
+- Mantener un tono amable y educativo.
+- Responder solo en texto plano.
+- No uses markdown ni JSON.
+
+HISTORIAL:
+{json.dumps(historial, ensure_ascii=False)}
+
+MENSAJE DEL USUARIO:
+{json.dumps(mensaje, ensure_ascii=False)}
+""".strip()

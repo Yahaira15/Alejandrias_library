@@ -18,6 +18,8 @@ export class ListaForos implements OnInit {
   usuario: any;
   rol = '';
 
+  apodoUsuario = '';
+
   constructor(
     private foroService: ForoService,
     private router: Router,
@@ -27,6 +29,7 @@ export class ListaForos implements OnInit {
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     this.rol = this.usuario.usuario_rol;
+    this.apodoUsuario = this.usuario.apodo || this.usuario.apodoUsuario || this.usuario.nombre || '';
     this.cargarForos();
   }
 
@@ -95,12 +98,16 @@ export class ListaForos implements OnInit {
     this.router.navigate(['/foros/crear']);
   }
 
+  irAChatIa(): void {
+    this.router.navigate(['/chat-ia']);
+  }
+
   editarForo(id: number): void {
     this.router.navigate(['/foros/editar', id]);
   }
 
   eliminarForo(id: number): void {
-    const confirmar = confirm('¿Estas seguro de que quieres eliminar este foro?');
+    const confirmar = confirm('ï¿½Estas seguro de que quieres eliminar este foro?');
     if (!confirmar) return;
 
     this.foroService.deleteForo(id).subscribe({
