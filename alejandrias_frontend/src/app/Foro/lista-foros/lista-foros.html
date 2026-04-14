@@ -40,6 +40,12 @@
           <h3>{{ foro.foro_titulo }}</h3>
           <p>{{ foro.categoria?.categoria_nombre }}</p>
           <p>{{ foro.foro_descripcion }}</p>
+          <p>Publicaciones: {{ foro.publicaciones_count || 0 }}</p>
+          <p>Comentarios: {{ foro.comentarios_count_total || 0 }}</p>
+
+          <a [routerLink]="['/foros', foro.foro_id]" class="btn-ver-foro">
+            Ver foro
+          </a>
 
           <div class="buttons" *ngIf="rol === 'lider'">
             <button (click)="editarForo(foro.foro_id)">Editar</button>
