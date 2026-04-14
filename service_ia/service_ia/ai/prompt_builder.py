@@ -1,3 +1,15 @@
+def construir_prompt(tarea, contexto):
+    builders = {
+        "recomendar_foros": construir_prompt_recomendador,
+    }
+
+    builder = builders.get(tarea)
+    if builder is None:
+        raise ValueError(f"Tarea no soportada: {tarea}")
+
+    return builder(contexto)
+
+
 def construir_prompt_recomendador(contexto):
 
     return f"""
