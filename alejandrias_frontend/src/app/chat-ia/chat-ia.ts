@@ -52,6 +52,8 @@ export class ChatIaComponent {
 
     this.chatIaService.enviarMensaje(texto, this.mensajes).subscribe({
       next: (respuesta) => {
+        this.error = '';
+
         this.mensajes = [
           ...this.mensajes,
           {

@@ -50,6 +50,7 @@ PyAutoGUI==0.9.54
 pycparser==2.22
 pydantic==2.12.5
 pydantic_core==2.41.5
+psycopg[binary]>=3.2,<4
 PyGetWindow==0.0.9
 Pygments==2.19.1
 PyMsgBox==1.0.9
