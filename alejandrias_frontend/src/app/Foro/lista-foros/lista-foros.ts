@@ -29,7 +29,9 @@ export class ListaForos implements OnInit {
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     this.rol = this.usuario.usuario_rol;
-    this.apodoUsuario = this.usuario.apodo || this.usuario.apodoUsuario || this.usuario.nombre || '';
+    this.apodoUsuario = this.usuario.usuario_apodo || this.usuario.apodoUsuario || this.usuario.usuario_nombre || '';
+    console.log('Usuario cargado:', this.usuario);
+    console.log(this.apodoUsuario);
     this.cargarForos();
   }
 
