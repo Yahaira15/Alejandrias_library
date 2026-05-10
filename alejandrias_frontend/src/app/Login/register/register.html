@@ -1,71 +1,144 @@
-<div class="img-fondo">
-    <img src="fondoLogin.png" alt="Fondo de login">
-</div>
-<div class="register-form">
-    <h1>Registro como {{ rol }}</h1>
-    <form #form="ngForm" (ngSubmit)="registrar(form)" novalidate>
-        <div class="input-group">
-            <input type="text" [(ngModel)]="usuario.usuario_nombre" id="nombre" name="nombre" required placeholder="Nombre">
-        </div>
-        <div class="input-group">
-            <input type="text" [(ngModel)]="usuario.usuario_apellido" id="apellido" name="apellido" required placeholder="Apellido">
-        </div>
-        <div class="input-group">
-            <input type="text" [(ngModel)]="usuario.usuario_apodo" id="apodo" name="apodo" required placeholder="Apodo" (input)="verificarApodo()">
-        </div>
-        <div *ngIf="apodoDisponible === false" style="color:red;">
-            Este apodo ya está en uso
-        </div>
-        <div *ngIf="apodoDisponible === true" style="color:green;">
-            Apodo disponible
-        </div>
-        <div class="input-group">
-            <input type="email" [(ngModel)]="usuario.usuario_email" id="email" name="email" required placeholder="Email" email #emailRef="ngModel">
-        </div>
-        <div *ngIf="emailRef.invalid && emailRef.touched" style="color: red; font-size: 14px;">
-            <div *ngIf="emailRef.errors?.['required']">
-                El correo es obligatorio
+<main class="register-page">
+    <div class="img-fondo" aria-hidden="true">
+        <img src="fondoRegister.png" alt="registro">
+    </div>
+
+    <section class="register-form" aria-labelledby="register-title">
+        <h1 id="register-title">REGISTRO</h1>
+
+        <form #form="ngForm" (ngSubmit)="registrar(form)" novalidate>
+            <div class="form-grid">
+                <div class="input-group">
+                    <label for="nombre">Nombre</label>
+                    <input
+                        type="text"
+                        [(ngModel)]="usuario.usuario_nombre"
+                        id="nombre"
+                        name="nombre"
+                        required>
+                </div>
+
+                <div class="input-group">
+                    <label for="apellido">Apellido</label>
+                    <input
+                        type="text"
+                        [(ngModel)]="usuario.usuario_apellido"
+                        id="apellido"
+                        name="apellido"
+                        required>
+                </div>
+
+                <div class="field-stack">
+                    <div class="input-group">
+                        <label for="apodo">Apodo</label>
+                        <input
+                            type="text"
+                            [(ngModel)]="usuario.usuario_apodo"
+                            id="apodo"
+                            name="apodo"
+                            required
+                            (input)="verificarApodo()">
+                    </div>
+                    <p *ngIf="apodoDisponible === false" class="field-message error">
+                        Este apodo ya está en uso
+                    </p>
+                    <p *ngIf="apodoVerificando" class="field-message">
+                        Verificando apodo...
+                    </p>
+                    <p *ngIf="apodoDisponible === true" class="field-message success">
+                        Apodo disponible
+                    </p>
+                </div>
+
+                <div class="field-stack">
+                    <div class="input-group">
+                        <label for="email">Correo</label>
+                        <input
+                            type="email"
+                            [(ngModel)]="usuario.usuario_email"
+                            id="email"
+                            name="email"
+                            required
+                            email
+                            #emailRef="ngModel">
+                    </div>
+                    <div *ngIf="emailRef.invalid && emailRef.touched" class="field-message error">
+                        <p *ngIf="emailRef.errors?.['required']">El correo es obligatorio</p>
+                        <p *ngIf="emailRef.errors?.['email']">El formato del correo es inválido</p>
+                    </div>
+                </div>
+
+                <div class="field-stack">
+                    <div class="input-group">
+                        <label for="password">Contraseña</label>
+                        <input
+                            [type]="mostrarPassword ? 'text' : 'password'"
+                            [(ngModel)]="usuario.usuario_password"
+                            id="password"
+                            name="password"
+                            required
+                            #passwordRef="ngModel"
+                            pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$">
+                    </div>
+
+                    <label class="checkbox-container" for="mostrarPassword">
+                        <input
+                            type="checkbox"
+                            id="mostrarPassword"
+                            [(ngModel)]="mostrarPassword"
+                            name="mostrarPassword">
+                        <span class="checkmark"></span>
+                        <span>Visualizar</span>
+                    </label>
+
+                    <div *ngIf="passwordRef.invalid && passwordRef.touched" class="password-rules">
+                        <p *ngIf="passwordRef.errors?.['required']" class="field-message error">
+                            La contraseña es obligatoria
+                        </p>
+                        <ul *ngIf="passwordRef.errors?.['pattern']">
+                            <li [class.valid]="usuario.usuario_password.length >= 8">
+                                Mínimo 8 caracteres
+                            </li>
+                            <li [class.valid]="usuario.usuario_password.match('[A-Z]')">
+                                Una mayúscula
+                            </li>
+                            <li [class.valid]="usuario.usuario_password.match('[0-9]')">
+                                Un número
+                            </li>
+                            <li [class.valid]="usuario.usuario_password.match('[^A-Za-z0-9]')">
+                                Un carácter especial
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="confirmPassword">Confirmar</label>
+                    <input
+                        [type]="mostrarPassword ? 'text' : 'password'"
+                        [(ngModel)]="usuario.confirmPassword"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        required
+                        #confirmPasswordRef="ngModel">
+                    <p
+                        *ngIf="passwordsNoCoinciden && (confirmPasswordRef.touched || usuario.confirmPassword)"
+                        class="field-message error">
+                        Las contraseñas no coinciden
+                    </p>
+                </div>
             </div>
-            <div *ngIf="emailRef.errors?.['email']">
-                El formato del correo es inválido
-            </div>
-        </div>
-        <div class="input-group">
-            <input [type]="mostrarPassword ? 'text' : 'password'" [(ngModel)]="usuario.usuario_password" id="password" name="password" required placeholder="Contraseña" #passwordRef="ngModel" pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$">
-            <label class="checkbox-container">
-                <input 
-                    type="checkbox" 
-                    [(ngModel)]="mostrarPassword" 
-                    name="mostrarPassword">
-                <span class="checkmark"></span>
-                Mostrar contraseña
-            </label>
-        </div>
-        <div *ngIf="passwordRef.invalid && passwordRef.touched" style="color:red; font-size:14px;">
-        <div *ngIf="passwordRef.errors?.['required']">
-            La contraseña es obligatoria
-        </div>
-            <div *ngIf="passwordRef.errors?.['pattern']">
-                <ul style="font-size:13px; color:#333;">
-                <li [style.color]="usuario.usuario_password.length >= 8 ? 'green' : 'red'">
-                    Mínimo 8 caracteres
-                </li>
-                <li [style.color]="/[A-Z]/.test(usuario.usuario_password) ? 'green' : 'red'">
-                    Una mayúscula
-                </li>
-                <li [style.color]="/[0-9]/.test(usuario.usuario_password) ? 'green' : 'red'">
-                    Un número
-                </li>
-                <li [style.color]="/[^A-Za-z0-9]/.test(usuario.usuario_password) ? 'green' : 'red'">
-                    Un carácter especial
-                </li>
-                </ul>
-            </div>
-        </div>
-        <div class="input-group">
-            <input type="password" [(ngModel)]="usuario.confirmPassword" id="confirmPassword" name="confirmPassword" required placeholder="Confirmar Contraseña">
-        </div>
-        <a href="/login">¿Ya tienes una cuenta? Inicia sesión</a>
-        <button type="submit" [disabled]="form.invalid">Registrarse</button>
-    </form>
-</div>
+
+            <button
+                type="submit"
+                [disabled]="form.invalid || passwordsNoCoinciden || apodoDisponible === false || apodoVerificando">
+                Registrarse
+            </button>
+
+            <p class="login-link">
+                ¿Ya tienes cuenta?
+                <a href="/login">Entra aquí</a>
+            </p>
+        </form>
+    </section>
+</main>

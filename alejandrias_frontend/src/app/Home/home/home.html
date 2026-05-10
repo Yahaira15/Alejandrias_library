@@ -1,86 +1,107 @@
 <div class="layout">
-    <!-- Header -->
-     <header class="navbar">
-        <h2 class="logo">Alejandria's <br>
-        Library</h2>
-        <!-- Navegación -->
-        <div class="sections">
+    <header class="navbar">
+        <h2 class="logo">Alejandria's<br>Library</h2>
+
+        <nav class="sections" aria-label="Navegación principal">
             <a href="#inicio">Inicio</a>
             <a href="#nosotros">Sobre nosotros</a>
-        </div>
+        </nav>
+
         <div class="login">
-            <button (click)="irALogin()">Iniciar sesión</button>
+            <button type="button" class="ghost-button" (click)="irALogin()">Iniciar Sesión</button>
+            <button type="button" class="outline-button" (click)="irARegistro('explorador')">Registrarse</button>
         </div>
-     </header>
-     <!-- Bienvenida -->
-     <header class="hero">
-        <h1>Bienvenidos a Alejandria's Library</h1>
-        <p>Un espacio para compartir conocimientos, ideas y discusiones </p>
-     </header>
+    </header>
 
-     <!-- Inicio -->
-     <section>
-        <h1>Selecciona tu rol</h1>
+    <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-content">
+            <h1 id="hero-title">Bienvenidos a Alejandria's Library</h1>
+            <p>Un espacio para compartir conocimientos, ideas y discusiones</p>
+        </div>
+    </section>
 
-        <!-- Elección de rol -->
-        <div class="inicio" id="inicio">
-            
-            <div class="card">
-                <img src="iconos/biblioteca.png" alt="biblioteca_alejandria">
-                <div class="contenido">
-                    <p>La Biblioteca de Alejandría ha sido un símbolo del conocimiento y la curiosidad. Aquí los exploradores recorren pasillos llenos de ideas, 
-                        descubren nuevas discusiones y aprenden de cada historia compartida.</p>
-                        <button (click)="irARegistro('explorador')">Explorador</button>
-                </div>
+    <main>
+        <section class="roles-section" id="inicio" aria-labelledby="roles-title">
+            <h1 id="roles-title">Roles</h1>
+            <div class="description">
+                <p>
+                    En Alejandría cada miembro cumple un papel en la construcción del conocimiento.
+                    Los roles definen cómo participas en la comunidad: puedes explorar ideas, compartir descubrimientos o guiar a otros en el aprendizaje.
+                </p>
             </div>
-            <div class="card">
-                <img src="iconos/faro.png" alt="faro_alejandria">
-                <div class="contenido">
-                    <p>El Faro de Alejandría iluminaba el camino de quienes navegaban en la oscuridad.
-                        Desde lo alto, los líderes observan el horizonte, orientan a la comunidad y mantienen el rumbo del conocimiento.</p>
-                       <button (click)="irARegistro('lider')">Líder</button>
-                </div>
+
+            <div class="inicio">
+                <article class="card">
+                    <img src="iconos/biblioteca.png" alt="Biblioteca de Alejandría">
+                    <div class="contenido">
+                        <p>
+                            La Biblioteca de Alejandría ha sido un símbolo del conocimiento y la curiosidad.
+                            Aquí los exploradores recorren pasillos llenos de ideas, descubren nuevas discusiones
+                            y aprenden de cada historia compartida.
+                        </p>
+                    </div>
+                </article>
+
+                <article class="card">
+                    <img src="iconos/faro.png" alt="Faro de Alejandría">
+                    <div class="contenido">
+                        <p>
+                            El Faro de Alejandría iluminaba el camino de quienes navegaban en la oscuridad.
+                            Desde lo alto, los líderes observan el horizonte, orientan a la comunidad y mantienen
+                            el rumbo del conocimiento.
+                        </p>
+                    </div>
+                </article>
             </div>
-        </div>
-     </section>
-    <!-- Información -->
-     <section class="definicion" id="nosotros">
-        <h1>¿Qué es Alejandria's Library?</h1>
-        <div class="contenedor">
-            <div class="cards">
-                <div class="img">
-                    <img src="iconos/foro.png" alt="foro">
-                    <h4>Foros</h4>
-                </div>
-                <p>Participa en discusiones organizadas por temas </p>
-            </div>
-            <div class="cards">
-                <div class="img">
-                    <img src="iconos/libro.png" alt="libro">
-                    <h4>Conocimiento</h4>
-                </div>
-                <p>Comparte ideas, experiencias y aprendizajes </p>
-            </div>
-            <div class="cards">
-                <div class="img">
-                    <img src="iconos/comunidad.png" alt="comunidad">
-                    <h4>Comunidad</h4>
-                </div>
-                <p>Interactua con otros usuarios con intereses similares</p>
-            </div>
-        </div>
-     </section>
-    <div class="nosotros">
-        <section class="historia">
-            <h3>Nuestra historia</h3>
-            <p>Alejandría's Library surge como respuesta al consumo de contenido digital sin enfoque 
-                educativo claro. La plataforma busca crear un espacio donde el conocimiento, la curiosidad y el intercambio de ideas sean el centro de la comunidad.</p>
         </section>
-        <section class="mision">
-            <h3>Nuestra misión</h3>
-            <p>Nuestra misión es ofrecer una plataforma donde los jóvenes puedan descubrir información, 
-                compartir conocimientos y aprender en comunidad, fomentando una mentalidad autodidacta y el desarrollo de sus intereses.</p>
+
+        <section class="definicion" aria-labelledby="definicion-title">
+            <h1 id="definicion-title">¿Qué es Alejandria's Library?</h1>
+
+            <div class="contenedor">
+                <article class="cards">
+                    <div class="img">
+                        <img src="iconos/foro.png" alt="">
+                        <h4>Foros</h4>
+                    </div>
+                    <p>Participa en discusiones organizadas por temas</p>
+                </article>
+
+                <article class="cards">
+                    <div class="img">
+                        <img src="iconos/libro.png" alt="">
+                        <h4>Conocimiento</h4>
+                    </div>
+                    <p>Comparte ideas, experiencias y aprendizajes</p>
+                </article>
+
+                <article class="cards">
+                    <div class="img">
+                        <img src="iconos/comunidad.png" alt="">
+                        <h4>Comunidad</h4>
+                    </div>
+                    <p>Interactúa con otros usuarios con intereses similares</p>
+                </article>
+            </div>
         </section>
-    </div>
-    
+
+        <section class="nosotros" id="nosotros" aria-label="Sobre nosotros">
+            <article class="historia">
+                <h3>Nuestra historia</h3>
+                <p>
+                    Alejandria's Library surge como respuesta al consumo de contenido digital sin enfoque educativo claro.
+                    La plataforma busca crear un espacio donde el conocimiento, la curiosidad y el intercambio de ideas
+                    sean el centro de la comunidad.
+                </p>
+            </article>
+
+            <article class="mision">
+                <h3>Nuestra misión</h3>
+                <p>
+                    Nuestra misión es ofrecer una plataforma donde los jóvenes puedan descubrir información, compartir
+                    conocimientos y aprender en comunidad, fomentando una mentalidad autodidacta y el desarrollo de sus intereses.
+                </p>
+            </article>
+        </section>
+    </main>
 </div>

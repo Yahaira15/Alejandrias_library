@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -10,11 +10,15 @@ import { OnInit } from '@angular/core';
   selector: 'app-register',
   imports: [FormsModule, CommonModule],
   templateUrl: './register.html',
-  styleUrl: './register.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  styleUrl: './register.scss'
 })
 export class Register implements OnInit{
-  constructor(private http: HttpClient, private router: Router, private route: ActivatedRoute) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
   this.route.queryParams.subscribe(params => {
@@ -39,13 +43,42 @@ export class Register implements OnInit{
   };
 
   apodoDisponible: boolean | null = null;
+  apodoVerificando: boolean = false;
+  private apodoConsultaId = 0;
+
+  get passwordsNoCoinciden(): boolean {
+    return !!this.usuario.confirmPassword &&
+      this.usuario.usuario_password !== this.usuario.confirmPassword;
+  }
 
   verificarApodo() {
-    if (!this.usuario.usuario_apodo) return;
+    const apodo = this.usuario.usuario_apodo.trim();
+    const consultaActual = ++this.apodoConsultaId;
 
-    this.http.get<any>(`http://localhost:8000/api/verificar-apodo/${this.usuario.usuario_apodo}`)
+    this.apodoDisponible = null;
+
+    if (!apodo) {
+      this.apodoVerificando = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.apodoVerificando = true;
+    this.cdr.detectChanges();
+
+    this.http.get<any>(`http://localhost:8000/api/verificar-apodo/${encodeURIComponent(apodo)}`)
       .subscribe(res => {
+        if (consultaActual !== this.apodoConsultaId) return;
+
         this.apodoDisponible = res.disponible;
+        this.apodoVerificando = false;
+        this.cdr.detectChanges();
+      }, () => {
+        if (consultaActual !== this.apodoConsultaId) return;
+
+        this.apodoDisponible = null;
+        this.apodoVerificando = false;
+        this.cdr.detectChanges();
       });
   }
 
@@ -56,7 +89,7 @@ export class Register implements OnInit{
   }
 
 
-    if (this.usuario.usuario_password !== this.usuario.confirmPassword) {
+    if (this.passwordsNoCoinciden) {
       alert('Las contraseñas no coinciden');
       return;
     }
@@ -83,6 +116,7 @@ export class Register implements OnInit{
 
       if (err.status === 422) {
         this.errores = err.error.errors;
+        this.cdr.detectChanges();
       }
     }
   });

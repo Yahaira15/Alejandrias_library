@@ -1,49 +1,56 @@
-<div class="img-fondo">
-    <img src="fondoLogin.png" alt="Fondo de login">
-</div>
+<main class="login-page">
+    <section class="login-form" aria-labelledby="login-title">
+        <h1 id="login-title">INICIO DE<br>SESIÓN</h1>
 
-<div class="login-form">
-    <h1>INICIO DE <br> SESIÓN</h1>
+        <form #form="ngForm" (ngSubmit)="iniciarSesion(form)" novalidate>
+            <div class="input-group">
+                <label for="login">Usuario</label>
+                <input
+                    id="login"
+                    type="text"
+                    [(ngModel)]="loginData.login"
+                    (input)="errorMensaje = ''"
+                    name="login"
+                    required>
+            </div>
 
-    <form #form="ngForm" (ngSubmit)="iniciarSesion(form)">
+            <div class="input-group">
+                <label for="usuario_password">Contraseña</label>
+                <input
+                    id="usuario_password"
+                    [type]="mostrarPassword ? 'text' : 'password'"
+                    [(ngModel)]="loginData.usuario_password"
+                    (input)="errorMensaje = ''"
+                    name="usuario_password"
+                    required>
+            </div>
 
-        <div class="input-group">
-            <input 
-            type="text"
-            [(ngModel)]="loginData.login"
-            (input)="errorMensaje = ''"
-            name="login"
-            required
-            placeholder="Apodo o correo electrónico">
-        </div>
-
-        <div class="input-group">
-            <input 
-                [type]="mostrarPassword ? 'text' : 'password'"
-                [(ngModel)]="loginData.usuario_password"
-                name="usuario_password"
-                required
-                placeholder="Contraseña">
-
-            <label class="checkbox-container">
-                <input 
-                    type="checkbox" 
+            <label class="checkbox-container" for="mostrarPasswordLogin">
+                <input
+                    type="checkbox"
+                    id="mostrarPasswordLogin"
                     [(ngModel)]="mostrarPassword"
                     name="mostrarPassword">
                 <span class="checkmark"></span>
-                Mostrar contraseña
+                <span>Visualizar</span>
             </label>
-        </div>
 
-        <div *ngIf="errorMensaje" class="error-msg">
-            {{ errorMensaje }}
-        </div>
+            <div *ngIf="errorMensaje" class="error-msg">
+                {{ errorMensaje }}
+            </div>
 
-        <a [routerLink]="['/register']">¿No tienes una cuenta? Regístrate</a>
+            <button type="submit" [disabled]="form.invalid || cargandoLogin">
+                {{ cargandoLogin ? 'Ingresando...' : 'Iniciar Sesión' }}
+            </button>
 
-        <button type="submit" [disabled]="form.invalid">
-            Iniciar sesión
-        </button>
+            <p class="register-link">
+                ¿Aún no tienes cuenta?
+                <a [routerLink]="['/register']">Entra aquí</a>
+            </p>
+        </form>
+    </section>
 
-    </form>
-</div>
+    <div class="img-fondo" aria-hidden="true">
+        <img src="fondoLogin.png" alt="">
+    </div>
+</main>

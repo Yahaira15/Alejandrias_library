@@ -1,237 +1,422 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap'); 
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap');
+
+:host {
+    display: block;
+    background: #fefeff;
+    color: #2f628c;
+    font-family: 'Lora', serif;
+}
 
 .layout {
-    display: block;
-    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    background: #fefeff;
+    overflow-x: hidden;
+}
 
-    //Barra de navegación
-    .navbar {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 30px;
-        padding: 10px 40px;
-        font-family: 'Lora', serif;
-        margin: 0;
+.navbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    height: 88px;
+    display: grid;
+    grid-template-columns: 150px 1fr 210px;
+    align-items: center;
+    padding: 0 34px;
+    background: rgba(255, 255, 255, 0.54);
+    animation: fade-down 0.65s ease both;
+}
+
+.logo {
+    margin: 0;
+    color: #306289;
+    font-size: 24px;
+    line-height: 1.05;
+    font-weight: 700;
+}
+
+.sections {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+}
+
+.sections a {
+    position: relative;
+    color: #244f73;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.22s ease;
+}
+
+.sections a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -5px;
+    height: 2px;
+    background: #306289;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.22s ease;
+}
+
+.sections a:hover {
+    color: #143f63;
+}
+
+.sections a:hover::after {
+    transform: scaleX(1);
+}
+
+.login {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+}
+
+.login button {
+    height: 38px;
+    padding: 0 15px;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
+}
+
+.ghost-button {
+    border: 0;
+    background: transparent;
+    color: #557aa1;
+}
+
+.outline-button {
+    border: 2px solid #0D416A;
+    background: transparent;
+    color: #0D416A;
+}
+
+.login button:hover {
+    transform: translateY(-1px);
+}
+
+.outline-button:hover {
+    background: rgba(48, 98, 137, 0.06);
+    box-shadow: 0 4px 10px rgba(48, 98, 137, 0.18);
+}
+
+.hero {
+    position: relative;
+    height: 365px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 58px;
+    box-sizing: border-box;
+    overflow: hidden;
+    background-image: url('/fondo_home.png');
+    background-size: cover;
+    background-position: center 42%;
+    color: #fff;
+    text-align: center;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(77, 126, 178, 0.45);
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    animation: fade-up 0.75s ease 0.1s both;
+}
+
+.hero h1 {
+    margin: 0 0 18px;
+    font-size: 29px;
+    font-weight: 700;
+    color: #fefeff;
+}
+
+
+
+.hero p {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+main {
+    animation: fade-up 0.7s ease 0.2s both;
+}
+
+section {
+    text-align: center;
+}
+
+section h1 {
+    margin: 38px 0 28px;
+    color: #306289;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.roles-section {
+    padding-bottom: 14px;
+}
+
+.description {
+    width: min(100% - 48px, 720px);
+    margin: -10px auto 72px;
+    text-align: center;
+}
+
+.description p {
+    margin: 0;
+    color: #306289;
+    font-size: 16px;
+    line-height: 1.45;
+    font-weight: 400;
+}
+
+.inicio {
+    display: flex;
+    justify-content: center;
+    gap: clamp(70px, 12vw, 190px);
+    padding: 0 40px;
+}
+
+.card {
+    width: 250px;
+    min-height: 315px;
+    padding: 0 28px 24px;
+    border-radius: 7px;
+    background: #6695c6;
+    color: #fff;
+    text-align: center;
+    box-shadow: 0 6px 14px rgba(48, 98, 137, 0.14);
+    transition: transform 0.28s ease, box-shadow 0.28s ease;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(48, 98, 137, 0.22);
+}
+
+.card img {
+    width: 214px;
+    margin-top: -44px;
+    margin-bottom: -4px;
+    filter: drop-shadow(0 8px 12px rgba(33, 72, 108, 0.18));
+    transition: transform 0.28s ease;
+}
+
+.card:hover img {
+    transform: translateY(-4px);
+}
+
+.contenido p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.08;
+    font-weight: 400;
+}
+
+.definicion {
+    padding: 0 40px 72px;
+}
+
+.definicion h1 {
+    margin-top: 32px;
+    margin-bottom: 50px;
+}
+
+.contenedor {
+    display: flex;
+    justify-content: center;
+    gap: 22px;
+}
+
+.cards {
+    width: 215px;
+    min-height: 118px;
+    box-sizing: border-box;
+    padding: 24px 22px 20px;
+    border-radius: 7px;
+    background: #a9c4df;
+    text-align: left;
+    transition: transform 0.26s ease, box-shadow 0.26s ease, background-color 0.26s ease;
+}
+
+.cards:hover {
+    transform: translateY(-6px);
+    background: #9fbddc;
+    box-shadow: 0 10px 20px rgba(48, 98, 137, 0.18);
+}
+
+.img {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.img img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+}
+
+.img h4 {
+    margin: 0;
+    color: #2f628c;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.cards p {
+    margin: 0;
+    color: #2f628c;
+    font-size: 13px;
+    line-height: 1.25;
+    font-weight: 400;
+}
+
+.nosotros {
+    display: flex;
+    justify-content: center;
+    gap: clamp(75px, 12vw, 180px);
+    padding: 36px 40px 52px;
+    background: #82aad1;
+    color: #fff;
+    text-align: center;
+}
+
+.historia,
+.mision {
+    width: 355px;
+}
+
+.nosotros h3 {
+    margin: 0 0 22px;
+    font-size: 25px;
+    font-weight: 700;
+}
+
+.nosotros p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.16;
+    font-weight: 700;
+}
+
+@keyframes fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
     }
-    
-    .logo {
-        color: #306289;
-        font-weight: 800;
-        font-size: 30px;
-        margin: 12px;
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fade-down {
+    from {
+        opacity: 0;
+        transform: translateY(-14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 820px) {
+    .navbar {
+        grid-template-columns: 120px 1fr;
+        height: auto;
+        gap: 10px;
+        padding: 12px 18px;
     }
 
     .sections {
-        padding-top: 30px;
-
-        a {
-            text-decoration: none;
-            padding: 15px;
-            font-size: 20px;
-            color: #306289;
-            font-weight: 800;
-        }
+        justify-content: flex-end;
+        gap: 18px;
     }
 
     .login {
-        padding-top: 20px;
-
-        button {
-            padding: 15px 25px;
-            border-radius: 16px;
-            font-family: 'Lora', serif;
-            text-decoration: none;
-            font-size: 18px;
-            color: #5C799D;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            border: none;
-            background: #FAEDD9;
-            margin-left: 10px;
-            &:hover {
-            color: #415670;
-            background-color: #fadeb4;
-            }
-
-        }
+        grid-column: 1 / -1;
+        justify-content: center;
     }
 
+    .hero {
+        height: 330px;
+        padding-top: 94px;
+    }
 
-    //Bienvenida
-    .hero{
-        height: 300px;
-        background-image: url('/fondo_home.png'); 
-        background-size: cover;
-        background-position: center;
-        display:flex;
-        flex-direction:column;
-        justify-content:center;
-        align-items:center;
-        text-align:center;
-        color:white;
+    .inicio,
+    .contenedor,
+    .nosotros {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .inicio {
+        gap: 70px;
+    }
+
+    .contenedor,
+    .nosotros {
+        gap: 22px;
+    }
+}
+
+@media (max-width: 520px) {
+    .navbar {
         position: relative;
-        font-family: 'Lora', serif;
-    }
-    
-    .hero::before{
-        content:"";
-        position:absolute;
-        inset:0;
-        background:rgba(140, 161, 176, 0.45);
-    }
-
-    .hero h1, .hero p{
-        position:relative;
-    }
-
-    .hero h1{
-        font-family:'Lora', serif;
-        font-size:40px;
-    }
-    .hero p{
-        font-size:18px;
-    }
-
-    // Selección del rol
-    section{
-        text-align:center;
-    }
-    section h1{
-        font-family:'Lora', serif;
-        color:#306289;
-        margin:40px 0;
-    }
-
-    .inicio{
-        display:flex;
-        justify-content:center;
-        gap:280px;
-        margin-bottom:60px;
-    }
-
-    .card{
-        width:320px;
-        background:#6695C6;
-        border-radius:12px;
-        padding:10px 30px;
-        text-align:center;
-        box-shadow:0 4px 10px rgba(0,0,0,0.1);
-        font-family: 'Lora', serif;
-        height: 100%;
-    }
-
-    .card img{
-        width:250px;
-        margin-top:-80px;
-    }
-
-    .contenido{
-        color:white;
-    }
-
-    .contenido p{
-        font: size 16px;
-        margin:30px 0;
-    }
-
-    .card button{
-        padding:10px 25px;
-        font-family: 'Lora', serif;
-        border-radius:10px;
-        border:none;
-        background:#FAEDD9;
-        color:#306289;
-        font-weight:600;
-        cursor:pointer;
-    }
-
-    .card button:hover{
-        background:#f7dfb8;
-    }
-
-    // Cards de información
-    .definicion{
+        grid-template-columns: 1fr;
         text-align: center;
-        margin: 80px 0;
-    }
-    .definicion h1{
-        font-family: 'Lora', serif;
-        color:#306289;
-        margin-bottom:50px;
-    }
-    .contenedor{
-        display:flex;
-        justify-content:center;
-        gap:40px;
-    }
-    .cards{
-        background:#9fb8d1;
-        width:260px;
-        padding:25px;
-        border-radius:12px;
-        text-align:left;
-        transition:0.3s;
-        font-family: 'Lora', serif;
     }
 
-    .cards img{
-        width:35px;
-        margin-bottom:10px;
-    }
-    .img{
-        display:flex;
-        align-items:center;
-        gap:10px;
-        margin-bottom:10px;
+    .sections,
+    .login {
+        justify-content: center;
+        flex-wrap: wrap;
     }
 
-    .img img{
-        width:30px;
+    .hero {
+        height: 300px;
+        padding: 34px 22px;
     }
 
-    .img h4{
-        font-family:'Lora', serif;
-        color:#2e5577;
-        font-size:20px;
-        margin:0;
-    }
-    .cards h4{
-        font-family:'Lora', serif;
-        color:#2e5577;
-        font-size:20px;
-        margin-bottom:10px;
+    .hero h1 {
+        font-size: 24px;
     }
 
-    .cards p{
-        color:#2e5577;
-        font-size:16px;
-        line-height:1.4;
-        font-family: 'Lora', serif;
+    .hero p {
+        font-size: 14px;
     }
 
-    //Ultima sección - Nostros
-    .nosotros{
-        display:flex;
-        justify-content:center;
-        gap:100px;
-        background:#7fa0c0;
-        padding:60px;
-        color:white;
-        text-align:center;
+    .card,
+    .cards,
+    .historia,
+    .mision {
+        width: min(100%, 280px);
     }
 
-    .historia, .mision{
-        width:350px;
-    }
-
-    .nosotros h3{
-        font-family:'Lora', serif;
-        font-size:24px;
-        margin-bottom:15px;
-    }
-
-    .nosotros p {
-        font-family: 'Lora', serif;
+    .definicion {
+        padding-inline: 22px;
     }
 }
