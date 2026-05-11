@@ -20,7 +20,6 @@
                     id="usuario_password"
                     [type]="mostrarPassword ? 'text' : 'password'"
                     [(ngModel)]="loginData.usuario_password"
-                    (input)="errorMensaje = ''"
                     name="usuario_password"
                     required>
             </div>
@@ -39,8 +38,8 @@
                 {{ errorMensaje }}
             </div>
 
-            <button type="submit" [disabled]="form.invalid || cargandoLogin">
-                {{ cargandoLogin ? 'Ingresando...' : 'Iniciar Sesión' }}
+            <button type="submit" [disabled]="form.invalid">
+                Iniciar Sesión
             </button>
 
             <p class="register-link">

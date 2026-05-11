@@ -42,9 +42,6 @@
                     <p *ngIf="apodoDisponible === false" class="field-message error">
                         Este apodo ya está en uso
                     </p>
-                    <p *ngIf="apodoVerificando" class="field-message">
-                        Verificando apodo...
-                    </p>
                     <p *ngIf="apodoDisponible === true" class="field-message success">
                         Apodo disponible
                     </p>
@@ -119,21 +116,11 @@
                         [(ngModel)]="usuario.confirmPassword"
                         id="confirmPassword"
                         name="confirmPassword"
-                        required
-                        #confirmPasswordRef="ngModel">
-                    <p
-                        *ngIf="passwordsNoCoinciden && (confirmPasswordRef.touched || usuario.confirmPassword)"
-                        class="field-message error">
-                        Las contraseñas no coinciden
-                    </p>
+                        required>
                 </div>
             </div>
 
-            <button
-                type="submit"
-                [disabled]="form.invalid || passwordsNoCoinciden || apodoDisponible === false || apodoVerificando">
-                Registrarse
-            </button>
+            <button type="submit" [disabled]="form.invalid">Registrarse</button>
 
             <p class="login-link">
                 ¿Ya tienes cuenta?
