@@ -67,9 +67,11 @@
       <span>Comentarios: {{ foroSeleccionado.comentarios_count_total || 0 }}</span>
     </div>
     <p class="modal-error" *ngIf="errorRegistro">{{ errorRegistro }}</p>
-    <button type="button" class="modal-action" (click)="registrarForoPublico()" [disabled]="registrandoForo">
+    @if (rol === 'explorador'){
+      <button type="button" class="modal-action" (click)="registrarForoPublico()" [disabled]="registrandoForo">
       {{ registrandoForo ? 'Registrando...' : 'Registrarse' }}
     </button>
+    }
   </div>
 </div>
 
