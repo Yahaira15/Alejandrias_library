@@ -6,7 +6,7 @@ use App\Http\Controllers\ApiForo\ForoController;
 use App\Http\Controllers\ApiCategoria\CategoriaController;
 use App\Http\Controllers\ApiForo\PublicacionController;
 use App\Http\Controllers\ApiForo\ComentarioController;
-use App\Http\Controllers\ApiNotificacion\NotificacionController;
+use App\Http\Controllers\ApiForo\NotificacionController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -53,7 +53,6 @@ Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notificaciones', [NotificacionController::class, 'index']);
-    Route::post('/notificaciones', [NotificacionController::class, 'store']);
     Route::put('/notificaciones/{id}/leer', [NotificacionController::class, 'marcarLeida']);
-    Route::delete('/notificaciones/{id}', [NotificacionController::class, 'destroy']);
+    Route::get('/notificaciones-contador', [NotificacionController::class, 'contador']);
 });

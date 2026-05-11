@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Foro;
 use App\Models\Publicacion;
+use App\Models\Notificacion;
 
 class PublicacionController extends Controller
 {
@@ -78,6 +79,41 @@ class PublicacionController extends Controller
             $publicacion->publicacion_fecha_actualizacion = now();
 
             $publicacion->save();
+
+            // 🔔 Obtener foro
+            $foro = Foro::with('miembros')->find($foroId);
+
+            // 🔔 Notificar miembros registrados
+            foreach ($foro->miembros as $miembro) {
+
+                // ❌ No notificarse a sí mismo
+                if ($miembro->usuario_id == $usuario->usuario_id) {
+                    continue;
+                }
+
+                Notificacion::create([
+
+                    'notificacion_usuario_id' => $miembro->usuario_id,
+
+                    'notificacion_tipo' => 'nueva_publicacion',
+
+                    'notificacion_contenido' =>
+                        $usuario->usuario_apodo .
+                        ' publicó en el foro "' .
+                        $foro->foro_titulo . '"',
+
+                    'notificacion_leida' => false,
+
+                    'notificacion_fecha' => now(),
+
+                    'notificacion_url' =>
+                        '/foro/' . $foro->foro_id .
+                        '/publicacion/' . $publicacion->publicacion_id,
+
+                    'notificacion_referencia_id' =>
+                        $publicacion->publicacion_id
+                ]);
+            }
 
             return response()->json($publicacion->load('usuario'), 201);
         } catch (\Exception $e) {

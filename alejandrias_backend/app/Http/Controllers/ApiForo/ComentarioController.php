@@ -7,6 +7,7 @@ use App\Models\Comentario;
 use App\Models\Publicacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Notificacion;
 
 class ComentarioController extends Controller
 {
@@ -74,6 +75,40 @@ class ComentarioController extends Controller
         $data['comentario_usuario_id'] = $usuario->usuario_id;
 
         $comentario = Comentario::create($data);
+
+        // 🔔 Notificar dueño de publicación
+
+            $duenoPublicacion = $publicacion->usuario;
+
+            // ❌ Evitar auto notificación
+            if ($duenoPublicacion &&
+                $duenoPublicacion->usuario_id != $usuario->usuario_id) {
+
+                Notificacion::create([
+
+                    'notificacion_usuario_id' =>
+                        $duenoPublicacion->usuario_id,
+
+                    'notificacion_tipo' =>
+                        'nuevo_comentario',
+
+                    'notificacion_contenido' =>
+                        $usuario->usuario_apodo .
+                        ' comentó tu publicación "' .
+                        $publicacion->publicacion_titulo . '"',
+
+                    'notificacion_leida' => false,
+
+                    'notificacion_fecha' => now(),
+
+                    'notificacion_url' =>
+                        '/foro/' . $foro->foro_id .
+                        '/publicacion/' . $publicacion->publicacion_id,
+
+                    'notificacion_referencia_id' =>
+                        $publicacion->publicacion_id
+                ]);
+            }
 
         return response()->json($comentario->load('usuario'), 201);
     }

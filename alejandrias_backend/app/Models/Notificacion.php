@@ -17,7 +17,9 @@ class Notificacion extends Model
         'notificacion_tipo',
         'notificacion_contenido',
         'notificacion_leida',
-        'notificacion_fecha'
+        'notificacion_fecha',
+        'notificacion_url',
+        'notificacion_referencia_id'
     ];
 
     // 🔹 Relación usuario

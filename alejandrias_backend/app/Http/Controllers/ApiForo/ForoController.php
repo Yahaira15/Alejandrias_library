@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\Foro;
+use App\Models\Notificacion;
 
 class ForoController extends Controller
 {
@@ -270,6 +271,31 @@ class ForoController extends Controller
         }
 
         $foro->miembros()->syncWithoutDetaching([$usuario->usuario_id]);
+
+        // 🔔 Notificación para el usuario registrado
+        Notificacion::create([
+            'notificacion_usuario_id' => $usuario->usuario_id,
+            'notificacion_tipo' => 'registro_foro',
+            'notificacion_contenido' => 'Te registraste en el foro "' . $foro->foro_titulo . '"',
+            'notificacion_leida' => false,
+            'notificacion_fecha' => now(),
+            'notificacion_url' => '/foro/' . $foro->foro_id,
+            'notificacion_referencia_id' => $foro->foro_id
+        ]);
+
+        // 🔔 Notificación para el líder del foro
+        if ($foro->foro_creador_id != $usuario->usuario_id) {
+
+            Notificacion::create([
+                'notificacion_usuario_id' => $foro->foro_creador_id,
+                'notificacion_tipo' => 'nuevo_miembro',
+                'notificacion_contenido' => $usuario->usuario_apodo . ' se unió a tu foro "' . $foro->foro_titulo . '"',
+                'notificacion_leida' => false,
+                'notificacion_fecha' => now(),
+                'notificacion_url' => '/foro/' . $foro->foro_id,
+                'notificacion_referencia_id' => $foro->foro_id
+            ]);
+        }
 
         return response()->json([
             'mensaje' => 'Registro al foro completado',
