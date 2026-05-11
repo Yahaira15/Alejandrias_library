@@ -309,3 +309,180 @@
   cursor: not-allowed;
 }
 
+/* 🔔 CONTENEDOR */
+
+.notificaciones-container {
+
+  position: relative;
+
+}
+
+/* 🔔 BOTÓN */
+
+.notificacion-boton {
+
+  position: relative;
+
+  cursor: pointer;
+
+}
+
+/* 🔴 BADGE */
+
+.badge-notificaciones {
+
+  position: absolute;
+
+  top: -5px;
+
+  right: -5px;
+
+  background: red;
+
+  color: white;
+
+  border-radius: 50%;
+
+  width: 18px;
+
+  height: 18px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 11px;
+
+  font-weight: bold;
+}
+
+/* 🔔 PANEL */
+
+.panel-notificaciones {
+
+  position: absolute;
+
+  top: 45px;
+
+  right: 0;
+
+  width: 340px;
+
+  max-height: 450px;
+
+  overflow-y: auto;
+
+  background: white;
+
+  border-radius: 14px;
+
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+
+  padding: 15px;
+
+  z-index: 999;
+}
+
+/* 🔔 TÍTULO */
+
+.panel-notificaciones h3 {
+
+  margin-top: 0;
+
+  color: #306289;
+
+  font-family: 'Lora', serif;
+}
+
+/* 🔔 ITEM */
+
+.notificacion-item {
+
+  padding: 12px;
+
+  border-radius: 10px;
+
+  margin-bottom: 10px;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+
+  background: #f4f6f9;
+}
+
+.notificacion-item:hover {
+
+  background: #dce7f2;
+}
+
+/* 🔴 NO LEÍDA */
+
+.notificacion-item.no-leida {
+
+  background: #cfe2f5;
+
+  border-left: 5px solid #306289;
+}
+
+/* 🔔 TEXTO */
+
+.notificacion-item p {
+
+  margin: 0 0 5px 0;
+
+  color: #284358;
+
+  font-size: 14px;
+}
+
+.notificacion-item small {
+
+  color: gray;
+}
+
+/* VACÍO */
+
+.sin-notificaciones {
+
+  text-align: center;
+
+  color: gray;
+
+  padding: 20px 0;
+}
+
+.acciones-notificacion {
+
+  display: flex;
+
+  gap: 8px;
+
+  margin-top: 10px;
+}
+
+.acciones-notificacion button {
+
+  border: none;
+
+  background: #6b8fb3;
+
+  color: white;
+
+  padding: 6px 10px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  font-size: 12px;
+
+  transition: 0.2s;
+}
+
+.acciones-notificacion button:hover {
+
+  background: #56789c;
+}

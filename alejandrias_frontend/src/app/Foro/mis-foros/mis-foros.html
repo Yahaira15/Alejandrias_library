@@ -27,7 +27,90 @@
     <header class="topbar">
       <input type="text" placeholder="Buscar" />
       <div class="user">
-        <img src="iconos/notificaciones.png" alt="notificaciones" width="35px">
+        <div class="notificaciones-container">
+          <!-- 🔔 BOTÓN -->
+          <div
+            class="notificacion-boton"
+            (click)="toggleNotificaciones()">
+
+            <img
+              *ngIf="cantidadNoLeidas === 0"
+              src="iconos/notificaciones.png"
+              alt="notificaciones"
+              width="35px">
+
+            <img
+              *ngIf="cantidadNoLeidas > 0"
+              src="iconos/notificaciones.png"
+              alt="notificaciones"
+              width="35px">
+            <!-- 🔴 BADGE -->
+            <span
+              *ngIf="cantidadNoLeidas > 0"
+              class="badge-notificaciones">
+
+              {{ cantidadNoLeidas }}
+
+            </span>
+          </div>
+
+          <!-- 🔔 PANEL -->
+          <div
+            class="panel-notificaciones"
+            *ngIf="mostrarPanelNotificaciones">
+
+            <h3>Notificaciones</h3>
+
+            <div
+              *ngIf="notificaciones.length === 0"
+              class="sin-notificaciones">
+
+              No tienes notificaciones
+
+            </div>
+
+            <div
+              *ngFor="let notificacion of notificaciones"
+              class="notificacion-item"
+              [class.no-leida]="!notificacion.notificacion_leida"
+              (click)="abrirNotificacion(notificacion)">
+
+              <p>
+                {{ notificacion.notificacion_contenido }}
+              </p>
+
+              <small>
+                {{ obtenerTiempo(notificacion.notificacion_fecha) }}
+              </small>
+
+              <div class="acciones-notificacion">
+
+                  <!-- 🔹 MARCAR -->
+
+                  <button
+                    *ngIf="!notificacion.notificacion_leida"
+                    (click)="marcarComoLeida(notificacion)">
+
+                    Marcar leída
+
+                  </button>
+
+                  <!-- 🔹 IR A -->
+
+                  <button
+                    (click)="irANotificacion(notificacion)">
+
+                    Ir a
+
+                  </button>
+
+                </div>
+
+            </div>
+
+          </div>
+
+        </div>
           <p>{{ apodoUsuario }}</p>
          <img [routerLink]="['/perfil']" src="iconos/foto_perfil.png" alt="Foto de perfil" width="35px">
       </div>

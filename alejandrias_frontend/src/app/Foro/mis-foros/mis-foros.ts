@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit , OnDestroy} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ForoService } from '../../services/foro';
+import { NotificacionService } from '../../services/notificacion.service';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 @Component({
   selector: 'app-mis-foros',
@@ -13,7 +16,7 @@ import { ForoService } from '../../services/foro';
   styleUrl: './mis-foros.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MisForos implements OnInit {
+export class MisForos implements OnInit, OnDestroy {
   foros: any[] = [];
   cargando = false;
   usuario: any = null;
@@ -27,10 +30,16 @@ export class MisForos implements OnInit {
   registrandoForo = false;
   buscandoPrivado = false;
 
+  notificaciones: any[] = [];
+  mostrarPanelNotificaciones = false;
+  cantidadNoLeidas = 0;
+  intervaloNotificaciones: any;
+
   constructor(
     private foroService: ForoService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private notificacionService: NotificacionService
   ) {}
 
   ngOnInit(): void {
@@ -38,6 +47,16 @@ export class MisForos implements OnInit {
     this.rol = this.usuario.usuario_rol;
     this.apodoUsuario = this.usuario.usuario_apodo || this.usuario.apodoUsuario || this.usuario.usuario_nombre || '';
     this.cargarForos();
+    this.cargarNotificaciones();
+    this.intervaloNotificaciones = setInterval(() => {
+      this.cargarNotificaciones();
+    }, 15000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.intervaloNotificaciones) {
+      clearInterval(this.intervaloNotificaciones);
+    }
   }
 
   cargarForos(): void {
@@ -208,6 +227,156 @@ export class MisForos implements OnInit {
       }
     });
   }
+
+  cargarNotificaciones(): void {
+  
+    this.notificacionService.getNotificaciones()
+      .subscribe({
+  
+        next: (res) => {
+  
+          this.notificaciones = res;
+  
+        },
+  
+        error: (err) => {
+  
+          console.error('Error cargando notificaciones', err);
+  
+        }
+  
+      });
+  
+    this.notificacionService.getCantidadNoLeidas()
+      .subscribe({
+  
+        next: (res) => {
+  
+          this.cantidadNoLeidas = res.cantidad;
+  
+        }
+  
+      });
+    }
+  
+    toggleNotificaciones(): void {
+  
+      this.mostrarPanelNotificaciones =
+        !this.mostrarPanelNotificaciones;
+    }
+  
+    abrirNotificacion(notificacion: any): void {
+  
+      // ✅ Marcar leída
+      this.notificacionService
+        .marcarLeida(notificacion.notificacion_id)
+        .subscribe({
+  
+          next: () => {
+  
+            notificacion.notificacion_leida = true;
+  
+            if (this.cantidadNoLeidas > 0) {
+              this.cantidadNoLeidas--;
+            }
+  
+            // 🚀 Navegar
+            this.router.navigateByUrl(
+              notificacion.notificacion_url
+            );
+  
+            this.mostrarPanelNotificaciones = false;
+          }
+  
+        });
+    }
+  
+    obtenerTiempo(fecha: string): string {
+  
+      return formatDistanceToNow(
+        new Date(fecha),
+        {
+          addSuffix: true,
+          locale: es
+        }
+      );
+    }
+  
+    marcarComoLeida(notificacion: any): void {
+  
+      this.notificacionService.marcarComoLeida(
+          notificacion.notificacion_id
+        )
+        .subscribe({
+  
+          next: () => {
+  
+            notificacion.notificacion_leida = true;
+  
+          },
+  
+          error: (err) => {
+  
+            console.error(err);
+  
+          }
+        });
+    }
+  
+    irANotificacion(notificacion: any): void {
+  
+      if (!notificacion.notificacion_leida) {
+  
+        this.marcarComoLeida(notificacion);
+  
+      }
+  
+      switch (notificacion.notificacion_tipo) {
+  
+        case 'registro_foro':
+  
+          this.router.navigate([
+            '/foros',
+            notificacion.notificacion_referencia_id
+          ]);
+  
+          break;
+        
+        case 'nuevo_miembro':
+  
+          this.router.navigate([
+            '/foros/',
+            notificacion.notificacion_referencia_id
+          ]);
+  
+          break;
+  
+        case 'nueva_publicacion':
+          this.router.navigate([
+            '/publicaciones',
+            notificacion.notificacion_referencia_id
+          ]);
+  
+          break;
+  
+        case 'nuevo_comentario':
+  
+          this.router.navigate([
+            '/publicaciones',
+            notificacion.notificacion_referencia_id
+          ]);
+  
+          break;
+  
+        default:
+  
+          console.warn(
+            'Tipo de notificación desconocido'
+          );
+      }
+  
+      this.mostrarPanelNotificaciones = false;
+    }
 
   trackByForoId(index: number, foro: any): number {
     return foro.foro_id;
