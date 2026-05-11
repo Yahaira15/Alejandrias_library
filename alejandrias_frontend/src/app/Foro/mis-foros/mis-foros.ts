@@ -1,31 +1,29 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ForoService } from '../../services/foro';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { ForoService } from '../../services/foro';
 
 @Component({
-  selector: 'app-lista-foros',
+  selector: 'app-mis-foros',
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
-  templateUrl: './lista-foros.html',
-  styleUrls: ['./lista-foros.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
+  templateUrl: './mis-foros.html',
+  styleUrl: './mis-foros.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ListaForos implements OnInit {
+export class MisForos implements OnInit {
   foros: any[] = [];
   cargando = false;
-  usuario: any;
+  usuario: any = null;
   rol = '';
-
   apodoUsuario = '';
   foroSeleccionado: any = null;
   modalForoAbierto = false;
   modalPrivadoAbierto = false;
   passwordPrivado = '';
   errorPrivado = '';
-  errorRegistro = '';
   registrandoForo = false;
   buscandoPrivado = false;
 
@@ -39,18 +37,16 @@ export class ListaForos implements OnInit {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     this.rol = this.usuario.usuario_rol;
     this.apodoUsuario = this.usuario.usuario_apodo || this.usuario.apodoUsuario || this.usuario.usuario_nombre || '';
-    console.log('Usuario cargado:', this.usuario);
-    console.log(this.apodoUsuario);
     this.cargarForos();
   }
 
   cargarForos(): void {
     this.cargando = true;
 
-    this.foroService.getForosPublicos().subscribe({
-      next: (res: any) => this.enriquecerForos(res ?? []),
+    this.foroService.getMisForos().subscribe({
+      next: (res: any) => this.enriquecerForos(res?.data ?? res ?? []),
       error: (err) => {
-        console.error('ERROR FOROS PUBLICOS:', err);
+        console.error('Error cargando mis foros:', err);
         this.cargando = false;
         this.cdr.detectChanges();
       }
@@ -86,16 +82,12 @@ export class ListaForos implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error contando comentarios por foro:', err);
+        console.error('Error contando publicaciones de mis foros:', err);
         this.foros = foros;
         this.cargando = false;
         this.cdr.detectChanges();
       }
     });
-  }
-
-  irACrearForo(): void {
-    this.router.navigate(['/foros/crear']);
   }
 
   irAInicio(): void {
@@ -106,23 +98,17 @@ export class ListaForos implements OnInit {
     this.router.navigate(['/mis-foros']);
   }
 
+  irACrearForo(): void {
+    this.router.navigate(['/foros/crear']);
+  }
+
   irAChatIa(): void {
     this.router.navigate(['/chat-ia']);
   }
 
-  editarForo(id: number): void {
-    this.router.navigate(['/foros/editar', id]);
-  }
-
   abrirModalForo(foro: any): void {
-    if (foro?.foro_privado && this.rol === 'lider') {
-      this.router.navigate(['/foros', foro.foro_id]);
-      return;
-    }
-
     this.foroSeleccionado = foro;
     this.modalForoAbierto = true;
-    this.errorRegistro = '';
     this.cdr.detectChanges();
   }
 
@@ -130,31 +116,15 @@ export class ListaForos implements OnInit {
     this.modalForoAbierto = false;
     this.foroSeleccionado = null;
     this.registrandoForo = false;
-    this.errorRegistro = '';
     this.cdr.detectChanges();
   }
 
-  registrarForoPublico(): void {
-    if (!this.foroSeleccionado || this.registrandoForo) return;
+  entrarForoSeleccionado(): void {
+    if (!this.foroSeleccionado) return;
 
-    const confirmar = confirm(`¿Deseas registrarte al foro ${this.foroSeleccionado.foro_titulo}?`);
-    if (!confirmar) return;
-
-    this.registrandoForo = true;
-
-    this.foroService.registrarEnForo(this.foroSeleccionado.foro_id).subscribe({
-      next: () => {
-        const foroId = this.foroSeleccionado.foro_id;
-        this.cerrarModalForo();
-        this.router.navigate(['/foros', foroId]);
-      },
-      error: (err) => {
-        console.error('Error registrando foro', err);
-        this.errorRegistro = err?.error?.error || 'No se pudo registrar al foro.';
-        this.registrandoForo = false;
-        this.cdr.detectChanges();
-      }
-    });
+    const foroId = this.foroSeleccionado.foro_id;
+    this.cerrarModalForo();
+    this.router.navigate(['/foros', foroId]);
   }
 
   abrirModalPrivado(): void {
@@ -220,8 +190,12 @@ export class ListaForos implements OnInit {
     });
   }
 
+  editarForo(id: number): void {
+    this.router.navigate(['/foros/editar', id]);
+  }
+
   eliminarForo(id: number): void {
-    const confirmar = confirm('�Estas seguro de que quieres eliminar este foro?');
+    const confirmar = confirm('¿Estas seguro de que quieres eliminar este foro?');
     if (!confirmar) return;
 
     this.foroService.deleteForo(id).subscribe({

@@ -31,7 +31,8 @@ export class CrearForo implements OnInit {
     foro_titulo: ['', Validators.required],
     foro_descripcion: ['', Validators.required],
     foro_categoria_id: ['', Validators.required],
-    foro_privado: [false]
+    foro_privado: [false],
+    foro_password: [null]
 });
   }
 
@@ -57,6 +58,7 @@ export class CrearForo implements OnInit {
 
    
     if (this.foroForm.invalid) {
+      this.foroForm.markAllAsTouched();
       alert("Por favor completa todos los campos");
       return;
     }
@@ -64,7 +66,8 @@ export class CrearForo implements OnInit {
     const data = {
       ...this.foroForm.value,
       foro_categoria_id: Number(this.foroForm.value.foro_categoria_id),
-      foro_creador_id: this.id
+      foro_creador_id: this.id,
+      foro_password: this.foroForm.value.foro_privado ? this.foroForm.value.foro_password : null
     };
 
     this.foroService.crearForo(data).subscribe({
@@ -85,6 +88,19 @@ export class CrearForo implements OnInit {
 
   setPrivado(valor: boolean) {
     this.foroForm.patchValue({ foro_privado: valor });
+    const passwordControl = this.foroForm.get('foro_password');
+
+    if (valor) {
+      passwordControl?.setValidators([
+        Validators.required,
+        Validators.pattern(/^[A-Za-z0-9]{8}$/)
+      ]);
+    } else {
+      passwordControl?.clearValidators();
+      passwordControl?.setValue(null);
+    }
+
+    passwordControl?.updateValueAndValidity();
     this.indicatorStyle(valor);
   }
 

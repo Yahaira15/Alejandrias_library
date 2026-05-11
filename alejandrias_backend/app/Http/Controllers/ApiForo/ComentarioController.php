@@ -18,6 +18,20 @@ class ComentarioController extends Controller
             return response()->json(['message' => 'Publicacion no encontrada'], 404);
         }
 
+        if ($publicacion->foro?->foro_privado) {
+            $usuario = Auth::guard('sanctum')->user();
+            $registrado = $usuario && (
+                $publicacion->foro->foro_creador_id == $usuario->usuario_id
+                || $publicacion->foro->miembros()
+                    ->where('usuario.usuario_id', $usuario->usuario_id)
+                    ->exists()
+            );
+
+            if (!$registrado) {
+                return response()->json(['error' => 'Debes registrarte en el foro antes de ver sus comentarios'], 403);
+            }
+        }
+
         $comentarios = Comentario::where('comentario_publicacion_id', $publicacionId)
             ->with('usuario')
             ->orderBy('comentario_id', 'asc')
@@ -38,6 +52,18 @@ class ComentarioController extends Controller
 
         if (!$usuario) {
             return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $foro = $publicacion->foro;
+        $registrado = $foro && (
+            $foro->foro_creador_id == $usuario->usuario_id
+            || $foro->miembros()
+                ->where('usuario.usuario_id', $usuario->usuario_id)
+                ->exists()
+        );
+
+        if (!$registrado) {
+            return response()->json(['error' => 'Debes registrarte en el foro antes de comentar'], 403);
         }
 
         $data = $request->validate([

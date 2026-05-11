@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -28,6 +28,12 @@ export class VerForoComponent implements OnInit {
   feedbackMensaje = '';
   feedbackTipo: 'success' | 'error' | '' = '';
   private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  modalPasswordAbierto = false;
+  usuarioPassword = '';
+  passwordForoRevelada = '';
+  errorPasswordForo = '';
+  consultandoPasswordForo = false;
+  copiandoPasswordForo = false;
 
   nuevaPublicacion = {
     publicacion_titulo: '',
@@ -169,7 +175,7 @@ export class VerForoComponent implements OnInit {
   }
 
   eliminarPublicacion(publicacionId: number): void {
-    if (!confirm('�Seguro que quieres eliminar esta publicacion?')) {
+    if (!confirm('¿Seguro que quieres eliminar esta publicacion?')) {
       return;
     }
 
@@ -220,6 +226,79 @@ export class VerForoComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  abrirModalPasswordForo(): void {
+    this.modalPasswordAbierto = true;
+    this.usuarioPassword = '';
+    this.passwordForoRevelada = '';
+    this.errorPasswordForo = '';
+    this.consultandoPasswordForo = false;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalPasswordForo(): void {
+    this.modalPasswordAbierto = false;
+    this.usuarioPassword = '';
+    this.passwordForoRevelada = '';
+    this.errorPasswordForo = '';
+    this.consultandoPasswordForo = false;
+    this.copiandoPasswordForo = false;
+    this.cdr.detectChanges();
+  }
+
+  revelarPasswordForo(): void {
+    const password = this.usuarioPassword.trim();
+
+    if (!password) {
+      this.errorPasswordForo = 'Ingresa tu contraseña de usuario.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.errorPasswordForo = '';
+    this.passwordForoRevelada = '';
+    this.consultandoPasswordForo = true;
+
+    this.foroService.revelarPasswordForo(this.foroId, password).subscribe({
+      next: (res) => {
+        this.passwordForoRevelada = res?.foro_password || '';
+        this.consultandoPasswordForo = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error revelando contraseña del foro:', err);
+        this.errorPasswordForo = err?.error?.error || 'No se pudo mostrar la contraseña del foro.';
+        this.consultandoPasswordForo = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  copiarPasswordForo(): void {
+    if (!this.passwordForoRevelada || this.copiandoPasswordForo) {
+      return;
+    }
+
+    this.copiandoPasswordForo = true;
+
+    navigator.clipboard.writeText(this.passwordForoRevelada)
+      .then(() => {
+        this.copiandoPasswordForo = false;
+        this.mostrarFeedback('success', 'Contraseña del foro copiada.');
+        this.cdr.detectChanges();
+      })
+      .catch(() => {
+        this.copiandoPasswordForo = false;
+        this.errorPasswordForo = 'No se pudo copiar la contraseña.';
+        this.cdr.detectChanges();
+      });
+  }
+
+  get esCreadorDelForo(): boolean {
+    return !!this.usuario
+      && !!this.foro
+      && this.usuario.usuario_id === this.foro.foro_creador_id
+      && this.usuario.usuario_rol === 'lider';
+  }
   get puedeCrearPublicacion(): boolean {
     return !!this.usuario
       && this.nuevaPublicacion.publicacion_titulo.trim().length > 0
@@ -287,3 +366,4 @@ export class VerForoComponent implements OnInit {
     return `${contenido.slice(0, limite).trim()}...`;
   }
 }
+

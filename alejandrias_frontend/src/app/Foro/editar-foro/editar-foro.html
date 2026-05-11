@@ -1,3 +1,7 @@
+<div class="img-fondo">
+  <img src="FondoCrearForo.png" alt="Fondo de editar foro">
+</div>
+
 <div class="crear_foro">
   <div class="card">
     <h2>Editar foro</h2>
@@ -22,16 +26,32 @@
         <button 
           type="button" 
           (click)="setEstado(false)" 
-          [class.selected]="esPublico">
+          [class.active]="esPublico">
           Público
         </button>
 
         <button 
           type="button" 
           (click)="setEstado(true)" 
-          [class.selected]="!esPublico">
+          [class.active]="!esPublico">
           Privado
         </button>
+        <div class="indicator" id="indicator-editar"></div>
+      </div>
+
+      <div *ngIf="foroForm.get('foro_privado')?.value" class="password-field">
+        <input
+          type="text"
+          maxlength="8"
+          placeholder="Nueva contraseña privada (8 caracteres)"
+          formControlName="foro_password"
+        />
+        <p
+          class="field-error"
+          *ngIf="foroForm.get('foro_password')?.invalid && foroForm.get('foro_password')?.touched"
+        >
+          La contraseña debe tener exactamente 8 caracteres alfanuméricos.
+        </p>
       </div>
     </form>
 

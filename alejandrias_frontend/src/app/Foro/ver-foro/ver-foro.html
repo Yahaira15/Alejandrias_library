@@ -31,6 +31,15 @@
         <span>Creador: {{ foro.usuario?.usuario_nombre }} {{ foro.usuario?.usuario_apellido }}</span>
         <span>Publicaciones: {{ publicaciones.length }}</span>
       </div>
+
+      <button
+        *ngIf="esCreadorDelForo && foro.foro_privado"
+        type="button"
+        class="btn btn-secondary forum-password-button"
+        (click)="abrirModalPasswordForo()"
+      >
+        Ver contraseña del foro
+      </button>
     </header>
 
     <div class="new-publication">
@@ -191,6 +200,48 @@
           </ng-template>
         </article>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="modalPasswordAbierto" (click)="cerrarModalPasswordForo()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarModalPasswordForo()">x</button>
+    <p class="modal-kicker">Foro privado</p>
+    <h2>Ver contraseña del foro</h2>
+
+    <div *ngIf="!passwordForoRevelada" class="modal-form">
+      <input
+        type="password"
+        [(ngModel)]="usuarioPassword"
+        placeholder="Contraseña de usuario"
+        class="modal-input"
+      />
+      <p class="modal-error" *ngIf="errorPasswordForo">{{ errorPasswordForo }}</p>
+      <button
+        type="button"
+        class="modal-action"
+        (click)="revelarPasswordForo()"
+        [disabled]="consultandoPasswordForo"
+      >
+        {{ consultandoPasswordForo ? 'Verificando...' : 'Ver contraseña' }}
+      </button>
+    </div>
+
+    <div *ngIf="passwordForoRevelada" class="modal-form">
+      <label class="password-result-label">Contraseña del foro</label>
+      <div class="password-result">
+        <span>{{ passwordForoRevelada }}</span>
+      </div>
+      <p class="modal-error" *ngIf="errorPasswordForo">{{ errorPasswordForo }}</p>
+      <button
+        type="button"
+        class="modal-action"
+        (click)="copiarPasswordForo()"
+        [disabled]="copiandoPasswordForo"
+      >
+        {{ copiandoPasswordForo ? 'Copiando...' : 'Copiar contraseña' }}
+      </button>
     </div>
   </div>
 </div>

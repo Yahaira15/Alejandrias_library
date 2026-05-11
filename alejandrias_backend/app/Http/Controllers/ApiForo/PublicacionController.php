@@ -4,12 +4,33 @@ namespace App\Http\Controllers\ApiForo;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Foro;
 use App\Models\Publicacion;
 
 class PublicacionController extends Controller
 {
     public function index($foroId)
     {
+        $foro = Foro::find($foroId);
+
+        if (!$foro) {
+            return response()->json(['error' => 'Foro no encontrado'], 404);
+        }
+
+        if ($foro->foro_privado) {
+            $usuario = auth('sanctum')->user();
+            $registrado = $usuario && (
+                $foro->foro_creador_id == $usuario->usuario_id
+                || $foro->miembros()
+                    ->where('usuario.usuario_id', $usuario->usuario_id)
+                    ->exists()
+            );
+
+            if (!$registrado) {
+                return response()->json(['error' => 'Debes registrarte en el foro antes de ver sus publicaciones'], 403);
+            }
+        }
+
         $publicaciones = Publicacion::where('publicacion_foro_id', $foroId)
             ->with('usuario')
             ->withCount('comentarios')
@@ -27,6 +48,18 @@ class PublicacionController extends Controller
 
             if (!$usuario) {
                 return response()->json(['error' => 'No autenticado'], 401);
+            }
+
+            $foro = Foro::find($foroId);
+            $registrado = $foro && (
+                $foro->foro_creador_id == $usuario->usuario_id
+                || $foro->miembros()
+                    ->where('usuario.usuario_id', $usuario->usuario_id)
+                    ->exists()
+            );
+
+            if (!$registrado) {
+                return response()->json(['error' => 'Debes registrarte en el foro antes de publicar'], 403);
             }
 
             $request->validate([
@@ -65,7 +98,46 @@ class PublicacionController extends Controller
             return response()->json(['error' => 'No encontrada'], 404);
         }
 
+        if ($publicacion->foro?->foro_privado) {
+            $usuario = auth('sanctum')->user();
+            $registrado = $usuario && (
+                $publicacion->foro->foro_creador_id == $usuario->usuario_id
+                || $publicacion->foro->miembros()
+                    ->where('usuario.usuario_id', $usuario->usuario_id)
+                    ->exists()
+            );
+
+            if (!$registrado) {
+                return response()->json(['error' => 'Debes registrarte en el foro antes de ver esta publicación'], 403);
+            }
+        }
+
         return response()->json($publicacion, 200);
+    }
+
+    public function verificarRegistro($id)
+    {
+        $usuario = auth('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['registrado' => false], 401);
+        }
+
+        $publicacion = Publicacion::with('foro')->find($id);
+
+        if (!$publicacion || !$publicacion->foro) {
+            return response()->json(['registrado' => false], 404);
+        }
+
+        $registrado = $publicacion->foro->foro_creador_id == $usuario->usuario_id
+            || $publicacion->foro->miembros()
+                ->where('usuario.usuario_id', $usuario->usuario_id)
+                ->exists();
+
+        return response()->json([
+            'registrado' => $registrado,
+            'foro_id' => $publicacion->publicacion_foro_id,
+        ], 200);
     }
 
     public function update(Request $request, $id)

@@ -20,6 +20,27 @@ export class ForoService {
     );
   }
 
+  registrarEnForo(id: number, foroPassword: string | null = null): Observable<any> {
+    const body = foroPassword ? { foro_password: foroPassword } : {};
+    return this.http.post(`${this.apiUrl}/foros/${id}/registrarse`, body);
+  }
+
+  verificarRegistroForo(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/foros/${id}/registro`);
+  }
+
+  buscarForoPrivado(foroPassword: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/foros/privado/buscar`, {
+      foro_password: foroPassword
+    });
+  }
+
+  revelarPasswordForo(id: number, usuarioPassword: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/foros/${id}/password`, {
+      usuario_password: usuarioPassword
+    });
+  }
+
   getCategorias(): Observable<any> {
     if (this.cacheCategorias) return of(this.cacheCategorias);
     return this.http.get(`${this.apiUrl}/categorias`).pipe(
@@ -40,6 +61,10 @@ export class ForoService {
 
   getPublicacion(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/publicaciones/${id}`);
+  }
+
+  verificarRegistroPublicacion(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/publicaciones/${id}/registro`);
   }
 
   getPublicaciones(foroId: number): Observable<any> {

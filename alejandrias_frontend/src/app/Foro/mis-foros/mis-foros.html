@@ -6,8 +6,8 @@
        Library</h2>
 
     <nav>
-      <button class="active" (click)="irAInicio()"><img src="iconos/home.png" alt="home" width="20px"> Inicio</button>
-      <button (click)="irAMisForos()"><img src="iconos/mis_foros.png" alt="mis_foros" width="20px"> Mis foros</button>
+      <button (click)="irAInicio()"><img src="iconos/home.png" alt="home" width="20px"> Inicio</button>
+      <button class="active" (click)="irAMisForos()"><img src="iconos/mis_foros.png" alt="mis_foros" width="20px"> Mis foros</button>
       <button><img src="iconos/logros.png" alt="logros" width="20px"> Logros</button>
       <button (click)="irAChatIa()"><img src="iconos/notificaciones.png" alt="chat_ia" width="20px"> Chat IA</button>
       <button (click)="abrirModalPrivado()"><img src="iconos/foro.png" alt="foro privado" width="20px"> Ingresar a foro privado</button>
@@ -35,7 +35,11 @@
 
     <!-- SECCIÓN -->
     <section>
-      <h2>Foros destacados</h2>
+      @if (rol === 'lider') {
+        <h2>Foros que creaste</h2>
+      } @else {
+        <h2>Foros en los que estás registrado</h2>
+      }
 
       <div class="foros-container">
         <div class="foro-card" *ngFor="let foro of foros">
@@ -49,6 +53,10 @@
             Ver foro
           </button>
 
+          <div class="buttons" *ngIf="rol === 'lider'">
+            <button (click)="editarForo(foro.foro_id)">Editar</button>
+            <button (click)="eliminarForo(foro.foro_id)">Eliminar</button>
+          </div>
         </div>
       </div>
     </section>
@@ -66,9 +74,8 @@
       <span>Publicaciones: {{ foroSeleccionado.publicaciones_count || 0 }}</span>
       <span>Comentarios: {{ foroSeleccionado.comentarios_count_total || 0 }}</span>
     </div>
-    <p class="modal-error" *ngIf="errorRegistro">{{ errorRegistro }}</p>
-    <button type="button" class="modal-action" (click)="registrarForoPublico()" [disabled]="registrandoForo">
-      {{ registrandoForo ? 'Registrando...' : 'Registrarse' }}
+    <button type="button" class="modal-action" (click)="entrarForoSeleccionado()">
+      Entrar al foro
     </button>
   </div>
 </div>

@@ -3,8 +3,11 @@ import { Login } from './Login/login/login';
 import { Register } from './Login/register/register';
 import { CrearForo } from './Foro/crear-foro/crear-foro';
 import { ListaForos } from './Foro/lista-foros/lista-foros';
+import { MisForos } from './Foro/mis-foros/mis-foros';
 import { EditarForo } from './Foro/editar-foro/editar-foro';
 import { authGuard } from './guards/auth-guard';
+import { foroRegistroGuard } from './guards/foro-registro-guard';
+import { publicacionRegistroGuard } from './guards/publicacion-registro-guard';
 import { Home } from './Home/home/home';
 import { Perfil } from './perfil/perfil';
 import { VerPublicacionComponent } from './Foro/ver-publicacion/ver-publicacion';
@@ -17,10 +20,11 @@ export const routes: Routes = [
     {path: 'register', component: Register },
     {path: 'chat-ia', component: ChatIaComponent, canActivate: [authGuard] },
     {path: 'foros/crear', component: CrearForo},
-    { path: 'foros/:foro_id', component: VerForoComponent },
-    { path: 'publicaciones/:publicacion_id', component: VerPublicacionComponent },
+    { path: 'foros/:foro_id', component: VerForoComponent, canActivate: [authGuard, foroRegistroGuard] },
+    { path: 'publicaciones/:publicacion_id', component: VerPublicacionComponent, canActivate: [authGuard, publicacionRegistroGuard] },
     { path: '', redirectTo: 'home', pathMatch: 'full'},
     { path: 'foros', component: ListaForos, canActivate: [authGuard] },
+    { path: 'mis-foros', component: MisForos, canActivate: [authGuard] },
     { path: 'foros/editar/:id', component: EditarForo, canActivate: [authGuard] },
     { path: 'perfil', component: Perfil, canActivate: [authGuard] }
 ];

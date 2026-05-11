@@ -19,9 +19,10 @@
 }
 
 .img-fondo img {
-  width: 40%;
+  width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0.6;
 }
 
 .back {
@@ -38,15 +39,14 @@
 .card {
   width: 600px;
   padding: 40px;
-  background: rgba(102, 149, 198, 0.35);
-  backdrop-filter: blur(6px);
+  background: rgba(175, 203, 230, 0.7647058824);
   border-radius: 20px;
   z-index: 1;
 }
 
 .card h2 {
   text-align: center;
-  color: #6695C6;
+  color: #306289;
   margin-bottom: 30px;
   font-size: 28px;
 }
@@ -69,6 +69,12 @@ input, textarea, select {
   box-sizing: border-box;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: #ffffff;
+  opacity: 0.7;
+}
+
 textarea {
   height: 120px;
   resize: none;
@@ -76,7 +82,9 @@ textarea {
 
 .options {
   display: flex;
+  align-items: center;
   gap: 10px;
+  margin-bottom: 5px;
 }
 
 .options button {
@@ -98,6 +106,25 @@ textarea {
   &:hover {
     opacity: 0.9;
   }
+}
+
+.indicator {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #7edd8a;
+  transition: all 0.3s ease;
+}
+
+.password-field {
+  margin-top: 3px;
+}
+
+.field-error {
+  margin: -5px 0 5px;
+  color: #8b2f2f;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .save-btn {

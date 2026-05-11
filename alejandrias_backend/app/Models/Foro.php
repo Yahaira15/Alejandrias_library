@@ -19,7 +19,12 @@ class Foro extends Model
         'foro_descripcion',
         'foro_categoria_id',
         'foro_creador_id',
-        'foro_privado'
+        'foro_privado',
+        'foro_password'
+    ];
+
+    protected $hidden = [
+        'foro_password',
     ];
 
     public function usuario()

@@ -6,6 +6,7 @@ use App\Http\Controllers\ApiForo\ForoController;
 use App\Http\Controllers\ApiCategoria\CategoriaController;
 use App\Http\Controllers\ApiForo\PublicacionController;
 use App\Http\Controllers\ApiForo\ComentarioController;
+use App\Http\Controllers\ApiNotificacion\NotificacionController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -23,6 +24,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/foros/{id}', [ForoController::class, 'update']);
     Route::delete('/foros/{id}', [ForoController::class, 'destroy']);
     Route::get('/mis-foros', [ForoController::class, 'misForos']);
+    Route::post('/foros/privado/buscar', [ForoController::class, 'buscarPrivadoPorPassword']);
+    Route::post('/foros/{id}/registrarse', [ForoController::class, 'registrar']);
+    Route::get('/foros/{id}/registro', [ForoController::class, 'verificarRegistro']);
+    Route::post('/foros/{id}/password', [ForoController::class, 'revelarPassword']);
 });
 Route::get('/foros-publicos', [ForoController::class, 'forosPublicos']);
 Route::get('/foros', [ForoController::class, 'index']);
@@ -35,6 +40,7 @@ Route::get('/categorias/{categoria_id}/foros', [CategoriaController::class, 'for
 
 Route::get('/foros/{foroId}/publicaciones', [PublicacionController::class, 'index']);
 Route::post('/foros/{foroId}/publicaciones', [PublicacionController::class, 'store']);
+Route::middleware('auth:sanctum')->get('/publicaciones/{id}/registro', [PublicacionController::class, 'verificarRegistro']);
 Route::get('/publicaciones/{id}', [PublicacionController::class, 'show']);
 Route::put('/publicaciones/{id}', [PublicacionController::class, 'update']);
 Route::delete('/publicaciones/{id}', [PublicacionController::class, 'destroy']);
@@ -44,3 +50,10 @@ Route::post('/publicaciones/{publicacionId}/comentarios', [ComentarioController:
 Route::get('/comentarios/{id}', [ComentarioController::class, 'show']);
 Route::put('/comentarios/{id}', [ComentarioController::class, 'update']);
 Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notificaciones', [NotificacionController::class, 'index']);
+    Route::post('/notificaciones', [NotificacionController::class, 'store']);
+    Route::put('/notificaciones/{id}/leer', [NotificacionController::class, 'marcarLeida']);
+    Route::delete('/notificaciones/{id}', [NotificacionController::class, 'destroy']);
+});

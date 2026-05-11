@@ -34,7 +34,8 @@ export class EditarForo implements OnInit {
       foro_titulo: ['', Validators.required],
       foro_descripcion: ['', Validators.required],
       foro_categoria_id: ['', Validators.required],
-      foro_privado: [false] 
+      foro_privado: [false],
+      foro_password: [null]
     });
   }
 
@@ -71,8 +72,11 @@ export class EditarForo implements OnInit {
           foro_titulo: res.foro_titulo,
           foro_descripcion: res.foro_descripcion,
           foro_categoria_id: res.foro_categoria_id,
-          foro_privado: res.foro_privado
+          foro_privado: !!res.foro_privado,
+          foro_password: null
         });
+        this.actualizarValidadoresPassword(!!res.foro_privado);
+        this.indicatorStyle(!!res.foro_privado);
         this.cdr.markForCheck(); 
       },
       error: (err) => {
@@ -83,13 +87,15 @@ export class EditarForo implements OnInit {
 
   actualizarForo() {
     if (this.foroForm.invalid) {
+      this.foroForm.markAllAsTouched();
       alert("⚠️ Completa todos los campos");
       return;
     }
 
     const data = {
       ...this.foroForm.value,
-      foro_categoria_id: Number(this.foroForm.value.foro_categoria_id)
+      foro_categoria_id: Number(this.foroForm.value.foro_categoria_id),
+      foro_password: this.foroForm.value.foro_privado ? this.foroForm.value.foro_password : null
     };
 
     this.foroService.actualizarForo(this.foroId, data).subscribe({
@@ -107,7 +113,32 @@ export class EditarForo implements OnInit {
 
   setEstado(privado: boolean) {
     this.foroForm.patchValue({ foro_privado: privado });
+    this.actualizarValidadoresPassword(privado);
+    this.indicatorStyle(privado);
     this.cdr.markForCheck(); 
+  }
+
+  private actualizarValidadoresPassword(privado: boolean) {
+    const passwordControl = this.foroForm.get('foro_password');
+
+    if (privado) {
+      passwordControl?.setValidators([
+        Validators.required,
+        Validators.pattern(/^[A-Za-z0-9]{8}$/)
+      ]);
+    } else {
+      passwordControl?.clearValidators();
+      passwordControl?.setValue(null);
+    }
+
+    passwordControl?.updateValueAndValidity();
+  }
+
+  indicatorStyle(privado: boolean) {
+    const indicator = document.getElementById('indicator-editar');
+    if (indicator) {
+      indicator.style.backgroundColor = privado ? '#FF6347' : '#7edd8a';
+    }
   }
 
   volver() {
