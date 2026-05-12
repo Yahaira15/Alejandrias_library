@@ -19,7 +19,7 @@ export const routes: Routes = [
     {path: 'login', component: Login },
     {path: 'register', component: Register },
     {path: 'chat-ia', component: ChatIaComponent, canActivate: [authGuard] },
-    {path: 'foros/crear', component: CrearForo},
+    {path: 'foros/crear', component: CrearForo, canActivate: [authGuard] },
     { path: 'foros/:foro_id', component: VerForoComponent, canActivate: [authGuard, foroRegistroGuard] },
     { path: 'publicaciones/:publicacion_id', component: VerPublicacionComponent, canActivate: [authGuard, publicacionRegistroGuard] },
     { path: '', redirectTo: 'home', pathMatch: 'full'},
