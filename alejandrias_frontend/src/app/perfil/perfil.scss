@@ -1,90 +1,358 @@
 @import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap');
 
-.perfil-container {
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: 'Lora', serif;
+  color: #050505;
+}
+
+.perfil-page {
+  display: flex;
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(238, 246, 255, 0.62), rgba(238, 246, 255, 0.62)),
+    url('/fondo_home.png') center / cover no-repeat;
+}
+
+.perfil-sidebar {
+  width: 228px;
+  min-height: 100vh;
+  padding: 46px 34px 38px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  background: #b3d0e7;
+}
+
+.perfil-sidebar h1 {
+  margin: 0 0 42px;
+  color: #2d5c7e;
+  font-size: 23px;
+  line-height: 1.45;
+  text-align: center;
+  font-weight: 400;
+}
+
+.perfil-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.nav-item,
+.logout-btn,
+.back-btn,
+.edit-btn,
+.buttons button {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nav-item,
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  background: transparent;
+  color: #070707;
+  font-size: 15px;
+  text-align: left;
+}
+
+.nav-item img,
+.logout-btn img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.logout-btn {
+  margin-top: auto;
+}
+
+.perfil-main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 24px 64px 48px;
+  box-sizing: border-box;
+}
+
+.back-btn {
+  position: absolute;
+  top: 25px;
+  left: 28px;
+  width: 104px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #fbefd9;
+  color: #050505;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.perfil-content {
+  width: min(100%, 940px);
+  margin: 0 auto;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-wrap {
+  width: 186px;
+  height: 186px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.avatar-wrap img {
+  width: 124px;
+  height: 124px;
+  object-fit: cover;
+}
+
+.username-row {
+  position: relative;
+  min-width: 220px;
+  margin-top: 20px;
   display: flex;
   justify-content: center;
-  margin-top: 40px;
+  align-items: center;
 }
 
-.perfil-card {
-  width: 350px;
-  background: #6b8fb3;
-  color: white;
-  border-radius: 12px;
-  padding: 20px;
-  font-family: 'Lora', serif;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-.perfil-card h2 {
+.username-row h2 {
+  margin: 0;
+  color: #050505;
+  font-size: 21px;
+  font-weight: 400;
   text-align: center;
-  margin-bottom: 15px;
+  overflow-wrap: anywhere;
 }
 
-/* TEXTO */
-.perfil-card p {
-  margin: 8px 0;
+.edit-btn {
+  position: absolute;
+  right: -34px;
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+  border-radius: 50%;
+  background: rgba(251, 239, 217, 0.95);
 }
 
-/* INPUTS */
+.edit-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.info-panel,
+.foros-panel {
+  background: #abcce6;
+  color: #050505;
+  box-sizing: border-box;
+}
+
+.info-panel {
+  width: min(100%, 300px);
+  min-height: 54px;
+  margin-top: 28px;
+  padding: 13px 16px;
+  border-radius: 5px;
+  font-size: 12px;
+}
+
+.info-panel p {
+  margin: 9px 0 0;
+  line-height: 1.45;
+}
+
+.materias-panel {
+  width: min(100%, 368px);
+  margin-top: 18px;
+}
+
+.materias-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.materias-lista span {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.42);
+  font-size: 12px;
+}
+
+.foros-panel {
+  width: 100%;
+  min-height: 246px;
+  margin-top: 26px;
+  padding: 15px 18px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+.edit-content {
+  min-height: calc(100vh - 72px);
+  justify-content: center;
+}
+
+.edit-card {
+  width: min(100%, 440px);
+  padding: 28px;
+  border-radius: 8px;
+  background: rgba(171, 204, 230, 0.96);
+  box-shadow: 0 18px 45px rgba(38, 68, 94, 0.18);
+}
+
+.edit-card h2 {
+  margin: 0 0 20px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 400;
+}
+
 .edit-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 11px;
 }
 
-.edit-form input {
-  padding: 8px;
-  border-radius: 8px;
-  border: none;
+.edit-form input,
+.edit-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
   outline: none;
+  background: rgba(255, 255, 255, 0.88);
+  font-family: inherit;
 }
 
-/* CHECKBOX */
+.edit-form textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
 .checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   font-size: 13px;
 }
 
-/* BOTONES */
-button {
-  margin-top: 10px;
-  background: #f2e9d8;
-  border: none;
-  padding: 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-family: 'Lora', serif;
-}
-
-button:hover {
-  background: #e4d7c3;
-}
-
-/* BOTONES AGRUPADOS */
 .buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
-/* ERROR */
+.buttons button {
+  flex: 1 1 120px;
+  min-height: 36px;
+  border-radius: 6px;
+  background: #fbefd9;
+  color: #050505;
+}
+
+.buttons button:hover,
+.back-btn:hover,
+.edit-btn:hover {
+  background: #eadbc0;
+}
+
+.buttons .delete-btn {
+  background: #d55d51;
+  color: #fff;
+}
+
+.buttons .delete-btn:hover {
+  background: #bb463b;
+}
+
 .error {
-  color: #ffdede;
+  margin: 0;
+  color: #8a1515;
   font-size: 13px;
 }
 
-/* MENSAJE */
 .mensaje {
+  width: fit-content;
+  max-width: 100%;
+  margin: 16px auto 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(251, 239, 217, 0.92);
+  color: #050505;
   text-align: center;
-  margin-top: 10px;
 }
 
-/* ELIMINAR */
-.delete-btn {
-  width: 100%;
-  background: #e74c3c;
-  color: white;
-}
+@media (max-width: 760px) {
+  .perfil-page {
+    flex-direction: column;
+  }
 
-.delete-btn:hover {
-  background: #c0392b;
+  .perfil-sidebar {
+    width: 100%;
+    min-height: auto;
+    padding: 18px 20px;
+  }
+
+  .perfil-sidebar h1 {
+    margin-bottom: 18px;
+    font-size: 22px;
+  }
+
+  .perfil-nav {
+    flex-direction: row;
+    justify-content: center;
+    gap: 18px;
+  }
+
+  .nav-item,
+  .logout-btn {
+    width: auto;
+    font-size: 13px;
+  }
+
+  .logout-btn {
+    margin: 18px auto 0;
+  }
+
+  .perfil-main {
+    padding: 72px 18px 32px;
+  }
+
+  .back-btn {
+    top: 22px;
+    left: 18px;
+  }
+
+  .avatar-wrap {
+    width: 150px;
+    height: 150px;
+  }
+
+  .avatar-wrap img {
+    width: 100px;
+    height: 100px;
+  }
+
+  .foros-panel {
+    min-height: 210px;
+  }
 }

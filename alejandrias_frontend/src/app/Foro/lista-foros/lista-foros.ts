@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ForoService } from '../../services/foro';
@@ -18,9 +18,14 @@ import { es } from 'date-fns/locale';
 })
 export class ListaForos implements OnInit, OnDestroy {
   foros: any[] = [];
+  categorias: any[] = [];
   cargando = false;
   usuario: any;
   rol = '';
+  terminoBusqueda = '';
+  categoriaSeleccionada: number | null = null;
+  busquedaActiva = false;
+  mostrarPanelBusqueda = false;
 
   notificaciones: any[] = [];
   mostrarPanelNotificaciones = false;
@@ -44,11 +49,26 @@ export class ListaForos implements OnInit, OnDestroy {
     private notificacionService: NotificacionService
   ) {}
 
+  @HostListener('document:click', ['$event'])
+  cerrarPanelBusquedaSiClickFuera(event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    const clickDentroBusqueda = target?.closest('.search-box, .search-panel, .clear-search');
+
+    if (clickDentroBusqueda) return;
+
+    if (this.mostrarPanelBusqueda || this.busquedaActiva) {
+      this.mostrarPanelBusqueda = false;
+      this.busquedaActiva = false;
+      this.cdr.detectChanges();
+    }
+  }
+
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     this.rol = this.usuario.usuario_rol;
     this.apodoUsuario = this.usuario.usuario_apodo || this.usuario.apodoUsuario || this.usuario.usuario_nombre || '';
     this.cargarForos();
+    this.cargarCategorias();
     this.cargarNotificaciones();
     this.intervaloNotificaciones = setInterval(() => {
       this.cargarNotificaciones();
@@ -72,6 +92,92 @@ export class ListaForos implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  cargarCategorias(): void {
+    this.foroService.getCategorias().subscribe({
+      next: (res: any) => {
+        this.categorias = res ?? [];
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error cargando categorÃ­as', err);
+      }
+    });
+  }
+
+  get forosFiltrados(): any[] {
+    const termino = this.normalizarTexto(this.terminoBusqueda);
+
+    return this.foros.filter((foro) => {
+      const coincideNombre = !termino || this.normalizarTexto(foro.foro_titulo).includes(termino);
+      const coincideCategoria = !this.categoriaSeleccionada || this.obtenerCategoriaId(foro) === this.categoriaSeleccionada;
+
+      return coincideNombre && coincideCategoria;
+    });
+  }
+
+  get sugerenciasForos(): any[] {
+    const termino = this.normalizarTexto(this.terminoBusqueda);
+
+    if (!termino) return [];
+
+    return this.foros
+      .filter((foro) => this.normalizarTexto(foro.foro_titulo).includes(termino))
+      .slice(0, 5);
+  }
+
+  get nombreCategoriaSeleccionada(): string {
+    return this.categorias.find((categoria) => categoria.categoria_id === this.categoriaSeleccionada)?.categoria_nombre || '';
+  }
+
+  get hayFiltrosActivos(): boolean {
+    return !!this.terminoBusqueda.trim() || !!this.categoriaSeleccionada;
+  }
+
+  seleccionarSugerencia(foro: any): void {
+    this.terminoBusqueda = foro.foro_titulo;
+    this.busquedaActiva = false;
+    this.cdr.detectChanges();
+  }
+
+  seleccionarCategoria(categoriaId: number | null): void {
+    this.categoriaSeleccionada = categoriaId;
+    this.mostrarPanelBusqueda = true;
+    this.cdr.detectChanges();
+  }
+
+  limpiarBusqueda(): void {
+    this.terminoBusqueda = '';
+    this.categoriaSeleccionada = null;
+    this.busquedaActiva = false;
+    this.mostrarPanelBusqueda = false;
+    this.cdr.detectChanges();
+  }
+
+  abrirPanelBusqueda(): void {
+    this.busquedaActiva = true;
+    this.mostrarPanelBusqueda = true;
+  }
+
+  ocultarSugerencias(): void {
+    setTimeout(() => {
+      this.busquedaActiva = false;
+      this.cdr.detectChanges();
+    }, 140);
+  }
+
+  private obtenerCategoriaId(foro: any): number | null {
+    return Number(foro?.foro_categoria_id ?? foro?.categoria?.categoria_id) || null;
+  }
+
+  private normalizarTexto(valor: string | null | undefined): string {
+    return (valor || '')
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 
   enriquecerForos(foros: any[]): void {
