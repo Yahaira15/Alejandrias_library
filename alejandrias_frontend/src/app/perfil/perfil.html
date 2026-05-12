@@ -1,61 +1,101 @@
-<div class="perfil-container">
+<div class="perfil-page">
+  <aside class="perfil-sidebar">
+    <h1>Alejandria's<br>Library</h1>
 
-  <div class="perfil-card">
+    <nav class="perfil-nav" aria-label="Menu de perfil">
+      <button type="button" class="nav-item">
+        <img src="iconos/logros.png" alt="">
+        <span>Mis Logros</span>
+      </button>
 
-    <h2>Mi Perfil</h2>
+      <button type="button" class="nav-item" (click)="irAMisForos()">
+        <img src="iconos/mis_foros.png" alt="">
+        <span>Mis Foros</span>
+      </button>
+    </nav>
 
-    <!-- MODO LECTURA -->
-    <div *ngIf="!modoEdicion">
+    <button type="button" class="logout-btn" (click)="logout()">
+      <img src="iconos/salida.png" alt="">
+      <span>Cerrar Sesion</span>
+    </button>
+  </aside>
 
-      <p><strong>Nombre:</strong> {{ perfil.usuario_nombre }}</p>
-      <p><strong>Apodo:</strong> {{ perfil.usuario_apodo }}</p>
-      <p><strong>Email:</strong> {{ perfil.usuario_email }}</p>
-
-      <button (click)="toggleEditar()">Editar perfil</button>
-
-    </div>
-
-    <!-- MODO EDICIÓN -->
-    <div *ngIf="modoEdicion" class="edit-form">
-
-      <input [(ngModel)]="perfil.usuario_nombre" placeholder="Nombre">
-      <input [(ngModel)]="perfil.usuario_apodo" placeholder="Apodo">
-      <input [(ngModel)]="perfil.usuario_email" placeholder="Email">
-
-      <input 
-        [type]="mostrarPassword ? 'text' : 'password'"
-        [(ngModel)]="passwordNueva"
-        placeholder="Nueva contraseña">
-
-      <input 
-        [type]="mostrarPassword ? 'text' : 'password'"
-        [(ngModel)]="confirmarPassword"
-        placeholder="Confirmar contraseña">
-
-      <label class="checkbox">
-        <input type="checkbox" [(ngModel)]="mostrarPassword">
-        Mostrar contraseña
-      </label>
-
-      <p class="error" *ngIf="errorPassword">
-        {{ errorPassword }}
-      </p>
-
-      <div class="buttons">
-        <button (click)="actualizar()">Guardar</button>
-        <button (click)="toggleEditar()">Cancelar</button>
-      </div>
-
-    </div>
-
-    <!-- MENSAJE -->
-    <p class="mensaje">{{ mensaje }}</p>
-
-    <!-- ELIMINAR -->
-    <button class="delete-btn" (click)="eliminarCuenta()">
-      Eliminar cuenta
+  <main class="perfil-main">
+    <button class="back-btn" type="button" (click)="volverAtras()" aria-label="Regresar atras">
+      <span aria-hidden="true">&#8592;</span>
     </button>
 
-  </div>
+    <section class="perfil-content" *ngIf="!modoEdicion">
+      <div class="avatar-wrap">
+        <img
+          [src]="perfil.usuario_foto_perfil || 'iconos/foto_perfil.png'"
+          alt="Foto de perfil">
+      </div>
 
+      <div class="username-row">
+        <h2>{{ perfil.usuario_apodo || perfil.usuario_nombre || 'Username' }}</h2>
+        <button class="edit-btn" type="button" (click)="toggleEditar()" aria-label="Editar perfil">
+          <img src="iconos/editar.png" alt="">
+        </button>
+      </div>
+
+      <div class="info-panel bio-panel">
+        <span>Describa su perfil...</span>
+        <p>{{ perfil.usuario_bio || 'Agrega una descripcion para contar un poco sobre ti.' }}</p>
+      </div>
+
+      <div class="info-panel materias-panel">
+        <span>Mis materias favoritas:</span>
+        <div class="materias-lista">
+          <span *ngFor="let materia of materiasFavoritas">{{ materia }}</span>
+        </div>
+      </div>
+
+      <div class="foros-panel">
+        <span>Foros Favoritos:</span>
+      </div>
+
+      <p class="mensaje" *ngIf="mensaje">{{ mensaje }}</p>
+    </section>
+
+    <section *ngIf="modoEdicion" class="perfil-content edit-content">
+      <div class="edit-card">
+        <h2>Editar perfil</h2>
+
+        <div class="edit-form">
+          <input [(ngModel)]="perfil.usuario_nombre" placeholder="Nombre">
+          <input [(ngModel)]="perfil.usuario_apodo" placeholder="Apodo">
+          <input [(ngModel)]="perfil.usuario_email" placeholder="Email">
+          <textarea [(ngModel)]="perfil.usuario_bio" placeholder="Descripcion"></textarea>
+
+          <input
+            [type]="mostrarPassword ? 'text' : 'password'"
+            [(ngModel)]="passwordNueva"
+            placeholder="Nueva contrasena">
+
+          <input
+            [type]="mostrarPassword ? 'text' : 'password'"
+            [(ngModel)]="confirmarPassword"
+            placeholder="Confirmar contrasena">
+
+          <label class="checkbox">
+            <input type="checkbox" [(ngModel)]="mostrarPassword">
+            Mostrar contrasena
+          </label>
+
+          <p class="error" *ngIf="errorPassword">
+            {{ errorPassword }}
+          </p>
+
+          <div class="buttons">
+            <button type="button" (click)="actualizar()">Guardar</button>
+            <button type="button" (click)="toggleEditar()">Cancelar</button>
+            <button type="button" class="delete-btn" (click)="eliminarCuenta()">Eliminar cuenta</button>
+          </div>
+        </div>
+
+        <p class="mensaje" *ngIf="mensaje">{{ mensaje }}</p>
+      </div>
+    </section>
+  </main>
 </div>

@@ -146,6 +146,7 @@ class UsuarioController extends Controller
                 'usuario_apellido' => 'nullable|string',
                 'usuario_apodo' => 'required|string',
                 'usuario_email' => 'required|email',
+                'usuario_bio' => 'nullable|string',
                 'usuario_password' => 'nullable|min:6'
             ]);
 
@@ -153,6 +154,7 @@ class UsuarioController extends Controller
             $usuario->usuario_apellido = $request->usuario_apellido;
             $usuario->usuario_apodo = $request->usuario_apodo;
             $usuario->usuario_email = $request->usuario_email;
+            $usuario->usuario_bio = $request->usuario_bio;
 
             // 🔐 Si quiere cambiar contraseña
             if ($request->filled('usuario_password')) {

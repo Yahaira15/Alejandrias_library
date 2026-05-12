@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { PerfilService } from '../services/perfil';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ChangeDetectorRef } from '@angular/core';
 
 @Component({
@@ -21,10 +21,12 @@ export class Perfil implements OnInit {
   confirmarPassword: string = '';
   mostrarPassword: boolean = false;
   errorPassword = '';
+  materiasFavoritas: string[] = ['Programacion', 'Matematicas', 'Biologia'];
 
   constructor(
     private perfilService: PerfilService,
     private router: Router,
+    private location: Location,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -48,6 +50,14 @@ export class Perfil implements OnInit {
     if (!this.modoEdicion) {
       this.perfil = { ...this.perfilOriginal };
     }
+  }
+
+  volverAtras() {
+    this.location.back();
+  }
+
+  irAMisForos() {
+    this.router.navigate(['/mis-foros']);
   }
 
   validarPassword(password: string): string | null {
@@ -84,7 +94,8 @@ actualizar() {
   const data: any = {
     usuario_nombre: this.perfil.usuario_nombre,
     usuario_apodo: this.perfil.usuario_apodo,
-    usuario_email: this.perfil.usuario_email
+    usuario_email: this.perfil.usuario_email,
+    usuario_bio: this.perfil.usuario_bio
   };
 
   if (this.passwordNueva) {
@@ -96,6 +107,7 @@ actualizar() {
       this.mensaje = 'Perfil actualizado correctamente';
       this.passwordNueva = '';
       this.confirmarPassword = '';
+      this.perfilOriginal = { ...this.perfil };
     },
     error: () => {
       this.mensaje = 'Error al actualizar';
