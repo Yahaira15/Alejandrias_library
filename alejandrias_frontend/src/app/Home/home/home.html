@@ -4,6 +4,7 @@
 
         <nav class="sections" aria-label="Navegación principal">
             <a href="#inicio">Inicio</a>
+            <a href="#categorias">Categorias</a>
             <a href="#nosotros">Sobre nosotros</a>
         </nav>
 
@@ -81,6 +82,29 @@
                         <h4>Comunidad</h4>
                     </div>
                     <p>Interactúa con otros usuarios con intereses similares</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="categorias-section" id="categorias" aria-labelledby="categorias-title">
+            <h1 id="categorias-title">Categorias</h1>
+            <div class="description categorias-description">
+                <p>
+                    Las categorias ayudaran a ordenar los foros por areas de interes y, mas adelante,
+                    serviran como base para recomendaciones y acompanamiento con IA.
+                </p>
+            </div>
+
+            <div class="categorias-grid">
+                <article class="categoria-card" *ngFor="let categoria of categorias">
+                    <h3>{{ categoria.nombre }}</h3>
+                    <p>{{ categoria.descripcion }}</p>
+
+                    <div class="subcategorias" aria-label="Subcategorias">
+                        <span *ngFor="let subcategoria of categoria.subcategorias">
+                            {{ subcategoria }}
+                        </span>
+                    </div>
                 </article>
             </div>
         </section>

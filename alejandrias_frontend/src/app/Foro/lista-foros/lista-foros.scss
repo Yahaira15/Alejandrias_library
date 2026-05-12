@@ -273,6 +273,92 @@
       font-weight: 700;
     }
 
+    .topics-panel {
+      margin: 0 0 28px;
+      padding: 20px 22px;
+      border: 1px solid rgba(139, 171, 205, 0.65);
+      border-radius: 14px;
+      background: #ffffff;
+      box-shadow: 2px 2px 5px #98B3D4;
+    }
+
+    .topics-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .topics-heading h3 {
+      margin: 0;
+      color: #306289;
+      font-size: 24px;
+    }
+
+    .topics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .topic-card {
+      min-height: 150px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #a9c4df;
+      box-sizing: border-box;
+      transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+    }
+
+    .topic-card:hover,
+    .topic-card.active {
+      transform: translateY(-4px);
+      background: #9fbddc;
+      box-shadow: 0 8px 18px rgba(48, 98, 137, 0.18);
+    }
+
+    .topic-title {
+      width: 100%;
+      margin: 0 0 13px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #284358;
+      font-family: 'Lora', serif;
+      font-size: 19px;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .topic-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .topic-tags button {
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #306289;
+      font-family: 'Lora', serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    }
+
+    .topic-tags button:hover,
+    .topic-tags button.active {
+      border-color: #5f8fbd;
+      background: #5f8fbd;
+      color: #ffffff;
+    }
+
 
 
     /* CONTENEDOR FOROS */

@@ -24,8 +24,15 @@ export class ListaForos implements OnInit, OnDestroy {
   rol = '';
   terminoBusqueda = '';
   categoriaSeleccionada: number | null = null;
+  temaSeleccionado = '';
   busquedaActiva = false;
   mostrarPanelBusqueda = false;
+  subcategoriasPorCategoria: Record<string, string[]> = {
+    ciencias: ['Biologia', 'Fisica', 'Quimica'],
+    tecnologia: ['Programacion', 'Inteligencia Artificial', 'Ciberseguridad'],
+    humanidades: ['Historia', 'Filosofia', 'Literatura'],
+    matematicas: ['Algebra', 'Geometria', 'Estadistica']
+  };
 
   notificaciones: any[] = [];
   mostrarPanelNotificaciones = false;
@@ -52,7 +59,7 @@ export class ListaForos implements OnInit, OnDestroy {
   @HostListener('document:click', ['$event'])
   cerrarPanelBusquedaSiClickFuera(event: MouseEvent): void {
     const target = event.target as HTMLElement | null;
-    const clickDentroBusqueda = target?.closest('.search-box, .search-panel, .clear-search');
+    const clickDentroBusqueda = target?.closest('.search-box, .search-panel, .clear-search, .topics-panel');
 
     if (clickDentroBusqueda) return;
 
@@ -132,7 +139,19 @@ export class ListaForos implements OnInit, OnDestroy {
   }
 
   get hayFiltrosActivos(): boolean {
-    return !!this.terminoBusqueda.trim() || !!this.categoriaSeleccionada;
+    return !!this.terminoBusqueda.trim() || !!this.categoriaSeleccionada || !!this.temaSeleccionado;
+  }
+
+  get categoriasTematicas(): any[] {
+    return this.categorias.map((categoria) => {
+      const nombre = categoria.categoria_nombre || '';
+      const clave = this.normalizarTexto(nombre);
+
+      return {
+        ...categoria,
+        subcategorias: this.subcategoriasPorCategoria[clave] || ['General', 'Preguntas', 'Recursos']
+      };
+    });
   }
 
   seleccionarSugerencia(foro: any): void {
@@ -143,13 +162,23 @@ export class ListaForos implements OnInit, OnDestroy {
 
   seleccionarCategoria(categoriaId: number | null): void {
     this.categoriaSeleccionada = categoriaId;
+    this.temaSeleccionado = '';
     this.mostrarPanelBusqueda = true;
+    this.cdr.detectChanges();
+  }
+
+  seleccionarTema(categoria: any, tema: string): void {
+    this.categoriaSeleccionada = categoria?.categoria_id ?? null;
+    this.temaSeleccionado = tema;
+    this.mostrarPanelBusqueda = false;
+    this.busquedaActiva = false;
     this.cdr.detectChanges();
   }
 
   limpiarBusqueda(): void {
     this.terminoBusqueda = '';
     this.categoriaSeleccionada = null;
+    this.temaSeleccionado = '';
     this.busquedaActiva = false;
     this.mostrarPanelBusqueda = false;
     this.cdr.detectChanges();
