@@ -25,7 +25,29 @@
 
     <!-- TOPBAR -->
     <header class="topbar">
-      <input type="text" placeholder="Buscar" />
+      <div class="search-box">
+        <input
+          type="search"
+          placeholder="Buscar foro por nombre"
+          [(ngModel)]="terminoBusqueda"
+          (focus)="abrirPanelBusqueda()"
+          (click)="abrirPanelBusqueda()"
+          (input)="abrirPanelBusqueda()"
+          (blur)="ocultarSugerencias()"
+          aria-label="Buscar foro por nombre"
+        />
+
+        <div class="search-suggestions" *ngIf="busquedaActiva && sugerenciasForos.length > 0">
+          <button
+            type="button"
+            *ngFor="let foro of sugerenciasForos; trackBy: trackByForoId"
+            (click)="seleccionarSugerencia(foro)"
+          >
+            <span>{{ foro.foro_titulo }}</span>
+            <small>{{ foro.categoria?.categoria_nombre || 'Sin categoria' }}</small>
+          </button>
+        </div>
+      </div>
       <div class="user">
         <div class="notificaciones-container">
           <!-- 🔔 BOTÓN -->
@@ -118,10 +140,49 @@
 
     <!-- SECCIÓN -->
     <section>
-      <h2>Foros destacados</h2>
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">Explora la biblioteca</p>
+          <h2>Foros destacados</h2>
+        </div>
+        <button type="button" class="clear-search" *ngIf="hayFiltrosActivos" (click)="limpiarBusqueda()">
+          Limpiar busqueda
+        </button>
+      </div>
 
-      <div class="foros-container">
-        <div class="foro-card" *ngFor="let foro of foros">
+      <div class="search-panel" *ngIf="mostrarPanelBusqueda || hayFiltrosActivos">
+        <div class="category-search" aria-label="Buscar por categoria">
+          <p>Buscar por categoria</p>
+          <div class="category-options">
+            <button
+              type="button"
+              [class.active]="categoriaSeleccionada === null"
+              (click)="seleccionarCategoria(null)"
+            >
+              Todas
+            </button>
+            <button
+              type="button"
+              *ngFor="let categoria of categorias"
+              [class.active]="categoriaSeleccionada === categoria.categoria_id"
+              (click)="seleccionarCategoria(categoria.categoria_id)"
+            >
+              {{ categoria.categoria_nombre }}
+            </button>
+          </div>
+        </div>
+
+        <p class="search-summary" *ngIf="hayFiltrosActivos">
+          {{ forosFiltrados.length }} foro{{ forosFiltrados.length === 1 ? '' : 's' }} encontrado{{ forosFiltrados.length === 1 ? '' : 's' }}
+          <span *ngIf="terminoBusqueda"> para "{{ terminoBusqueda }}"</span>
+          <span *ngIf="categoriaSeleccionada"> en {{ nombreCategoriaSeleccionada }}</span>
+        </p>
+      </div>
+
+      <div class="loading" *ngIf="cargando">Cargando foros...</div>
+
+      <div class="foros-container" *ngIf="!cargando && forosFiltrados.length > 0">
+        <div class="foro-card" *ngFor="let foro of forosFiltrados; trackBy: trackByForoId">
           <h3>{{ foro.foro_titulo }}</h3>
           <p>{{ foro.categoria?.categoria_nombre }}</p>
           <p>{{ foro.foro_descripcion }}</p>
@@ -133,6 +194,12 @@
           </button>
 
         </div>
+      </div>
+
+      <div class="empty-state" *ngIf="!cargando && forosFiltrados.length === 0">
+        <h3>No encontramos foros</h3>
+        <p>Prueba con otro nombre o cambia la categoria seleccionada.</p>
+        <button type="button" (click)="limpiarBusqueda()">Ver todos los foros</button>
       </div>
     </section>
 
