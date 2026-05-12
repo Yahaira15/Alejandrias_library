@@ -291,6 +291,76 @@ section h1 {
     font-weight: 400;
 }
 
+.categorias-section {
+    padding: 0 40px 74px;
+}
+
+.categorias-section h1 {
+    margin-top: 0;
+}
+
+.categorias-description {
+    margin-bottom: 36px;
+}
+
+.categorias-grid {
+    width: min(100%, 940px);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.categoria-card {
+    min-height: 218px;
+    box-sizing: border-box;
+    padding: 24px 20px 20px;
+    border-radius: 7px;
+    background: #a9c4df;
+    color: #2f628c;
+    text-align: left;
+    box-shadow: 0 6px 14px rgba(48, 98, 137, 0.12);
+    transition: transform 0.26s ease, box-shadow 0.26s ease, background-color 0.26s ease;
+}
+
+.categoria-card:hover {
+    transform: translateY(-6px);
+    background: #9fbddc;
+    box-shadow: 0 10px 20px rgba(48, 98, 137, 0.18);
+}
+
+.categoria-card h3 {
+    margin: 0 0 12px;
+    color: #2f628c;
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.categoria-card p {
+    margin: 0 0 18px;
+    min-height: 64px;
+    font-size: 13px;
+    line-height: 1.25;
+}
+
+.subcategorias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.subcategorias span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 4px 9px;
+    border-radius: 7px;
+    background: #fefeff;
+    color: #306289;
+    font-size: 12px;
+    font-weight: 700;
+}
+
 .nosotros {
     display: flex;
     justify-content: center;
@@ -368,9 +438,14 @@ section h1 {
 
     .inicio,
     .contenedor,
+    .categorias-grid,
     .nosotros {
         flex-direction: column;
         align-items: center;
+    }
+
+    .categorias-grid {
+        display: flex;
     }
 
     .inicio {
@@ -411,12 +486,14 @@ section h1 {
 
     .card,
     .cards,
+    .categoria-card,
     .historia,
     .mision {
         width: min(100%, 280px);
     }
 
-    .definicion {
+    .definicion,
+    .categorias-section {
         padding-inline: 22px;
     }
 }

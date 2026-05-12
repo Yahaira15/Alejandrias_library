@@ -3,14 +3,58 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL_ALT = 'http://localhost:8000/api';
+
+function getApiPath(url: string): string | null {
+  if (url.startsWith(API_BASE_URL)) {
+    return url.replace(API_BASE_URL, '');
+  }
+
+  if (url.startsWith(API_BASE_URL_ALT)) {
+    return url.replace(API_BASE_URL_ALT, '');
+  }
+
+  return null;
+}
+
+function isPublicApiRequest(method: string, path: string): boolean {
+  if (method === 'POST' && ['/login', '/register'].includes(path)) {
+    return true;
+  }
+
+  if (method === 'GET' && path.startsWith('/verificar-apodo/')) {
+    return true;
+  }
+
+  if (method !== 'GET') {
+    return false;
+  }
+
+  return (
+    path === '/foros-publicos'
+    || path === '/foros'
+    || /^\/foros\/\d+$/.test(path)
+    || /^\/foros\/\d+\/publicaciones$/.test(path)
+    || path === '/categorias'
+    || /^\/categorias\/\d+(\/foros)?$/.test(path)
+    || /^\/publicaciones\/\d+$/.test(path)
+    || /^\/publicaciones\/\d+\/comentarios$/.test(path)
+    || /^\/comentarios\/\d+$/.test(path)
+  );
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const router = inject(Router);
   const token = localStorage.getItem('token');
+  const apiPath = getApiPath(req.url);
+  const isBackendApiRequest = apiPath !== null;
+  const isProtectedApiRequest = isBackendApiRequest && !isPublicApiRequest(req.method, apiPath);
 
   let cloned = req;
 
-  if (token) {
+  if (token && isBackendApiRequest) {
     cloned = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`
@@ -22,7 +66,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error) => {
 
       // 🔥 Si el token falla
-      if (error.status === 401) {
+      if (error.status === 401 && token && isProtectedApiRequest) {
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
         router.navigate(['/login']);
