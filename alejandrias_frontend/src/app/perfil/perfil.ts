@@ -22,6 +22,19 @@ export class Perfil implements OnInit {
   mostrarPassword: boolean = false;
   errorPassword = '';
   materiasFavoritas: string[] = ['Programacion', 'Matematicas', 'Biologia'];
+  materiasOriginal: string[] = [];
+  materiasDisponibles: string[] = [
+    'Programacion',
+    'Matematicas',
+    'Biologia',
+    'Fisica',
+    'Quimica',
+    'Historia',
+    'Literatura',
+    'Filosofia',
+    'Inteligencia Artificial',
+    'Ciberseguridad'
+  ];
 
   constructor(
     private perfilService: PerfilService,
@@ -31,13 +44,33 @@ export class Perfil implements OnInit {
   ) {}
 
   ngOnInit() {
+    this.cargarPerfilLocal();
     this.cargarPerfil();
+  }
+
+  get nombreUsuarioPerfil(): string {
+    return this.perfil.usuario_nombre || this.perfil.usuario_apodo || this.perfil.usuario_email || '';
+  }
+
+  cargarPerfilLocal() {
+    const usuarioGuardado = localStorage.getItem('usuario');
+
+    if (!usuarioGuardado) return;
+
+    try {
+      this.perfil = { ...JSON.parse(usuarioGuardado), ...this.perfil };
+      this.perfilOriginal = { ...this.perfil };
+      this.cargarMateriasGuardadas();
+    } catch {
+      localStorage.removeItem('usuario');
+    }
   }
 
   cargarPerfil() {
     this.perfilService.getPerfil().subscribe((res: any) => {
-      this.perfil = { ...res };
-      this.perfilOriginal = { ...res };
+      this.perfil = { ...this.perfil, ...res };
+      this.perfilOriginal = { ...this.perfil };
+      this.cargarMateriasGuardadas();
       this.cdr.detectChanges();
     });
   }
@@ -49,7 +82,49 @@ export class Perfil implements OnInit {
     // si cancela → restaurar datos
     if (!this.modoEdicion) {
       this.perfil = { ...this.perfilOriginal };
+      this.materiasFavoritas = [...this.materiasOriginal];
     }
+  }
+
+  cargarMateriasGuardadas() {
+    const materiasGuardadas = localStorage.getItem(this.obtenerClaveMaterias());
+
+    if (materiasGuardadas) {
+      this.materiasFavoritas = JSON.parse(materiasGuardadas);
+    }
+
+    this.materiasOriginal = [...this.materiasFavoritas];
+  }
+
+  obtenerClaveMaterias(): string {
+    return `materiasFavoritas_${this.perfil.usuario_id || this.perfil.usuario_email || 'usuario'}`;
+  }
+
+  cambiarFotoPerfil(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+
+    if (!archivo) return;
+
+    const lector = new FileReader();
+    lector.onload = () => {
+      this.perfil.usuario_foto_perfil = lector.result as string;
+      this.cdr.detectChanges();
+    };
+    lector.readAsDataURL(archivo);
+  }
+
+  toggleMateria(materia: string) {
+    if (this.materiaSeleccionada(materia)) {
+      this.materiasFavoritas = this.materiasFavoritas.filter((item) => item !== materia);
+      return;
+    }
+
+    this.materiasFavoritas = [...this.materiasFavoritas, materia];
+  }
+
+  materiaSeleccionada(materia: string): boolean {
+    return this.materiasFavoritas.includes(materia);
   }
 
   volverAtras() {
@@ -95,7 +170,8 @@ actualizar() {
     usuario_nombre: this.perfil.usuario_nombre,
     usuario_apodo: this.perfil.usuario_apodo,
     usuario_email: this.perfil.usuario_email,
-    usuario_bio: this.perfil.usuario_bio
+    usuario_bio: this.perfil.usuario_bio,
+    usuario_foto_perfil: this.perfil.usuario_foto_perfil
   };
 
   if (this.passwordNueva) {
@@ -108,6 +184,9 @@ actualizar() {
       this.passwordNueva = '';
       this.confirmarPassword = '';
       this.perfilOriginal = { ...this.perfil };
+      this.materiasOriginal = [...this.materiasFavoritas];
+      localStorage.setItem(this.obtenerClaveMaterias(), JSON.stringify(this.materiasFavoritas));
+      localStorage.setItem('usuario', JSON.stringify(this.perfil));
     },
     error: () => {
       this.mensaje = 'Error al actualizar';

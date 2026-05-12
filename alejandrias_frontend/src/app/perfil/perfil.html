@@ -33,7 +33,7 @@
       </div>
 
       <div class="username-row">
-        <h2>{{ perfil.usuario_apodo || perfil.usuario_nombre || 'Username' }}</h2>
+        <h2>{{ nombreUsuarioPerfil }}</h2>
         <button class="edit-btn" type="button" (click)="toggleEditar()" aria-label="Editar perfil">
           <img src="iconos/editar.png" alt="">
         </button>
@@ -63,25 +63,67 @@
         <h2>Editar perfil</h2>
 
         <div class="edit-form">
-          <input [(ngModel)]="perfil.usuario_nombre" placeholder="Nombre">
-          <input [(ngModel)]="perfil.usuario_apodo" placeholder="Apodo">
-          <input [(ngModel)]="perfil.usuario_email" placeholder="Email">
+          <div class="photo-editor">
+            <div class="photo-preview">
+              <img
+                [src]="perfil.usuario_foto_perfil || 'iconos/foto_perfil.png'"
+                alt="Foto de perfil">
+            </div>
+            <label class="photo-upload">
+              <input type="file" accept="image/*" (change)="cambiarFotoPerfil($event)">
+              Cambiar foto
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <input [(ngModel)]="perfil.usuario_nombre" placeholder="Nombre">
+            <input [(ngModel)]="perfil.usuario_apodo" placeholder="Apodo">
+            <input [(ngModel)]="perfil.usuario_email" placeholder="Email">
+          </div>
+
           <textarea [(ngModel)]="perfil.usuario_bio" placeholder="Descripcion"></textarea>
 
-          <input
-            [type]="mostrarPassword ? 'text' : 'password'"
-            [(ngModel)]="passwordNueva"
-            placeholder="Nueva contrasena">
+          <div class="materias-editor">
+            <div class="form-label">
+              <span>Materias favoritas</span>
+              <small>{{ materiasFavoritas.length }} seleccionada{{ materiasFavoritas.length === 1 ? '' : 's' }}</small>
+            </div>
 
-          <input
-            [type]="mostrarPassword ? 'text' : 'password'"
-            [(ngModel)]="confirmarPassword"
-            placeholder="Confirmar contrasena">
+            <div class="materias-opciones">
+              <button
+                type="button"
+                *ngFor="let materia of materiasDisponibles"
+                [class.active]="materiaSeleccionada(materia)"
+                (click)="toggleMateria(materia)"
+              >
+                {{ materia }}
+              </button>
+            </div>
+          </div>
 
-          <label class="checkbox">
-            <input type="checkbox" [(ngModel)]="mostrarPassword">
-            Mostrar contrasena
-          </label>
+          <div class="password-section">
+            <div class="form-label">
+              <span>Seguridad</span>
+              <small>Cambia tu contrasena solo si lo necesitas</small>
+            </div>
+
+            <div class="password-grid">
+              <input
+                [type]="mostrarPassword ? 'text' : 'password'"
+                [(ngModel)]="passwordNueva"
+                placeholder="Nueva contrasena">
+
+              <input
+                [type]="mostrarPassword ? 'text' : 'password'"
+                [(ngModel)]="confirmarPassword"
+                placeholder="Confirmar contrasena">
+            </div>
+
+            <label class="password-toggle">
+              <input type="checkbox" [(ngModel)]="mostrarPassword">
+              <span>Mostrar contrasena</span>
+            </label>
+          </div>
 
           <p class="error" *ngIf="errorPassword">
             {{ errorPassword }}
