@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { Login } from './Login/login/login';
 import { Register } from './Login/register/register';
+import { Intereses } from './Login/intereses/intereses';
 import { CrearForo } from './Foro/crear-foro/crear-foro';
 import { ListaForos } from './Foro/lista-foros/lista-foros';
 import { MisForos } from './Foro/mis-foros/mis-foros';
@@ -25,6 +26,7 @@ export const routes: Routes = [
     {path: 'home',component:Home},
     {path: 'login', component: Login },
     {path: 'register', component: Register },
+    {path: 'intereses', component: Intereses, canActivate: [authGuard] },
     {path: 'chat-ia', component: ChatIaComponent, canActivate: [authGuard] },
     {path: 'foros/crear', component: CrearForo, canActivate: [authGuard] },
     { path: 'foros/:foro_id', component: VerForoComponent, canActivate: [authGuard, foroRegistroGuard] },

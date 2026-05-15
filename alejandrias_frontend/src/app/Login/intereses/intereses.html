@@ -1,0 +1,44 @@
+<main class="register-page">
+    <div class="img-fondo" aria-hidden="true">
+        <img src="fondoRegister.png" alt="registro">
+    </div>
+
+    <div class="progress-tracker" aria-label="Progreso de registro">
+        <div class="progress-step done">
+            <img src="intereses/done.png" alt="">
+        </div>
+        <div class="progress-line complete"></div>
+        <div class="progress-step active">02</div>
+    </div>
+
+    <section class="register-form interests-form" aria-labelledby="intereses-title">
+        <h1 id="intereses-title">INTERESES</h1>
+
+        <div class="interests-grid" role="group" aria-label="Seleccion de intereses">
+            <button
+                *ngFor="let interes of intereses"
+                type="button"
+                class="interest-option"
+                [class.selected]="interesSeleccionado(interes.id)"
+                [attr.aria-pressed]="interesSeleccionado(interes.id)"
+                [disabled]="cargando"
+                (click)="toggleInteres(interes.id)">
+                <span class="interest-icon">
+                    <img [src]="interes.icono" [alt]="interes.nombre">
+                </span>
+                <span class="interest-name">{{ interes.nombre }}</span>
+                <span class="interest-radio" aria-hidden="true"></span>
+            </button>
+        </div>
+
+        <p *ngIf="errorMensaje" class="form-error">{{ errorMensaje }}</p>
+
+        <button class="primary-action finish-action" type="button" [disabled]="cargando" (click)="finalizar()">
+            <span *ngIf="!cargando">Finalizar</span>
+            <span *ngIf="cargando" class="loading-label">
+                <span class="spinner" aria-hidden="true"></span>
+                Guardando
+            </span>
+        </button>
+    </section>
+</main>

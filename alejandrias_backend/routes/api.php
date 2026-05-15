@@ -16,6 +16,7 @@ Route::get('/verificar-apodo/{apodo}', [UsuarioController::class, 'verificarApod
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/perfil', [UsuarioController::class, 'perfil']);
     Route::put('/perfil', [UsuarioController::class, 'update']);
+    Route::put('/perfil/intereses', [UsuarioController::class, 'updateIntereses']);
     Route::delete('/perfil', [UsuarioController::class, 'destroy']);
 
 });

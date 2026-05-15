@@ -187,7 +187,28 @@
 
 .login-form button:disabled {
     cursor: not-allowed;
-    opacity: 1;
+    opacity: 0.65;
+}
+
+.loading-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(90, 127, 166, 0.35);
+    border-top-color: #5a7fa6;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .register-link {
