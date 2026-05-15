@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap');
+
+:host {
+  display: block;
+  min-height: 100vh;
+  font-family: 'Lora', serif;
+}
+
+.admin-shell {
+  min-height: 100vh;
+  display: flex;
+  background:
+    linear-gradient(rgba(238, 246, 255, 0.72), rgba(238, 246, 255, 0.72)),
+    url('/fondo_home.png') center / cover no-repeat;
+  color: #050505;
+}
+
+.admin-sidebar {
+  width: 236px;
+  flex: 0 0 auto;
+  min-height: 100vh;
+  padding: 42px 28px 32px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: #b3d0e7;
+}
+
+.admin-sidebar h1 {
+  margin: 0 0 34px;
+  color: #2d5c7e;
+  font-size: 23px;
+  line-height: 1.45;
+  text-align: center;
+  font-weight: 400;
+}
+
+.admin-sidebar nav {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-sidebar a,
+.admin-sidebar button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  padding: 9px 12px;
+  box-sizing: border-box;
+  background: transparent;
+  color: #12364f;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.admin-sidebar a:hover,
+.admin-sidebar a.active,
+.admin-sidebar button:hover {
+  background: #fbefd9;
+}
+
+.admin-sidebar button {
+  margin-top: auto;
+}
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 780px) {
+  .admin-shell {
+    flex-direction: column;
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    min-height: auto;
+    padding: 18px;
+  }
+
+  .admin-sidebar nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-main {
+    padding: 18px;
+  }
+}

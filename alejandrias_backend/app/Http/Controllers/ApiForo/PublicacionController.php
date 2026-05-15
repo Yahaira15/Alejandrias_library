@@ -22,6 +22,7 @@ class PublicacionController extends Controller
             $usuario = auth('sanctum')->user();
             $registrado = $usuario && (
                 $foro->foro_creador_id == $usuario->usuario_id
+                || $usuario->usuario_rol === 'admin'
                 || $foro->miembros()
                     ->where('usuario.usuario_id', $usuario->usuario_id)
                     ->exists()
@@ -54,6 +55,7 @@ class PublicacionController extends Controller
             $foro = Foro::find($foroId);
             $registrado = $foro && (
                 $foro->foro_creador_id == $usuario->usuario_id
+                || $usuario->usuario_rol === 'admin'
                 || $foro->miembros()
                     ->where('usuario.usuario_id', $usuario->usuario_id)
                     ->exists()
@@ -138,6 +140,7 @@ class PublicacionController extends Controller
             $usuario = auth('sanctum')->user();
             $registrado = $usuario && (
                 $publicacion->foro->foro_creador_id == $usuario->usuario_id
+                || $usuario->usuario_rol === 'admin'
                 || $publicacion->foro->miembros()
                     ->where('usuario.usuario_id', $usuario->usuario_id)
                     ->exists()
@@ -166,6 +169,7 @@ class PublicacionController extends Controller
         }
 
         $registrado = $publicacion->foro->foro_creador_id == $usuario->usuario_id
+            || $usuario->usuario_rol === 'admin'
             || $publicacion->foro->miembros()
                 ->where('usuario.usuario_id', $usuario->usuario_id)
                 ->exists();
@@ -191,7 +195,7 @@ class PublicacionController extends Controller
                 return response()->json(['error' => 'No encontrada'], 404);
             }
 
-            if ($publicacion->publicacion_usuario_id != $usuario->usuario_id) {
+            if ($publicacion->publicacion_usuario_id != $usuario->usuario_id && $usuario->usuario_rol !== 'admin') {
                 return response()->json(['error' => 'No autorizado'], 403);
             }
 
@@ -232,7 +236,7 @@ class PublicacionController extends Controller
                 return response()->json(['error' => 'No encontrada'], 404);
             }
 
-            if ($publicacion->publicacion_usuario_id != $usuario->usuario_id) {
+            if ($publicacion->publicacion_usuario_id != $usuario->usuario_id && $usuario->usuario_rol !== 'admin') {
                 return response()->json(['error' => 'No autorizado'], 403);
             }
 

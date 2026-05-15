@@ -249,7 +249,10 @@ export class VerPublicacionComponent implements OnInit {
   }
 
   esComentarioPropio(comentario: any): boolean {
-    return !!this.usuario && this.usuario.usuario_id === comentario.comentario_usuario_id;
+    return !!this.usuario && (
+      this.usuario.usuario_rol === 'admin'
+      || this.usuario.usuario_id === comentario.comentario_usuario_id
+    );
   }
 
   tiempoRelativo(fecha: string | null | undefined): string {

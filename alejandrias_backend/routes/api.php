@@ -7,6 +7,7 @@ use App\Http\Controllers\ApiCategoria\CategoriaController;
 use App\Http\Controllers\ApiForo\PublicacionController;
 use App\Http\Controllers\ApiForo\ComentarioController;
 use App\Http\Controllers\ApiForo\NotificacionController;
+use App\Http\Controllers\ApiAdmin\AdminController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -17,6 +18,33 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/perfil', [UsuarioController::class, 'update']);
     Route::delete('/perfil', [UsuarioController::class, 'destroy']);
 
+});
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/usuarios', [AdminController::class, 'usuarios']);
+    Route::post('/usuarios', [AdminController::class, 'crearUsuario']);
+    Route::put('/usuarios/{id}', [AdminController::class, 'actualizarUsuario']);
+    Route::delete('/usuarios/{id}', [AdminController::class, 'eliminarUsuario']);
+
+    Route::get('/foros', [AdminController::class, 'foros']);
+    Route::post('/foros', [AdminController::class, 'crearForo']);
+    Route::put('/foros/{id}', [AdminController::class, 'actualizarForo']);
+    Route::delete('/foros/{id}', [ForoController::class, 'destroy']);
+
+    Route::get('/categorias', [AdminController::class, 'categorias']);
+    Route::post('/categorias', [CategoriaController::class, 'store']);
+    Route::put('/categorias/{id}', [CategoriaController::class, 'update']);
+    Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
+
+    Route::get('/publicaciones', [AdminController::class, 'publicaciones']);
+    Route::post('/publicaciones', [AdminController::class, 'crearPublicacion']);
+    Route::put('/publicaciones/{id}', [AdminController::class, 'actualizarPublicacion']);
+    Route::delete('/publicaciones/{id}', [PublicacionController::class, 'destroy']);
+
+    Route::get('/comentarios', [AdminController::class, 'comentarios']);
+    Route::post('/comentarios', [AdminController::class, 'crearComentario']);
+    Route::put('/comentarios/{id}', [AdminController::class, 'actualizarComentario']);
+    Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

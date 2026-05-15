@@ -296,8 +296,10 @@ export class VerForoComponent implements OnInit {
   get esCreadorDelForo(): boolean {
     return !!this.usuario
       && !!this.foro
-      && this.usuario.usuario_id === this.foro.foro_creador_id
-      && this.usuario.usuario_rol === 'lider';
+      && (
+        this.usuario.usuario_rol === 'admin'
+        || (this.usuario.usuario_id === this.foro.foro_creador_id && this.usuario.usuario_rol === 'lider')
+      );
   }
   get puedeCrearPublicacion(): boolean {
     return !!this.usuario
@@ -329,7 +331,10 @@ export class VerForoComponent implements OnInit {
   }
 
   esPropietarioDePublicacion(publicacion: any): boolean {
-    return !!this.usuario && this.usuario.usuario_id === publicacion.publicacion_usuario_id;
+    return !!this.usuario && (
+      this.usuario.usuario_rol === 'admin'
+      || this.usuario.usuario_id === publicacion.publicacion_usuario_id
+    );
   }
 
   tiempoRelativo(fecha: string | null | undefined): string {

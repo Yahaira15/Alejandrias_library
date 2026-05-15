@@ -205,6 +205,46 @@
   font-size: 12px;
 }
 
+.leader-request-panel {
+  width: 100%;
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(171, 204, 230, 0.95);
+  box-sizing: border-box;
+}
+
+.leader-request-panel span {
+  color: #284358;
+  font-weight: 700;
+}
+
+.leader-request-panel p {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.leader-request-panel button,
+.modal-actions button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 14px;
+  background: #fbefd9;
+  color: #050505;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.leader-request-panel button:hover,
+.modal-actions button:hover {
+  background: #eadbc0;
+}
+
 .edit-content {
   min-height: calc(100vh - 72px);
   justify-content: center;
@@ -442,6 +482,89 @@
   text-align: center;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(16, 38, 55, 0.45);
+}
+
+.leader-modal {
+  position: relative;
+  width: min(100%, 560px);
+  padding: 26px;
+  border-radius: 8px;
+  background: #abcce6;
+  box-shadow: 0 22px 56px rgba(15, 35, 51, 0.28);
+  box-sizing: border-box;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #fbefd9;
+  cursor: pointer;
+}
+
+.modal-kicker {
+  margin: 0 0 6px;
+  color: #2d5c7e;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.leader-modal h2 {
+  margin: 0 0 16px;
+  font-weight: 400;
+}
+
+.user-summary {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.leader-modal label {
+  display: grid;
+  gap: 7px;
+  margin-top: 12px;
+  color: #284358;
+  font-weight: 700;
+}
+
+.leader-modal textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 6px;
+  padding: 11px 13px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #284358;
+  font-family: inherit;
+}
+
+.leader-modal textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 @media (max-width: 760px) {
   .perfil-page {
     flex-direction: column;
@@ -495,6 +618,12 @@
 
   .foros-panel {
     min-height: 210px;
+  }
+
+  .leader-request-panel,
+  .modal-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .edit-card {

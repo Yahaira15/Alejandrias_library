@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { PerfilService } from '../services/perfil';
+import { EmailjsLiderService } from '../services/emailjs-lider.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, Location } from '@angular/common';
@@ -17,6 +18,14 @@ export class Perfil implements OnInit {
   perfilOriginal: any = {}; // para cancelar cambios
   modoEdicion: boolean = false;
   mensaje: string = '';
+  modalSolicitudLider = false;
+  enviandoSolicitudLider = false;
+  solicitudLiderMensaje = '';
+  solicitudLiderError = '';
+  solicitudLider = {
+    razon: '',
+    tipoContenido: ''
+  };
   passwordNueva: string = '';
   confirmarPassword: string = '';
   mostrarPassword: boolean = false;
@@ -38,6 +47,7 @@ export class Perfil implements OnInit {
 
   constructor(
     private perfilService: PerfilService,
+    private emailjsLiderService: EmailjsLiderService,
     private router: Router,
     private location: Location,
     private cdr: ChangeDetectorRef
@@ -133,6 +143,60 @@ export class Perfil implements OnInit {
 
   irAMisForos() {
     this.router.navigate(['/mis-foros']);
+  }
+
+  irAAdmin() {
+    this.router.navigate(['/admin']);
+  }
+
+  abrirSolicitudLider() {
+    this.modalSolicitudLider = true;
+    this.solicitudLiderMensaje = '';
+    this.solicitudLiderError = '';
+  }
+
+  cerrarSolicitudLider() {
+    if (this.enviandoSolicitudLider) return;
+
+    this.modalSolicitudLider = false;
+    this.solicitudLider = {
+      razon: '',
+      tipoContenido: ''
+    };
+    this.solicitudLiderError = '';
+  }
+
+  enviarSolicitudLider() {
+    this.solicitudLiderError = '';
+    this.solicitudLiderMensaje = '';
+
+    if (!this.solicitudLider.razon.trim() || !this.solicitudLider.tipoContenido.trim()) {
+      this.solicitudLiderError = 'Completa la razon y el tipo de contenido que deseas compartir.';
+      return;
+    }
+
+    this.enviandoSolicitudLider = true;
+
+    this.emailjsLiderService.enviarSolicitud({
+      nombre: this.perfil.usuario_nombre || '',
+      apellido: this.perfil.usuario_apellido || '',
+      apodo: this.perfil.usuario_apodo || '',
+      email: this.perfil.usuario_email || '',
+      razon: this.solicitudLider.razon,
+      tipoContenido: this.solicitudLider.tipoContenido
+    }).then(() => {
+      this.enviandoSolicitudLider = false;
+      this.solicitudLiderMensaje = 'Solicitud enviada correctamente. Un administrador revisara tu informacion.';
+      this.solicitudLider = {
+        razon: '',
+        tipoContenido: ''
+      };
+      this.cdr.detectChanges();
+    }).catch((err) => {
+      this.enviandoSolicitudLider = false;
+      this.solicitudLiderError = `No se pudo enviar la solicitud: ${err?.message || 'revisa la configuracion de EmailJS.'}`;
+      this.cdr.detectChanges();
+    });
   }
 
   validarPassword(password: string): string | null {
