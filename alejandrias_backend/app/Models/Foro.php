@@ -20,7 +20,9 @@ class Foro extends Model
         'foro_categoria_id',
         'foro_creador_id',
         'foro_privado',
-        'foro_password'
+        'foro_password',
+        'foro_estado_moderacion',
+        'foro_visibilidad'
     ];
 
     protected $hidden = [

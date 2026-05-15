@@ -44,6 +44,22 @@ function isPublicApiRequest(method: string, path: string): boolean {
   );
 }
 
+function isAuthenticationFailure(error: any): boolean {
+  const body = error?.error;
+  const message = String(
+    body?.error
+    || body?.message
+    || body?.mensaje
+    || ''
+  ).toLowerCase();
+
+  return (
+    message.includes('no autenticado')
+    || message.includes('unauthenticated')
+    || message.includes('token')
+  );
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const router = inject(Router);
@@ -66,7 +82,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error) => {
 
       // 🔥 Si el token falla
-      if (error.status === 401 && token && isProtectedApiRequest) {
+      if (error.status === 401 && token && isProtectedApiRequest && isAuthenticationFailure(error)) {
         localStorage.removeItem('token');
         localStorage.removeItem('usuario');
         router.navigate(['/login']);

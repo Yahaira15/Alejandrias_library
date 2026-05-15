@@ -1,16 +1,26 @@
 import json
 import logging
+import os
+import time
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from .chat_logic import construir_respuesta_foros, es_peticion_de_foros
 from .gemini_client import AIProviderError, generar_texto
+from .moderation import (
+    construir_prompt_moderacion,
+    extraer_json_moderacion,
+    MODERATION_RESPONSE_SCHEMA,
+    moderacion_respaldo,
+    normalizar_resultado_moderacion,
+)
 from .orchestrator import preparar_ejecucion
 from .response_formatter import formatear_respuesta
 
 
 logger = logging.getLogger(__name__)
+MAX_INTENTOS_PARSE_MODELO = int(os.getenv("MODERATION_MODEL_PARSE_RETRIES", "2"))
 
 
 def _detalle_fallo_modelo(error):
@@ -282,3 +292,110 @@ def chat_view(request):
             },
             status=200,
         )
+
+
+@csrf_exempt
+def moderation_view(request):
+    inicio_request = time.perf_counter()
+    if request.method == "GET":
+        return JsonResponse(
+            {
+                "ok": True,
+                "message": "Moderacion IA funcionando",
+                "methods": ["GET", "POST"],
+            }
+        )
+
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Metodo no permitido"}, status=405)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        logger.warning("Moderacion IA recibio JSON invalido desde Laravel")
+        return JsonResponse({"ok": False, "error": "JSON invalido"}, status=400)
+
+    prompt = construir_prompt_moderacion(payload)
+    tipo_contenido = payload.get("tipo_contenido", "contenido")
+
+    logger.info(
+        "Moderacion IA iniciada",
+        extra={
+            "tipo_contenido": tipo_contenido,
+            "payload_keys": sorted(payload.keys()),
+            "contenido_keys": sorted((payload.get("contenido") or {}).keys()),
+        },
+    )
+    logger.info("Prompt enviado a Gemini para moderacion:\n%s", prompt)
+
+    ultimo_error = None
+    texto = ""
+    json_limpio = ""
+    try:
+        for intento in range(1, MAX_INTENTOS_PARSE_MODELO + 1):
+            inicio_intento = time.perf_counter()
+            try:
+                logger.info("Invocando Gemini para moderacion, intento %s/%s", intento, MAX_INTENTOS_PARSE_MODELO)
+                texto = generar_texto(
+                    prompt,
+                    response_mime_type="application/json",
+                    response_json_schema=MODERATION_RESPONSE_SCHEMA,
+                )
+                logger.info("Respuesta RAW de Gemini para moderacion:\n%s", texto)
+                data, json_limpio = extraer_json_moderacion(texto)
+                logger.info("JSON extraido antes del parse/normalizacion:\n%s", json_limpio)
+                logger.info("Resultado JSON parseado de Gemini: %s", data)
+                resultado = normalizar_resultado_moderacion(data, payload)
+                logger.info("Resultado normalizado de moderacion Gemini: %s", resultado)
+                origen = "modelo"
+                break
+            except (json.JSONDecodeError, ValueError) as exc:
+                ultimo_error = exc
+                logger.warning(
+                    "Respuesta Gemini no fue JSON recuperable en intento %s/%s tras %.3fs: %s",
+                    intento,
+                    MAX_INTENTOS_PARSE_MODELO,
+                    time.perf_counter() - inicio_intento,
+                    exc,
+                    exc_info=True,
+                )
+                if intento >= MAX_INTENTOS_PARSE_MODELO:
+                    raise
+        else:
+            raise ultimo_error or RuntimeError("Gemini no produjo resultado de moderacion.")
+    except Exception as exc:
+        logger.exception(
+            "Fallo fatal de moderacion IA; punto exacto de fallback Django. raw=%r json_limpio=%r",
+            texto,
+            json_limpio,
+        )
+        resultado = moderacion_respaldo(payload)
+        origen = "respaldo"
+        resultado["detalle"] = _detalle_fallo_modelo(exc)
+
+    duracion_total = time.perf_counter() - inicio_request
+    logger.info(
+        "Moderacion IA finalizada",
+        extra={
+            "tipo_contenido": tipo_contenido,
+            "origen": origen,
+            "estado": resultado.get("estado"),
+            "riesgo": resultado.get("riesgo"),
+            "categoria": resultado.get("categoria"),
+            "duracion_segundos": round(duracion_total, 3),
+        },
+    )
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "tipo": tipo_contenido,
+            "origen": origen,
+            "data": resultado,
+            "debug": {
+                "duracion_segundos": round(duracion_total, 3),
+                "fallback": origen != "modelo",
+            },
+        },
+        status=200,
+    )

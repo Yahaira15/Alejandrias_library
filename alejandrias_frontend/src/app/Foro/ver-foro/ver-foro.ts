@@ -102,13 +102,19 @@ export class VerForoComponent implements OnInit {
 
     this.foroService.crearPublicacion(this.foroId, this.nuevaPublicacion).subscribe({
       next: (publicacion) => {
-        this.publicaciones = [publicacion, ...this.publicaciones];
+        const visible = this.esContenidoVisible(publicacion);
+        if (visible) {
+          this.publicaciones = [publicacion, ...this.publicaciones];
+        }
         this.nuevaPublicacion = {
           publicacion_titulo: '',
           publicacion_contenido: ''
         };
         this.creandoPublicacion = false;
-        this.mostrarFeedback('success', 'Publicacion creada correctamente.');
+        this.mostrarFeedback(
+          visible ? 'success' : 'error',
+          this.mensajeModeracion(publicacion, 'Publicacion creada correctamente.')
+        );
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -155,14 +161,23 @@ export class VerForoComponent implements OnInit {
       publicacion_contenido: this.publicacionEditando.publicacion_contenido
     }).subscribe({
       next: (publicacionActualizada) => {
-        this.publicaciones = this.publicaciones.map(publicacion =>
-          publicacion.publicacion_id === publicacionActualizada.publicacion_id
-            ? { ...publicacion, ...publicacionActualizada }
-            : publicacion
-        );
+        if (this.esContenidoVisible(publicacionActualizada)) {
+          this.publicaciones = this.publicaciones.map(publicacion =>
+            publicacion.publicacion_id === publicacionActualizada.publicacion_id
+              ? { ...publicacion, ...publicacionActualizada }
+              : publicacion
+          );
+        } else {
+          this.publicaciones = this.publicaciones.filter(
+            publicacion => publicacion.publicacion_id !== publicacionActualizada.publicacion_id
+          );
+        }
         this.publicacionEditando = null;
         this.guardandoPublicacion = false;
-        this.mostrarFeedback('success', 'Publicacion actualizada correctamente.');
+        this.mostrarFeedback(
+          this.esContenidoVisible(publicacionActualizada) ? 'success' : 'error',
+          this.mensajeModeracion(publicacionActualizada, 'Publicacion actualizada correctamente.')
+        );
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -369,6 +384,31 @@ export class VerForoComponent implements OnInit {
     if (!contenido) return '';
     if (contenido.length <= limite) return contenido;
     return `${contenido.slice(0, limite).trim()}...`;
+  }
+
+  private esContenidoVisible(item: any): boolean {
+    const estadoIa = item?._moderacion?.estado;
+    if (estadoIa && estadoIa !== 'permitido') {
+      return false;
+    }
+
+    const estadoModeracion = item?.estado_moderacion;
+    return !estadoModeracion || estadoModeracion === 'visible';
+  }
+
+  private mensajeModeracion(item: any, mensajeVisible: string): string {
+    const estadoIa = item?._moderacion?.estado;
+    const estadoModeracion = item?.estado_moderacion;
+
+    if (estadoIa === 'revision' || estadoModeracion === 'revision') {
+      return 'La publicacion fue enviada a revision por moderacion IA.';
+    }
+
+    if (estadoIa === 'bloqueado' || estadoModeracion === 'bloqueado') {
+      return 'La publicacion fue bloqueada por moderacion IA.';
+    }
+
+    return mensajeVisible;
   }
 }
 

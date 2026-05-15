@@ -16,7 +16,16 @@ class Comentario extends Model
     protected $fillable = [
         'comentario_usuario_id',
         'comentario_publicacion_id',
-        'comentario_contenido'
+        'comentario_contenido',
+        'estado_moderacion',
+        'ia_riesgo',
+        'ia_razon',
+        'ia_fecha_analisis',
+    ];
+
+    protected $casts = [
+        'ia_riesgo' => 'float',
+        'ia_fecha_analisis' => 'datetime',
     ];
 
     public function usuario()

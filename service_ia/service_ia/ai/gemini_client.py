@@ -25,7 +25,11 @@ load_dotenv(PROJECT_ENV_PATH)
 load_dotenv(ROOT_ENV_PATH)
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-FALLBACK_MODELS = [modelo.strip() for modelo in os.getenv("GEMINI_FALLBACK_MODELS", "").split(",") if modelo.strip()]
+FALLBACK_MODELS = [
+    modelo.strip()
+    for modelo in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-2.5-flash-lite,gemini-2.0-flash").split(",")
+    if modelo.strip()
+]
 MAX_HISTORIAL = 5
 MAX_REINTENTOS_MODELO = int(os.getenv("GEMINI_MAX_RETRIES", "3"))
 
@@ -71,8 +75,21 @@ def _obtener_api_key():
     )
 
 
+def _api_key_diagnostico(api_key):
+    if not api_key:
+        return {"presente": False, "longitud": 0, "terminacion": None}
+
+    api_key = str(api_key)
+    return {
+        "presente": True,
+        "longitud": len(api_key),
+        "terminacion": api_key[-4:] if len(api_key) >= 4 else "***",
+    }
+
+
 def obtener_cliente():
     api_key = _obtener_api_key()
+    logger.info("Validacion GEMINI_API_KEY: %s", _api_key_diagnostico(api_key))
 
     if not api_key:
         raise AIProviderError(
@@ -88,6 +105,7 @@ def obtener_cliente():
             retryable=False,
         )
 
+    logger.info("Cliente Gemini inicializado con dependencia google-genai disponible")
     return genai.Client(api_key=api_key)
 
 
@@ -181,7 +199,7 @@ def _serializar_foros(foros):
     return "\n".join(lineas)
 
 
-def generar_texto(prompt, user_id=None, mensaje_usuario=None, foros=None):
+def generar_texto(prompt, user_id=None, mensaje_usuario=None, foros=None, response_mime_type=None, response_json_schema=None):
     prompt_limpio = str(prompt or "").strip()
     if not prompt_limpio:
         raise ValueError("El prompt no puede estar vacio")
@@ -196,14 +214,43 @@ def generar_texto(prompt, user_id=None, mensaje_usuario=None, foros=None):
     ultimo_error = None
     respuesta = None
 
+    logger.info(
+        "Preparando solicitud Gemini",
+        extra={
+            "modelo_principal": DEFAULT_MODEL,
+            "modelos_fallback": FALLBACK_MODELS,
+            "prompt_caracteres": len(prompt_final),
+            "max_reintentos_modelo": MAX_REINTENTOS_MODELO,
+            "response_mime_type": response_mime_type,
+            "usa_response_json_schema": bool(response_json_schema),
+        },
+    )
+    logger.info("Prompt final enviado a Gemini:\n%s", prompt_final)
+
+    config = {}
+    if response_mime_type:
+        config["response_mime_type"] = response_mime_type
+    if response_json_schema:
+        config["response_json_schema"] = response_json_schema
+
     for modelo in modelos:
         for intento in range(1, MAX_REINTENTOS_MODELO + 1):
             try:
-                respuesta = client.models.generate_content(
-                    model=modelo,
-                    contents=prompt_final,
+                inicio = time.perf_counter()
+                kwargs = {
+                    "model": modelo,
+                    "contents": prompt_final,
+                }
+                if config:
+                    kwargs["config"] = config
+
+                respuesta = client.models.generate_content(**kwargs)
+                logger.info(
+                    "Respuesta Gemini recibida para modelo %s en intento %s tras %.3fs",
+                    modelo,
+                    intento,
+                    time.perf_counter() - inicio,
                 )
-                logger.info("Respuesta Gemini recibida para modelo %s en intento %s", modelo, intento)
                 break
             except Exception as exc:
                 ultimo_error = exc
@@ -214,7 +261,13 @@ def generar_texto(prompt, user_id=None, mensaje_usuario=None, foros=None):
                 )
                 ultimo_intento = intento >= MAX_REINTENTOS_MODELO
                 if not es_error_503 or ultimo_intento:
-                    logger.warning("Fallo Gemini con modelo %s en intento %s: %s", modelo, intento, exc)
+                    logger.warning(
+                        "Fallo Gemini con modelo %s en intento %s: %s",
+                        modelo,
+                        intento,
+                        exc,
+                        exc_info=True,
+                    )
                     break
 
                 # Retroceso corto para absorber picos de demanda temporales.
@@ -262,7 +315,7 @@ def generar_texto(prompt, user_id=None, mensaje_usuario=None, foros=None):
         )
 
     texto = _extraer_texto_respuesta(respuesta)
-    logger.debug("Respuesta Gemini: %s", texto)
+    logger.info("Texto RAW extraido de Gemini:\n%s", texto)
 
     if not texto:
         raise AIProviderError(

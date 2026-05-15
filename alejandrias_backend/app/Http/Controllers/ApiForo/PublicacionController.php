@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Foro;
 use App\Models\Publicacion;
 use App\Models\Notificacion;
+use App\Services\IA\Moderation\ContentModerationService;
+use App\Services\Notifications\LeaderNotificationService;
+use Illuminate\Support\Facades\Schema;
 
 class PublicacionController extends Controller
 {
@@ -34,6 +37,12 @@ class PublicacionController extends Controller
         }
 
         $publicaciones = Publicacion::where('publicacion_foro_id', $foroId)
+            ->when(Schema::hasColumn('publicacion', 'estado_moderacion'), function ($query) {
+                $usuario = auth('sanctum')->user();
+                if (!$usuario || $usuario->usuario_rol !== 'admin') {
+                    $query->where('estado_moderacion', 'visible');
+                }
+            })
             ->with('usuario')
             ->withCount('comentarios')
             ->orderBy('publicacion_destacada', 'desc')
@@ -71,6 +80,22 @@ class PublicacionController extends Controller
                 'publicacion_destacada' => 'nullable|boolean'
             ]);
 
+            $moderationService = app(ContentModerationService::class);
+            $moderationPayload = [
+                'tipo_contenido' => 'publicacion',
+                'contenido' => [
+                    'titulo' => $request->publicacion_titulo,
+                    'texto' => $request->publicacion_contenido,
+                ],
+                'contexto' => [
+                    'foro_id' => $foro?->foro_id,
+                    'foro' => $foro?->foro_titulo,
+                    'categoria' => $foro?->categoria?->categoria_nombre,
+                    'usuario_rol' => $usuario->usuario_rol,
+                ],
+            ];
+            $moderation = $moderationService->analyze($moderationPayload);
+
             $publicacion = new Publicacion();
             $publicacion->publicacion_foro_id = $foroId;
             $publicacion->publicacion_usuario_id = $usuario->usuario_id;
@@ -79,13 +104,22 @@ class PublicacionController extends Controller
             $publicacion->publicacion_destacada = $request->boolean('publicacion_destacada');
             $publicacion->publicacion_fecha_creacion = now();
             $publicacion->publicacion_fecha_actualizacion = now();
+            $moderationService->applyToModel($publicacion, $moderation, 'publicacion');
 
             $publicacion->save();
+            $moderationPersisted = $moderationService->record(
+                'publicacion',
+                $publicacion->publicacion_id,
+                $usuario->usuario_id,
+                $moderation,
+                $moderationPayload
+            );
 
             // 🔔 Obtener foro
             $foro = Foro::with('miembros')->find($foroId);
 
             // 🔔 Notificar miembros registrados
+            if (($moderation['estado'] ?? 'revision') === 'permitido') {
             foreach ($foro->miembros as $miembro) {
 
                 // ❌ No notificarse a sí mismo
@@ -116,8 +150,21 @@ class PublicacionController extends Controller
                         $publicacion->publicacion_id
                 ]);
             }
+            app(LeaderNotificationService::class)->notifyRelevantLeaders(
+                $foro,
+                'lider_publicacion_relevante',
+                'Nueva publicacion relevante en "' . $foro->foro_titulo . '"',
+                '/foro/' . $foro->foro_id . '/publicacion/' . $publicacion->publicacion_id,
+                $publicacion->publicacion_id,
+                $usuario->usuario_id
+            );
+            }
 
-            return response()->json($publicacion->load('usuario'), 201);
+            $response = $publicacion->load('usuario')->toArray();
+            $response['_moderacion'] = $moderation;
+            $response['_moderacion_registrada'] = $moderationPersisted;
+
+            return response()->json($response, 201);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error interno',
@@ -134,6 +181,16 @@ class PublicacionController extends Controller
 
         if (!$publicacion) {
             return response()->json(['error' => 'No encontrada'], 404);
+        }
+
+        if (
+            Schema::hasColumn('publicacion', 'estado_moderacion')
+            && $publicacion->estado_moderacion !== 'visible'
+        ) {
+            $usuario = auth('sanctum')->user();
+            if (!$usuario || ($usuario->usuario_rol !== 'admin' && $publicacion->publicacion_usuario_id !== $usuario->usuario_id)) {
+                return response()->json(['error' => 'Publicacion no disponible'], 404);
+            }
         }
 
         if ($publicacion->foro?->foro_privado) {
@@ -205,14 +262,42 @@ class PublicacionController extends Controller
                 'publicacion_destacada' => 'nullable|boolean'
             ]);
 
-            $publicacion->update([
-                'publicacion_titulo' => $request->publicacion_titulo,
-                'publicacion_contenido' => $request->publicacion_contenido,
-                'publicacion_destacada' => $request->boolean('publicacion_destacada'),
-                'publicacion_fecha_actualizacion' => now()
-            ]);
+            $moderationService = app(ContentModerationService::class);
+            $moderationPayload = [
+                'tipo_contenido' => 'publicacion',
+                'contenido' => [
+                    'titulo' => $request->publicacion_titulo,
+                    'texto' => $request->publicacion_contenido,
+                ],
+                'contexto' => [
+                    'foro_id' => $publicacion->publicacion_foro_id,
+                    'foro' => $publicacion->foro?->foro_titulo,
+                    'categoria' => $publicacion->foro?->categoria?->categoria_nombre,
+                    'usuario_rol' => $usuario->usuario_rol,
+                    'operacion' => 'actualizacion',
+                ],
+            ];
+            $moderation = $moderationService->analyze($moderationPayload);
 
-            return response()->json($publicacion, 200);
+            $publicacion->publicacion_titulo = $request->publicacion_titulo;
+            $publicacion->publicacion_contenido = $request->publicacion_contenido;
+            $publicacion->publicacion_destacada = $request->boolean('publicacion_destacada');
+            $publicacion->publicacion_fecha_actualizacion = now();
+            $moderationService->applyToModel($publicacion, $moderation, 'publicacion');
+            $publicacion->save();
+            $moderationPersisted = $moderationService->record(
+                'publicacion',
+                $publicacion->publicacion_id,
+                $usuario->usuario_id,
+                $moderation,
+                $moderationPayload
+            );
+
+            $response = $publicacion->toArray();
+            $response['_moderacion'] = $moderation;
+            $response['_moderacion_registrada'] = $moderationPersisted;
+
+            return response()->json($response, 200);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error interno',

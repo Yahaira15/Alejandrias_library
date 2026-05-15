@@ -38,4 +38,9 @@ class Usuario extends Authenticatable
     {
         return $this->hasMany(Publicacion::class, 'publicacion_usuario_id');
     }
+
+    public function forosCreados()
+    {
+        return $this->hasMany(Foro::class, 'foro_creador_id', 'usuario_id');
+    }
 }

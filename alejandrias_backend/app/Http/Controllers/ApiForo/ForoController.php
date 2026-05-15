@@ -10,12 +10,22 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\Foro;
 use App\Models\Notificacion;
+use App\Services\IA\Moderation\ContentModerationService;
+use App\Services\Notifications\LeaderNotificationService;
+use Illuminate\Support\Facades\Schema;
 
 class ForoController extends Controller
 {
     public function index()
     {
-        $foros = Foro::with(['usuario', 'categoria'])->get();
+        $foros = Foro::when(Schema::hasColumn('foro', 'foro_visibilidad'), function ($query) {
+                $usuario = Auth::guard('sanctum')->user();
+                if (!$usuario || $usuario->usuario_rol !== 'admin') {
+                    $query->where('foro_visibilidad', 'visible');
+                }
+            })
+            ->with(['usuario', 'categoria'])
+            ->get();
         return response()->json($foros, 200);
     }
 
@@ -52,6 +62,9 @@ class ForoController extends Controller
                 $query->where('foro_privado', false)
                     ->orWhereNull('foro_privado');
             })
+            ->when(Schema::hasColumn('foro', 'foro_visibilidad'), function ($query) {
+                $query->where('foro_visibilidad', 'visible');
+            })
             ->when($usuario, function ($query) use ($usuario) {
                 $query->where('foro_creador_id', '!=', $usuario->usuario_id)
                     ->whereDoesntHave('miembros', function ($miembros) use ($usuario) {
@@ -85,6 +98,21 @@ class ForoController extends Controller
                 return response()->json(['error' => 'No autorizado'], 403);
             }
 
+            $moderationService = app(ContentModerationService::class);
+            $moderationPayload = [
+                'tipo_contenido' => 'foro',
+                'contenido' => [
+                    'nombre' => $validated['foro_titulo'],
+                    'titulo' => $validated['foro_titulo'],
+                    'texto' => $validated['foro_descripcion'],
+                ],
+                'contexto' => [
+                    'categoria_id' => $validated['foro_categoria_id'],
+                    'usuario_rol' => $usuario->usuario_rol,
+                ],
+            ];
+            $moderation = $moderationService->analyze($moderationPayload);
+
             $foro = new Foro();
             $foro->foro_titulo = $validated['foro_titulo'];
             $foro->foro_descripcion = $validated['foro_descripcion'];
@@ -94,11 +122,27 @@ class ForoController extends Controller
             $foro->foro_password = $foro->foro_privado
                 ? Crypt::encryptString($validated['foro_password'])
                 : null;
+            $moderationService->applyToModel($foro, $moderation, 'foro');
 
             $foro->save();
+            $moderationService->record('foro', $foro->foro_id, $usuario->usuario_id, $moderation, $moderationPayload);
             $foro->miembros()->syncWithoutDetaching([$usuario->usuario_id]);
 
-            return response()->json($foro->load(['usuario', 'categoria']), 201);
+            if (($moderation['estado'] ?? 'revision') === 'permitido') {
+                app(LeaderNotificationService::class)->notifyRelevantLeaders(
+                    $foro,
+                    'lider_foro_relevante',
+                    'Nuevo foro relevante en tu categoria: "' . $foro->foro_titulo . '"',
+                    '/foro/' . $foro->foro_id,
+                    $foro->foro_id,
+                    $usuario->usuario_id
+                );
+            }
+
+            $response = $foro->load(['usuario', 'categoria'])->toArray();
+            $response['_moderacion'] = $moderation;
+
+            return response()->json($response, 201);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error interno',
@@ -113,6 +157,16 @@ class ForoController extends Controller
 
         if (!$foro) {
             return response()->json(['message' => 'Foro no encontrado'], 404);
+        }
+
+        if (
+            Schema::hasColumn('foro', 'foro_visibilidad')
+            && $foro->foro_visibilidad !== 'visible'
+        ) {
+            $usuario = Auth::guard('sanctum')->user();
+            if (!$usuario || ($usuario->usuario_rol !== 'admin' && $foro->foro_creador_id !== $usuario->usuario_id)) {
+                return response()->json(['message' => 'Foro no encontrado'], 404);
+            }
         }
 
         if ($foro->foro_privado) {
@@ -190,12 +244,31 @@ class ForoController extends Controller
                 $foro->foro_password = Crypt::encryptString($validated['foro_password']);
             }
 
-            $foro->save();
+            $moderationService = app(ContentModerationService::class);
+            $moderationPayload = [
+                'tipo_contenido' => 'foro',
+                'contenido' => [
+                    'nombre' => $foro->foro_titulo,
+                    'titulo' => $foro->foro_titulo,
+                    'texto' => $foro->foro_descripcion,
+                ],
+                'contexto' => [
+                    'categoria_id' => $foro->foro_categoria_id,
+                    'usuario_rol' => $usuario->usuario_rol,
+                    'operacion' => 'actualizacion',
+                ],
+            ];
+            $moderation = $moderationService->analyze($moderationPayload);
+            $moderationService->applyToModel($foro, $moderation, 'foro');
 
-            return response()->json([
-                'mensaje' => 'Foro actualizado',
-                'foro' => $foro->load(['usuario', 'categoria'])
-            ]);
+            $foro->save();
+            $moderationService->record('foro', $foro->foro_id, $usuario->usuario_id, $moderation, $moderationPayload);
+
+            $response = $foro->load(['usuario', 'categoria'])->toArray();
+            $response['mensaje'] = 'Foro actualizado';
+            $response['_moderacion'] = $moderation;
+
+            return response()->json($response);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error interno',

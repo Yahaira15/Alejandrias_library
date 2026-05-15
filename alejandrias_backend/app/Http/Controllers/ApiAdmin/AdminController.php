@@ -8,6 +8,7 @@ use App\Models\Comentario;
 use App\Models\Foro;
 use App\Models\Publicacion;
 use App\Models\Usuario;
+use App\Services\IA\Moderation\ContentModerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
@@ -155,7 +156,41 @@ class AdminController extends Controller
         $data['publicacion_fecha_creacion'] = now();
         $data['publicacion_fecha_actualizacion'] = now();
 
-        return response()->json(Publicacion::create($data)->load(['usuario', 'foro']), 201);
+        $moderationService = app(ContentModerationService::class);
+        $foro = Foro::with('categoria')->find($data['publicacion_foro_id']);
+        $usuario = Usuario::find($data['publicacion_usuario_id']);
+        $moderationPayload = [
+            'tipo_contenido' => 'publicacion',
+            'contenido' => [
+                'titulo' => $data['publicacion_titulo'],
+                'texto' => $data['publicacion_contenido'],
+            ],
+            'contexto' => [
+                'foro_id' => $foro?->foro_id,
+                'foro' => $foro?->foro_titulo,
+                'categoria' => $foro?->categoria?->categoria_nombre,
+                'usuario_rol' => $usuario?->usuario_rol ?? 'admin',
+                'origen' => 'admin',
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
+
+        $publicacion = new Publicacion($data);
+        $moderationService->applyToModel($publicacion, $moderation, 'publicacion');
+        $publicacion->save();
+        $moderationPersisted = $moderationService->record(
+            'publicacion',
+            $publicacion->publicacion_id,
+            $data['publicacion_usuario_id'],
+            $moderation,
+            $moderationPayload
+        );
+
+        $response = $publicacion->load(['usuario', 'foro'])->toArray();
+        $response['_moderacion'] = $moderation;
+        $response['_moderacion_registrada'] = $moderationPersisted;
+
+        return response()->json($response, 201);
     }
 
     public function actualizarPublicacion(Request $request, $id)
@@ -171,9 +206,42 @@ class AdminController extends Controller
 
         $data['publicacion_destacada'] = (bool) ($data['publicacion_destacada'] ?? false);
         $data['publicacion_fecha_actualizacion'] = now();
-        $publicacion->update($data);
+        $moderationService = app(ContentModerationService::class);
+        $foro = Foro::with('categoria')->find($data['publicacion_foro_id']);
+        $usuario = Usuario::find($data['publicacion_usuario_id']);
+        $moderationPayload = [
+            'tipo_contenido' => 'publicacion',
+            'contenido' => [
+                'titulo' => $data['publicacion_titulo'],
+                'texto' => $data['publicacion_contenido'],
+            ],
+            'contexto' => [
+                'foro_id' => $foro?->foro_id,
+                'foro' => $foro?->foro_titulo,
+                'categoria' => $foro?->categoria?->categoria_nombre,
+                'usuario_rol' => $usuario?->usuario_rol ?? 'admin',
+                'origen' => 'admin',
+                'operacion' => 'actualizacion',
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
 
-        return response()->json($publicacion->load(['usuario', 'foro']), 200);
+        $publicacion->fill($data);
+        $moderationService->applyToModel($publicacion, $moderation, 'publicacion');
+        $publicacion->save();
+        $moderationPersisted = $moderationService->record(
+            'publicacion',
+            $publicacion->publicacion_id,
+            $data['publicacion_usuario_id'],
+            $moderation,
+            $moderationPayload
+        );
+
+        $response = $publicacion->load(['usuario', 'foro'])->toArray();
+        $response['_moderacion'] = $moderation;
+        $response['_moderacion_registrada'] = $moderationPersisted;
+
+        return response()->json($response, 200);
     }
 
     public function comentarios()
@@ -192,7 +260,42 @@ class AdminController extends Controller
             'comentario_contenido' => 'required|string|max:2000',
         ]);
 
-        return response()->json(Comentario::create($data)->load(['usuario', 'publicacion']), 201);
+        $moderationService = app(ContentModerationService::class);
+        $publicacion = Publicacion::with(['foro.categoria'])->find($data['comentario_publicacion_id']);
+        $usuario = Usuario::find($data['comentario_usuario_id']);
+        $moderationPayload = [
+            'tipo_contenido' => 'comentario',
+            'contenido' => [
+                'texto' => $data['comentario_contenido'],
+            ],
+            'contexto' => [
+                'publicacion_id' => $publicacion?->publicacion_id,
+                'foro_id' => $publicacion?->publicacion_foro_id,
+                'publicacion' => $publicacion?->publicacion_titulo,
+                'foro' => $publicacion?->foro?->foro_titulo,
+                'categoria' => $publicacion?->foro?->categoria?->categoria_nombre,
+                'usuario_rol' => $usuario?->usuario_rol ?? 'admin',
+                'origen' => 'admin',
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
+
+        $comentario = new Comentario($data);
+        $moderationService->applyToModel($comentario, $moderation, 'comentario');
+        $comentario->save();
+        $moderationPersisted = $moderationService->record(
+            'comentario',
+            $comentario->comentario_id,
+            $data['comentario_usuario_id'],
+            $moderation,
+            $moderationPayload
+        );
+
+        $response = $comentario->load(['usuario', 'publicacion'])->toArray();
+        $response['_moderacion'] = $moderation;
+        $response['_moderacion_registrada'] = $moderationPersisted;
+
+        return response()->json($response, 201);
     }
 
     public function actualizarComentario(Request $request, $id)
@@ -204,8 +307,42 @@ class AdminController extends Controller
             'comentario_contenido' => 'required|string|max:2000',
         ]);
 
-        $comentario->update($data);
+        $moderationService = app(ContentModerationService::class);
+        $publicacion = Publicacion::with(['foro.categoria'])->find($data['comentario_publicacion_id']);
+        $usuario = Usuario::find($data['comentario_usuario_id']);
+        $moderationPayload = [
+            'tipo_contenido' => 'comentario',
+            'contenido' => [
+                'texto' => $data['comentario_contenido'],
+            ],
+            'contexto' => [
+                'publicacion_id' => $publicacion?->publicacion_id,
+                'foro_id' => $publicacion?->publicacion_foro_id,
+                'publicacion' => $publicacion?->publicacion_titulo,
+                'foro' => $publicacion?->foro?->foro_titulo,
+                'categoria' => $publicacion?->foro?->categoria?->categoria_nombre,
+                'usuario_rol' => $usuario?->usuario_rol ?? 'admin',
+                'origen' => 'admin',
+                'operacion' => 'actualizacion',
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
 
-        return response()->json($comentario->load(['usuario', 'publicacion']), 200);
+        $comentario->fill($data);
+        $moderationService->applyToModel($comentario, $moderation, 'comentario');
+        $comentario->save();
+        $moderationPersisted = $moderationService->record(
+            'comentario',
+            $comentario->comentario_id,
+            $data['comentario_usuario_id'],
+            $moderation,
+            $moderationPayload
+        );
+
+        $response = $comentario->load(['usuario', 'publicacion'])->toArray();
+        $response['_moderacion'] = $moderation;
+        $response['_moderacion_registrada'] = $moderationPersisted;
+
+        return response()->json($response, 200);
     }
 }

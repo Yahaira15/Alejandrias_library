@@ -105,9 +105,6 @@ class UsuarioController extends Controller
             ], 403);
         }
 
-        // 🔥 ELIMINAR TOKENS ANTERIORES (opcional pero recomendado)
-        $usuario->tokens()->delete();
-
         // 🔐 CREAR TOKEN
         $token = $usuario->createToken('auth_token')->plainTextToken;
 

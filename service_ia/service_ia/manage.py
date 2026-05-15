@@ -7,6 +7,13 @@ import sys
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+    if len(sys.argv) >= 2 and sys.argv[1] == 'runserver':
+        if len(sys.argv) == 2:
+            sys.argv.append('127.0.0.1:8080')
+        if '--noreload' not in sys.argv:
+            sys.argv.append('--noreload')
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

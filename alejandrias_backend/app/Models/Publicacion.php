@@ -17,7 +17,16 @@ class Publicacion extends Model
         'publicacion_contenido',
         'publicacion_destacada',
         'publicacion_fecha_creacion',
-        'publicacion_fecha_actualizacion'
+        'publicacion_fecha_actualizacion',
+        'estado_moderacion',
+        'ia_riesgo',
+        'ia_razon',
+        'ia_fecha_analisis',
+    ];
+
+    protected $casts = [
+        'ia_riesgo' => 'float',
+        'ia_fecha_analisis' => 'datetime',
     ];
 
     public function foro()

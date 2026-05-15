@@ -92,11 +92,17 @@ export class VerPublicacionComponent implements OnInit {
 
     this.foroService.crearComentarioPublicacion(this.publicacionId, this.nuevoComentario).subscribe({
       next: (comentario) => {
-        this.comentarios = [...this.comentarios, comentario];
-        this.comentariosVisiblesCount = Math.max(this.comentariosVisiblesCount, this.comentarios.length);
+        const visible = this.esContenidoVisible(comentario);
+        if (visible) {
+          this.comentarios = [...this.comentarios, comentario];
+          this.comentariosVisiblesCount = Math.max(this.comentariosVisiblesCount, this.comentarios.length);
+        }
         this.nuevoComentario = '';
         this.creandoComentario = false;
-        this.mostrarFeedback('success', 'Comentario enviado correctamente.');
+        this.mostrarFeedback(
+          visible ? 'success' : 'error',
+          this.mensajeModeracion(comentario, 'Comentario enviado correctamente.')
+        );
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -135,14 +141,23 @@ export class VerPublicacionComponent implements OnInit {
       this.comentarioEditando.comentario_contenido
     ).subscribe({
       next: (comentarioActualizado) => {
-        this.comentarios = this.comentarios.map(comentario =>
-          comentario.comentario_id === comentarioActualizado.comentario_id
-            ? { ...comentario, ...comentarioActualizado }
-            : comentario
-        );
+        if (this.esContenidoVisible(comentarioActualizado)) {
+          this.comentarios = this.comentarios.map(comentario =>
+            comentario.comentario_id === comentarioActualizado.comentario_id
+              ? { ...comentario, ...comentarioActualizado }
+              : comentario
+          );
+        } else {
+          this.comentarios = this.comentarios.filter(
+            comentario => comentario.comentario_id !== comentarioActualizado.comentario_id
+          );
+        }
         this.comentarioEditando = null;
         this.guardandoComentario = false;
-        this.mostrarFeedback('success', 'Comentario actualizado correctamente.');
+        this.mostrarFeedback(
+          this.esContenidoVisible(comentarioActualizado) ? 'success' : 'error',
+          this.mensajeModeracion(comentarioActualizado, 'Comentario actualizado correctamente.')
+        );
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -253,6 +268,31 @@ export class VerPublicacionComponent implements OnInit {
       this.usuario.usuario_rol === 'admin'
       || this.usuario.usuario_id === comentario.comentario_usuario_id
     );
+  }
+
+  private esContenidoVisible(item: any): boolean {
+    const estadoIa = item?._moderacion?.estado;
+    if (estadoIa && estadoIa !== 'permitido') {
+      return false;
+    }
+
+    const estadoModeracion = item?.estado_moderacion;
+    return !estadoModeracion || estadoModeracion === 'visible';
+  }
+
+  private mensajeModeracion(item: any, mensajeVisible: string): string {
+    const estadoIa = item?._moderacion?.estado;
+    const estadoModeracion = item?.estado_moderacion;
+
+    if (estadoIa === 'revision' || estadoModeracion === 'revision') {
+      return 'El comentario fue enviado a revision por moderacion IA.';
+    }
+
+    if (estadoIa === 'bloqueado' || estadoModeracion === 'bloqueado') {
+      return 'El comentario fue bloqueado por moderacion IA.';
+    }
+
+    return mensajeVisible;
   }
 
   tiempoRelativo(fecha: string | null | undefined): string {

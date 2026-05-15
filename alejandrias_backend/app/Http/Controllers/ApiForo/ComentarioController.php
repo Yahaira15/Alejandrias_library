@@ -8,6 +8,9 @@ use App\Models\Publicacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Notificacion;
+use App\Services\IA\Moderation\ContentModerationService;
+use App\Services\Notifications\LeaderNotificationService;
+use Illuminate\Support\Facades\Schema;
 
 class ComentarioController extends Controller
 {
@@ -35,6 +38,12 @@ class ComentarioController extends Controller
         }
 
         $comentarios = Comentario::where('comentario_publicacion_id', $publicacionId)
+            ->when(Schema::hasColumn('comentario', 'estado_moderacion'), function ($query) {
+                $usuario = Auth::guard('sanctum')->user();
+                if (!$usuario || $usuario->usuario_rol !== 'admin') {
+                    $query->where('estado_moderacion', 'visible');
+                }
+            })
             ->with('usuario')
             ->orderBy('comentario_id', 'asc')
             ->get();
@@ -76,14 +85,41 @@ class ComentarioController extends Controller
         $data['comentario_publicacion_id'] = $publicacionId;
         $data['comentario_usuario_id'] = $usuario->usuario_id;
 
+        $moderationService = app(ContentModerationService::class);
+        $moderationPayload = [
+            'tipo_contenido' => 'comentario',
+            'contenido' => [
+                'texto' => $data['comentario_contenido'],
+            ],
+            'contexto' => [
+                'publicacion_id' => $publicacion->publicacion_id,
+                'foro_id' => $foro?->foro_id,
+                'publicacion' => $publicacion->publicacion_titulo,
+                'foro' => $foro?->foro_titulo,
+                'categoria' => $foro?->categoria?->categoria_nombre,
+                'usuario_rol' => $usuario->usuario_rol,
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
+
         $comentario = Comentario::create($data);
+        $moderationService->applyToModel($comentario, $moderation, 'comentario');
+        $comentario->save();
+        $moderationPersisted = $moderationService->record(
+            'comentario',
+            $comentario->comentario_id,
+            $usuario->usuario_id,
+            $moderation,
+            $moderationPayload
+        );
 
         // 🔔 Notificar dueño de publicación
 
             $duenoPublicacion = $publicacion->usuario;
 
             // ❌ Evitar auto notificación
-            if ($duenoPublicacion &&
+            if (($moderation['estado'] ?? 'revision') === 'permitido' &&
+                $duenoPublicacion &&
                 $duenoPublicacion->usuario_id != $usuario->usuario_id) {
 
                 Notificacion::create([
@@ -112,7 +148,22 @@ class ComentarioController extends Controller
                 ]);
             }
 
-        return response()->json($comentario->load('usuario'), 201);
+            if (($moderation['estado'] ?? 'revision') === 'permitido' && $foro) {
+                app(LeaderNotificationService::class)->notifyRelevantLeaders(
+                    $foro,
+                    'lider_comentario_relevante',
+                    'Nuevo comentario relevante en "' . $foro->foro_titulo . '"',
+                    '/foro/' . $foro->foro_id . '/publicacion/' . $publicacion->publicacion_id,
+                    $publicacion->publicacion_id,
+                    $usuario->usuario_id
+                );
+            }
+
+        $response = $comentario->load('usuario')->toArray();
+        $response['_moderacion'] = $moderation;
+        $response['_moderacion_registrada'] = $moderationPersisted;
+
+        return response()->json($response, 201);
     }
 
     public function show($id)
@@ -121,6 +172,16 @@ class ComentarioController extends Controller
 
         if (!$comentario) {
             return response()->json(['message' => 'Comentario no encontrado'], 404);
+        }
+
+        if (
+            Schema::hasColumn('comentario', 'estado_moderacion')
+            && $comentario->estado_moderacion !== 'visible'
+        ) {
+            $usuario = Auth::guard('sanctum')->user();
+            if (!$usuario || ($usuario->usuario_rol !== 'admin' && $comentario->comentario_usuario_id !== $usuario->usuario_id)) {
+                return response()->json(['message' => 'Comentario no encontrado'], 404);
+            }
         }
 
         return response()->json($comentario, 200);
@@ -144,9 +205,40 @@ class ComentarioController extends Controller
             'comentario_contenido' => 'required|string|max:2000'
         ]);
 
-        $comentario->update($data);
+        $moderationService = app(ContentModerationService::class);
+        $moderationPayload = [
+            'tipo_contenido' => 'comentario',
+            'contenido' => [
+                'texto' => $data['comentario_contenido'],
+            ],
+            'contexto' => [
+                'publicacion_id' => $comentario->comentario_publicacion_id,
+                'foro_id' => $comentario->publicacion?->publicacion_foro_id,
+                'publicacion' => $comentario->publicacion?->publicacion_titulo,
+                'foro' => $comentario->publicacion?->foro?->foro_titulo,
+                'categoria' => $comentario->publicacion?->foro?->categoria?->categoria_nombre,
+                'usuario_rol' => $usuario->usuario_rol,
+                'operacion' => 'actualizacion',
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
+        $moderationService->applyToModel($comentario, $moderation, 'comentario');
 
-        return response()->json($comentario->load('usuario'), 200);
+        $comentario->update($data);
+        $comentario->save();
+        $moderationPersisted = $moderationService->record(
+            'comentario',
+            $comentario->comentario_id,
+            $usuario->usuario_id,
+            $moderation,
+            $moderationPayload
+        );
+
+        $response = $comentario->load('usuario')->toArray();
+        $response['_moderacion'] = $moderation;
+        $response['_moderacion_registrada'] = $moderationPersisted;
+
+        return response()->json($response, 200);
     }
 
     public function destroy($id)
