@@ -23,10 +23,15 @@ class Usuario extends Authenticatable
         'usuario_rol',
         'usuario_bio',
         'usuario_foto_perfil',
+        'usuario_intereses',
         'usuario_bloqueado',
         'usuario_nivel_id',
         'usuario_experiencia',
         'usuario_puntos'
+    ];
+
+    protected $casts = [
+        'usuario_intereses' => 'array',
     ];
 
     public function comentarios()

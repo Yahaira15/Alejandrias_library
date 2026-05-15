@@ -30,7 +30,7 @@ export class Perfil implements OnInit {
   confirmarPassword: string = '';
   mostrarPassword: boolean = false;
   errorPassword = '';
-  materiasFavoritas: string[] = ['Programacion', 'Matematicas', 'Biologia'];
+  materiasFavoritas: string[] = [];
   materiasOriginal: string[] = [];
   materiasDisponibles: string[] = [
     'Programacion',
@@ -44,6 +44,18 @@ export class Perfil implements OnInit {
     'Inteligencia Artificial',
     'Ciberseguridad'
   ];
+
+  // Mapeo de intereses a nombres mostrados
+  interesesMap: Record<string, string> = {
+    'programacion': 'Programacion',
+    'matematicas': 'Matematicas',
+    'historia': 'Historia',
+    'literatura': 'Literatura',
+    'biologia': 'Biologia',
+    'politica': 'Politica',
+    'idiomas': 'Idiomas',
+    'bienestar': 'Bienestar'
+  };
 
   constructor(
     private perfilService: PerfilService,
@@ -97,10 +109,19 @@ export class Perfil implements OnInit {
   }
 
   cargarMateriasGuardadas() {
-    const materiasGuardadas = localStorage.getItem(this.obtenerClaveMaterias());
+    // Cargar intereses del perfil
+    if (this.perfil.usuario_intereses && Array.isArray(this.perfil.usuario_intereses)) {
+      this.materiasFavoritas = this.perfil.usuario_intereses
+        .map((interes: string) => this.interesesMap[interes] || interes)
+        .filter((materia: string) => materia); // Filtrar valores vacíos
+    }
 
-    if (materiasGuardadas) {
-      this.materiasFavoritas = JSON.parse(materiasGuardadas);
+    // Si no hay intereses en el perfil, intentar cargar del localStorage (compatibilidad)
+    if (this.materiasFavoritas.length === 0) {
+      const materiasGuardadas = localStorage.getItem(this.obtenerClaveMaterias());
+      if (materiasGuardadas) {
+        this.materiasFavoritas = JSON.parse(materiasGuardadas);
+      }
     }
 
     this.materiasOriginal = [...this.materiasFavoritas];

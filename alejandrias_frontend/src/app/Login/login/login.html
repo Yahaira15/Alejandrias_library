@@ -1,6 +1,6 @@
 <main class="login-page">
     <section class="login-form" aria-labelledby="login-title">
-        <h1 id="login-title">INICIO DE<br>SESIÓN</h1>
+        <h1 id="login-title">INICIO DE<br>SESION</h1>
 
         <form #form="ngForm" (ngSubmit)="iniciarSesion(form)" novalidate>
             <div class="input-group">
@@ -11,7 +11,8 @@
                     [(ngModel)]="loginData.login"
                     (input)="errorMensaje = ''"
                     name="login"
-                    required>
+                    required
+                    [disabled]="cargandoLogin">
             </div>
 
             <div class="input-group">
@@ -21,7 +22,8 @@
                     [type]="mostrarPassword ? 'text' : 'password'"
                     [(ngModel)]="loginData.usuario_password"
                     name="usuario_password"
-                    required>
+                    required
+                    [disabled]="cargandoLogin">
             </div>
 
             <label class="checkbox-container" for="mostrarPasswordLogin">
@@ -29,7 +31,8 @@
                     type="checkbox"
                     id="mostrarPasswordLogin"
                     [(ngModel)]="mostrarPassword"
-                    name="mostrarPassword">
+                    name="mostrarPassword"
+                    [disabled]="cargandoLogin">
                 <span class="checkmark"></span>
                 <span>Visualizar</span>
             </label>
@@ -38,13 +41,17 @@
                 {{ errorMensaje }}
             </div>
 
-            <button type="submit" [disabled]="form.invalid">
-                Iniciar Sesión
+            <button type="submit" [disabled]="form.invalid || cargandoLogin">
+                <span *ngIf="!cargandoLogin">Iniciar Sesion</span>
+                <span *ngIf="cargandoLogin" class="loading-label">
+                    <span class="spinner" aria-hidden="true"></span>
+                    Entrando
+                </span>
             </button>
 
             <p class="register-link">
-                ¿Aún no tienes cuenta?
-                <a [routerLink]="['/register']">Entra aquí</a>
+                &iquest;Aun no tienes cuenta?
+                <a [routerLink]="['/register']">Entra aqui</a>
             </p>
         </form>
     </section>

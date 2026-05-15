@@ -18,7 +18,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding: 48px clamp(32px, 9vw, 120px);
+    padding: 112px clamp(48px, 6vw, 96px) 48px;
     overflow: hidden;
     background: #fefeff;
 }
@@ -26,41 +26,94 @@
 .img-fondo {
     position: absolute;
     inset: 0 auto 0 0;
-    width: 68%;
-    height: 900px;
+    width: 66%;
+    height: 100%;
     pointer-events: none;
-}
-
-.img-fondo::after {
-    content: "";
-    position: absolute;
-    inset: 0;
 }
 
 .img-fondo img {
     width: 100%;
-    height: 90%;
+    height: 100%;
     object-fit: cover;
-    object-position: left;
+    object-position: left center;
+}
+
+.progress-tracker {
+    position: absolute;
+    z-index: 2;
+    top: 80px;
+    left: 42%;
+    width: min(410px, 42vw);
+    display: flex;
+    align-items: center;
+}
+
+.progress-line {
+    flex: 1;
+    height: 4px;
+    background: #b6b6b6;
+    border-radius: 99px;
+}
+
+.progress-line.complete {
+    background: #0f4b77;
+}
+
+.progress-step {
+    width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    border: 2px solid #c6c6c6;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #fff;
+    color: #a6a6a6;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.progress-step.active {
+    border: 4px solid #9db4ca;
+    color: #0f4b77;
+    box-shadow: 0 0 0 2px #0f4b77 inset;
+}
+
+.progress-step.done {
+    border-color: #0f4b77;
+    background: #0f4b77;
+    box-shadow: none;
+}
+
+.progress-step.done img {
+    width: 22px;
+    height: 22px;
 }
 
 .register-form {
     position: relative;
     z-index: 1;
-    width: min(100%, 700px);
+    width: min(100%, 660px);
     min-height: 440px;
-    padding: 36px 50px 34px;
+    padding: 44px 58px 34px;
     border: 1px solid rgba(139, 171, 205, 0.65);
     border-radius: 14px;
-    background-color: rgba(255, 255, 255);
-    box-shadow: 2px 2px 5px #98B3D4;
+    background-color: #fff;
+    box-shadow: 3px 3px 5px #98b3d4;
+}
+
+.register-form.interests-form {
+    width: min(100%, 560px);
+    min-height: 440px;
+    padding: 46px 74px 58px;
 }
 
 .register-form h1 {
     margin: 0 0 30px;
     text-align: center;
     color: #306289;
-    font-size: 34px;
+    font-size: 31px;
     font-weight: 700;
     letter-spacing: 0;
 }
@@ -72,11 +125,11 @@
 }
 
 .form-grid {
-    width: 650px;
+    width: 100%;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 50px;
-    row-gap: 30px;
+    column-gap: 56px;
+    row-gap: 26px;
 }
 
 .field-stack {
@@ -86,22 +139,22 @@
 .input-group {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
 .input-group label {
-    color: #5C799D;
+    color: #5c799d;
     font-size: 16px;
     font-weight: 700;
 }
 
 .input-group input {
     width: 100%;
-    height: 30px;
+    height: 31px;
     box-sizing: border-box;
     border: 2px solid #9fb5cd;
     border-radius: 5px;
-    padding: 15px 5px;
+    padding: 5px 8px;
     background-color: #fff;
     color: #244f73;
     font-family: inherit;
@@ -118,10 +171,10 @@
 .checkbox-container {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     margin-top: 10px;
     color: #557aa1;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     user-select: none;
@@ -134,11 +187,11 @@
 }
 
 .checkmark {
-    width: 15px;
-    height: 15px;
+    width: 20px;
+    height: 20px;
     box-sizing: border-box;
     border: 2px solid #9fb5cd;
-    border-radius: 5px;
+    border-radius: 6px;
     background-color: #fff;
     display: inline-block;
     position: relative;
@@ -161,10 +214,10 @@
 .checkbox-container input:checked + .checkmark::after {
     content: "";
     position: absolute;
-    left: 4px;
-    top: 1px;
-    width: 4px;
-    height: 8px;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 9px;
     border: solid #fff;
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
@@ -181,7 +234,8 @@
 }
 
 .field-message.error,
-.password-rules li {
+.password-rules li,
+.form-error {
     color: #a33a3a;
 }
 
@@ -197,10 +251,18 @@
     line-height: 1.45;
 }
 
-.register-form button {
-    min-width: 136px;
-    height: 35px;
-    margin-top: 20px;
+.form-error {
+    width: 100%;
+    margin: 14px 0 0;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.primary-action {
+    min-width: 142px;
+    height: 42px;
+    margin-top: 24px;
     border: none;
     border-radius: 11px;
     background-color: #faedd9;
@@ -209,22 +271,23 @@
     font-size: 17px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(198, 178, 150, 0.32);
+    box-shadow: 0 3px 4px rgba(128, 118, 104, 0.32);
     transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 
-.register-form button:hover:not(:disabled) {
+.primary-action:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(198, 178, 150, 0.36);
+    box-shadow: 0 5px 8px rgba(128, 118, 104, 0.32);
 }
 
-.register-form button:disabled {
+.primary-action:disabled,
+.interest-option:disabled {
     cursor: not-allowed;
-    opacity: 0.55;
+    opacity: 0.6;
 }
 
 .login-link {
-    margin: 16px 0 0;
+    margin: 14px 0 0;
     color: #6d87a7;
     font-size: 13px;
     font-weight: 700;
@@ -241,10 +304,106 @@
     text-decoration: underline;
 }
 
+.interests-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 44px;
+}
+
+.interest-option {
+    width: 244px;
+    height: 54px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 42px 1fr 26px;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 13px;
+    border: 1.5px solid #8aa8c7;
+    border-radius: 10px;
+    background: #fff;
+    color: #16466f;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.interest-option:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: #0f4b77;
+    box-shadow: 0 3px 8px rgba(48, 98, 137, 0.12);
+}
+
+.interest-option.selected {
+    border-color: #0f4b77;
+    background: #f4f8fc;
+}
+
+.interest-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #bfd0df;
+}
+
+.interest-icon img {
+    width: 27px;
+    height: 27px;
+    object-fit: contain;
+}
+
+.interest-radio {
+    width: 24px;
+    height: 24px;
+    box-sizing: border-box;
+    border: 1.5px solid #5c799d;
+    border-radius: 50%;
+    position: relative;
+}
+
+.interest-option.selected .interest-radio::after {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    background: #0f4b77;
+}
+
+.finish-action {
+    display: block;
+    margin: 30px auto 0;
+}
+
+.loading-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(90, 127, 166, 0.35);
+    border-top-color: #5a7fa6;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 @media (max-width: 900px) {
     .register-page {
         justify-content: center;
-        padding: 32px 20px;
+        padding: 100px 20px 32px;
     }
 
     .img-fondo {
@@ -252,22 +411,44 @@
         opacity: 0.42;
     }
 
-    .register-form {
+    .progress-tracker {
+        left: 50%;
+        width: min(410px, 78vw);
+        transform: translateX(-50%);
+    }
+
+    .register-form,
+    .register-form.interests-form {
+        width: min(100%, 660px);
         padding: 32px 26px;
     }
 }
 
 @media (max-width: 640px) {
+    :host {
+        position: static;
+        min-height: 100dvh;
+        overflow: visible;
+    }
+
     .register-page {
+        min-height: 100dvh;
+        height: auto;
         align-items: flex-start;
+        overflow: visible;
     }
 
     .register-form {
         min-height: auto;
     }
 
-    .form-grid {
+    .form-grid,
+    .interests-grid {
         grid-template-columns: 1fr;
         row-gap: 14px;
+    }
+
+    .interest-option {
+        width: min(100%, 280px);
     }
 }

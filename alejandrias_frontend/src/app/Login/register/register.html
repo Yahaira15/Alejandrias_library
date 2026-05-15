@@ -3,129 +3,169 @@
         <img src="fondoRegister.png" alt="registro">
     </div>
 
-    <section class="register-form" aria-labelledby="register-title">
-        <h1 id="register-title">REGISTRO</h1>
+    <div class="progress-tracker" aria-label="Progreso de registro">
+        <div class="progress-step" [class.done]="pasoActual === 2" [class.active]="pasoActual === 1">
+            <span *ngIf="pasoActual === 1">01</span>
+            <img *ngIf="pasoActual === 2" src="intereses/done.png" alt="">
+        </div>
+        <div class="progress-line" [class.complete]="pasoActual === 2"></div>
+        <div class="progress-step" [class.active]="pasoActual === 2">02</div>
+    </div>
 
-        <form #form="ngForm" (ngSubmit)="registrar(form)" novalidate>
-            <div class="form-grid">
-                <div class="input-group">
-                    <label for="nombre">Nombre</label>
-                    <input
-                        type="text"
-                        [(ngModel)]="usuario.usuario_nombre"
-                        id="nombre"
-                        name="nombre"
-                        required>
-                </div>
+    <section class="register-form" [class.interests-form]="pasoActual === 2" aria-labelledby="register-title">
+        <ng-container *ngIf="pasoActual === 1; else interesesTemplate">
+            <h1 id="register-title">REGISTRO</h1>
 
-                <div class="input-group">
-                    <label for="apellido">Apellido</label>
-                    <input
-                        type="text"
-                        [(ngModel)]="usuario.usuario_apellido"
-                        id="apellido"
-                        name="apellido"
-                        required>
-                </div>
-
-                <div class="field-stack">
+            <form #form="ngForm" (ngSubmit)="continuar(form)" novalidate>
+                <div class="form-grid">
                     <div class="input-group">
-                        <label for="apodo">Apodo</label>
+                        <label for="nombre">Nombre</label>
                         <input
                             type="text"
-                            [(ngModel)]="usuario.usuario_apodo"
-                            id="apodo"
-                            name="apodo"
+                            [(ngModel)]="usuario.usuario_nombre"
+                            id="nombre"
+                            name="nombre"
                             required
-                            (input)="verificarApodo()">
+                            [disabled]="cargandoRegistro">
                     </div>
-                    <p *ngIf="apodoDisponible === false" class="field-message error">
-                        Este apodo ya está en uso
-                    </p>
-                    <p *ngIf="apodoDisponible === true" class="field-message success">
-                        Apodo disponible
-                    </p>
-                </div>
 
-                <div class="field-stack">
                     <div class="input-group">
-                        <label for="email">Correo</label>
+                        <label for="apellido">Apellido</label>
                         <input
-                            type="email"
-                            [(ngModel)]="usuario.usuario_email"
-                            id="email"
-                            name="email"
+                            type="text"
+                            [(ngModel)]="usuario.usuario_apellido"
+                            id="apellido"
+                            name="apellido"
                             required
-                            email
-                            #emailRef="ngModel">
+                            [disabled]="cargandoRegistro">
                     </div>
-                    <div *ngIf="emailRef.invalid && emailRef.touched" class="field-message error">
-                        <p *ngIf="emailRef.errors?.['required']">El correo es obligatorio</p>
-                        <p *ngIf="emailRef.errors?.['email']">El formato del correo es inválido</p>
-                    </div>
-                </div>
 
-                <div class="field-stack">
+                    <div class="field-stack">
+                        <div class="input-group">
+                            <label for="apodo">Apodo</label>
+                            <input
+                                type="text"
+                                [(ngModel)]="usuario.usuario_apodo"
+                                id="apodo"
+                                name="apodo"
+                                required
+                                (input)="verificarApodo()"
+                                [disabled]="cargandoRegistro">
+                        </div>
+                        <p *ngIf="apodoVerificando" class="field-message">Verificando apodo...</p>
+                        <p *ngIf="apodoDisponible === false" class="field-message error">Este apodo ya esta en uso</p>
+                        <p *ngIf="apodoDisponible === true" class="field-message success">Apodo disponible</p>
+                    </div>
+
+                    <div class="field-stack">
+                        <div class="input-group">
+                            <label for="email">Correo</label>
+                            <input
+                                type="email"
+                                [(ngModel)]="usuario.usuario_email"
+                                id="email"
+                                name="email"
+                                required
+                                email
+                                #emailRef="ngModel"
+                                [disabled]="cargandoRegistro">
+                        </div>
+                        <div *ngIf="emailRef.invalid && emailRef.touched" class="field-message error">
+                            <p *ngIf="emailRef.errors?.['required']">El correo es obligatorio</p>
+                            <p *ngIf="emailRef.errors?.['email']">El formato del correo es invalido</p>
+                        </div>
+                    </div>
+
+                    <div class="field-stack">
+                        <div class="input-group">
+                            <label for="password">Contraseña</label>
+                            <input
+                                [type]="mostrarPassword ? 'text' : 'password'"
+                                [(ngModel)]="usuario.usuario_password"
+                                id="password"
+                                name="password"
+                                required
+                                #passwordRef="ngModel"
+                                pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$"
+                                [disabled]="cargandoRegistro">
+                        </div>
+
+                        <label class="checkbox-container" for="mostrarPassword">
+                            <input
+                                type="checkbox"
+                                id="mostrarPassword"
+                                [(ngModel)]="mostrarPassword"
+                                name="mostrarPassword"
+                                [disabled]="cargandoRegistro">
+                            <span class="checkmark"></span>
+                            <span>Visualizar</span>
+                        </label>
+
+                        <div *ngIf="passwordRef.invalid && passwordRef.touched" class="password-rules">
+                            <p *ngIf="passwordRef.errors?.['required']" class="field-message error">La contrasena es obligatoria</p>
+                            <ul *ngIf="passwordRef.errors?.['pattern']">
+                                <li [class.valid]="usuario.usuario_password.length >= 8">Minimo 8 caracteres</li>
+                                <li [class.valid]="usuario.usuario_password.match('[A-Z]')">Una mayuscula</li>
+                                <li [class.valid]="usuario.usuario_password.match('[0-9]')">Un numero</li>
+                                <li [class.valid]="usuario.usuario_password.match('[^A-Za-z0-9]')">Un caracter especial</li>
+                            </ul>
+                        </div>
+                    </div>
+
                     <div class="input-group">
-                        <label for="password">Contraseña</label>
+                        <label for="confirmPassword">Confirmar</label>
                         <input
                             [type]="mostrarPassword ? 'text' : 'password'"
-                            [(ngModel)]="usuario.usuario_password"
-                            id="password"
-                            name="password"
+                            [(ngModel)]="usuario.confirmPassword"
+                            id="confirmPassword"
+                            name="confirmPassword"
                             required
-                            #passwordRef="ngModel"
-                            pattern="^(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$">
-                    </div>
-
-                    <label class="checkbox-container" for="mostrarPassword">
-                        <input
-                            type="checkbox"
-                            id="mostrarPassword"
-                            [(ngModel)]="mostrarPassword"
-                            name="mostrarPassword">
-                        <span class="checkmark"></span>
-                        <span>Visualizar</span>
-                    </label>
-
-                    <div *ngIf="passwordRef.invalid && passwordRef.touched" class="password-rules">
-                        <p *ngIf="passwordRef.errors?.['required']" class="field-message error">
-                            La contraseña es obligatoria
-                        </p>
-                        <ul *ngIf="passwordRef.errors?.['pattern']">
-                            <li [class.valid]="usuario.usuario_password.length >= 8">
-                                Mínimo 8 caracteres
-                            </li>
-                            <li [class.valid]="usuario.usuario_password.match('[A-Z]')">
-                                Una mayúscula
-                            </li>
-                            <li [class.valid]="usuario.usuario_password.match('[0-9]')">
-                                Un número
-                            </li>
-                            <li [class.valid]="usuario.usuario_password.match('[^A-Za-z0-9]')">
-                                Un carácter especial
-                            </li>
-                        </ul>
+                            [disabled]="cargandoRegistro">
                     </div>
                 </div>
 
-                <div class="input-group">
-                    <label for="confirmPassword">Confirmar</label>
-                    <input
-                        [type]="mostrarPassword ? 'text' : 'password'"
-                        [(ngModel)]="usuario.confirmPassword"
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        required>
-                </div>
+                <p *ngIf="errorMensaje" class="form-error">{{ errorMensaje }}</p>
+
+                <button class="primary-action" type="submit" [disabled]="form.invalid || cargandoRegistro">
+                    <span>Siguiente</span>
+                </button>
+
+                <p class="login-link">
+                    &iquest;Ya tienes cuenta?
+                    <a routerLink="/login">Entra aqui</a>
+                </p>
+            </form>
+        </ng-container>
+
+        <ng-template #interesesTemplate>
+            <h1 id="register-title">INTERESES</h1>
+
+            <div class="interests-grid" role="group" aria-label="Seleccion de intereses">
+                <button
+                    *ngFor="let interes of intereses"
+                    type="button"
+                    class="interest-option"
+                    [class.selected]="interesSeleccionado(interes.id)"
+                    [attr.aria-pressed]="interesSeleccionado(interes.id)"
+                    [disabled]="cargandoRegistro"
+                    (click)="toggleInteres(interes.id)">
+                    <span class="interest-icon">
+                        <img [src]="interes.icono" [alt]="interes.nombre">
+                    </span>
+                    <span class="interest-name">{{ interes.nombre }}</span>
+                    <span class="interest-radio" aria-hidden="true"></span>
+                </button>
             </div>
 
-            <button type="submit" [disabled]="form.invalid">Registrarse</button>
+            <p *ngIf="errorMensaje" class="form-error interests-error">{{ errorMensaje }}</p>
 
-            <p class="login-link">
-                ¿Ya tienes cuenta?
-                <a href="/login">Entra aquí</a>
-            </p>
-        </form>
+            <button class="primary-action finish-action" type="button" [disabled]="cargandoRegistro" (click)="registrar()">
+                <span *ngIf="!cargandoRegistro">Finalizar</span>
+                <span *ngIf="cargandoRegistro" class="loading-label">
+                    <span class="spinner" aria-hidden="true"></span>
+                    Guardando
+                </span>
+            </button>
+        </ng-template>
     </section>
 </main>

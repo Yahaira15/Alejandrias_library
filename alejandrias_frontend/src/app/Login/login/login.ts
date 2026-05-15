@@ -5,6 +5,14 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 
+interface LoginResponse {
+  usuario: {
+    usuario_intereses?: string[] | string | null;
+  };
+  token: string;
+  mensaje?: string;
+}
+
 @Component({
   selector: 'app-login',
   imports: [FormsModule, CommonModule, RouterModule],
@@ -12,26 +20,26 @@ import { RouterModule } from '@angular/router';
   styleUrl: './login.scss',
 })
 export class Login {
-
   constructor(
     private http: HttpClient,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
-  mostrarPassword: boolean = false;
+  mostrarPassword = false;
 
   loginData = {
     login: '',
     usuario_password: ''
   };
 
-  errorMensaje: string = '';
-  cargandoLogin: boolean = false;
+  errorMensaje = '';
+  cargandoLogin = false;
 
-  iniciarSesion(form: any) {
-    console.log('LOGIN DATA:', this.loginData);
+  iniciarSesion(form: any): void {
     this.errorMensaje = '';
+
+    if (this.cargandoLogin) return;
 
     if (form.invalid) {
       this.errorMensaje = 'Completa todos los campos';
@@ -43,18 +51,17 @@ export class Login {
     this.cargandoLogin = true;
     this.cdr.detectChanges();
 
-    this.http.post<any>('http://localhost:8000/api/login', this.loginData)
+    this.http.post<LoginResponse>('http://localhost:8000/api/login', this.loginData)
       .subscribe({
         next: (res) => {
           this.cargandoLogin = false;
           this.cdr.detectChanges();
-          console.log(res.token);
 
           localStorage.setItem('usuario', JSON.stringify(res.usuario));
           localStorage.setItem('token', res.token);
-          const id = res.usuario.usuario_id;
 
-          this.router.navigate(['/foros']);
+          const intereses = this.normalizarIntereses(res.usuario?.usuario_intereses);
+          this.router.navigate([intereses.length > 0 ? '/foros' : '/intereses']);
         },
         error: (err) => {
           this.cargandoLogin = false;
@@ -84,5 +91,20 @@ export class Login {
           this.cdr.detectChanges();
         }
       });
+  }
+
+  private normalizarIntereses(intereses: string[] | string | null | undefined): string[] {
+    if (Array.isArray(intereses)) return intereses;
+
+    if (typeof intereses === 'string' && intereses.trim()) {
+      try {
+        const parsed = JSON.parse(intereses) as unknown;
+        return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+      } catch {
+        return [];
+      }
+    }
+
+    return [];
   }
 }
