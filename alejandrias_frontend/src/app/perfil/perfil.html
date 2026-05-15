@@ -12,6 +12,11 @@
         <img src="iconos/mis_foros.png" alt="">
         <span>Mis Foros</span>
       </button>
+
+      <button *ngIf="perfil.usuario_rol === 'admin'" type="button" class="nav-item" (click)="irAAdmin()">
+        <img src="iconos/comunidad.png" alt="">
+        <span>Administracion</span>
+      </button>
     </nav>
 
     <button type="button" class="logout-btn" (click)="logout()">
@@ -54,6 +59,14 @@
       <div class="foros-panel">
         <span>Foros Favoritos:</span>
       </div>
+
+      <section *ngIf="perfil.usuario_rol !== 'lider' && perfil.usuario_rol !== 'admin'" class="leader-request-panel">
+        <div>
+          <span>Solicitud de rol lider</span>
+          <p>Envia tu justificacion y el tipo de contenido que quieres compartir.</p>
+        </div>
+        <button type="button" (click)="abrirSolicitudLider()">Solicitar cambio</button>
+      </section>
 
       <p class="mensaje" *ngIf="mensaje">{{ mensaje }}</p>
     </section>
@@ -140,4 +153,37 @@
       </div>
     </section>
   </main>
+</div>
+
+<div class="modal-backdrop" *ngIf="modalSolicitudLider" (click)="cerrarSolicitudLider()">
+  <section class="leader-modal" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarSolicitudLider()">x</button>
+    <p class="modal-kicker">Cambio de rol</p>
+    <h2>Solicitud para ser lider</h2>
+
+    <div class="user-summary">
+      <span>{{ perfil.usuario_nombre }} {{ perfil.usuario_apellido }}</span>
+      <small>{{ perfil.usuario_apodo }} · {{ perfil.usuario_email }}</small>
+    </div>
+
+    <label>
+      <span>Razon</span>
+      <textarea [(ngModel)]="solicitudLider.razon" placeholder="Explica por que deseas ser lider"></textarea>
+    </label>
+
+    <label>
+      <span>Tipo de contenido</span>
+      <textarea [(ngModel)]="solicitudLider.tipoContenido" placeholder="Describe que compartiras en los foros"></textarea>
+    </label>
+
+    <p class="error" *ngIf="solicitudLiderError">{{ solicitudLiderError }}</p>
+    <p class="mensaje" *ngIf="solicitudLiderMensaje">{{ solicitudLiderMensaje }}</p>
+
+    <div class="modal-actions">
+      <button type="button" (click)="enviarSolicitudLider()" [disabled]="enviandoSolicitudLider">
+        {{ enviandoSolicitudLider ? 'Enviando...' : 'Enviar solicitud' }}
+      </button>
+      <button type="button" (click)="cerrarSolicitudLider()" [disabled]="enviandoSolicitudLider">Cerrar</button>
+    </div>
+  </section>
 </div>

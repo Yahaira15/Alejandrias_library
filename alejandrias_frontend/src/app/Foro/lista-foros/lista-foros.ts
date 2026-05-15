@@ -267,7 +267,7 @@ export class ListaForos implements OnInit, OnDestroy {
   }
 
   abrirModalForo(foro: any): void {
-    if (foro?.foro_privado && this.rol === 'lider') {
+    if (foro?.foro_privado && (this.rol === 'lider' || this.rol === 'admin')) {
       this.router.navigate(['/foros', foro.foro_id]);
       return;
     }

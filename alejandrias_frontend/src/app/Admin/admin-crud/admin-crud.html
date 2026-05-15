@@ -1,0 +1,100 @@
+<section class="admin-card">
+  <header class="admin-header">
+    <div>
+      <p>Panel de administracion</p>
+      <h2>{{ config.titulo }}</h2>
+    </div>
+    <input
+      type="search"
+      [(ngModel)]="busqueda"
+      (ngModelChange)="cambiarBusqueda()"
+      placeholder="Buscar"
+      class="admin-search"
+    >
+  </header>
+
+  <form class="admin-form" (ngSubmit)="guardar()">
+    <ng-container *ngFor="let field of config.fields">
+      <label [class.full]="field.type === 'textarea'">
+        <span>{{ field.label }}</span>
+
+        <textarea
+          *ngIf="field.type === 'textarea'"
+          [(ngModel)]="formulario[field.key]"
+          [name]="field.key"
+          [required]="field.required || false"
+        ></textarea>
+
+        <select
+          *ngIf="field.type === 'select'"
+          [(ngModel)]="formulario[field.key]"
+          [name]="field.key"
+          [required]="field.required || false"
+        >
+          <option value="">Seleccionar</option>
+          <option *ngFor="let option of field.options || []" [ngValue]="option.value">{{ option.label }}</option>
+        </select>
+
+        <input
+          *ngIf="field.type !== 'textarea' && field.type !== 'select' && field.type !== 'checkbox'"
+          [type]="field.type || 'text'"
+          [(ngModel)]="formulario[field.key]"
+          [name]="field.key"
+          [required]="field.required || false"
+        >
+
+        <input
+          *ngIf="field.type === 'checkbox'"
+          type="checkbox"
+          [(ngModel)]="formulario[field.key]"
+          [name]="field.key"
+        >
+      </label>
+    </ng-container>
+
+    <div class="admin-actions">
+      <button type="submit" [disabled]="guardando">{{ guardando ? 'Guardando...' : (editandoId ? 'Actualizar' : 'Agregar') }}</button>
+      <button type="button" (click)="cancelar()">Cancelar</button>
+    </div>
+  </form>
+
+  <p class="admin-message" *ngIf="mensaje">{{ mensaje }}</p>
+  <p class="admin-error" *ngIf="error">{{ error }}</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th *ngFor="let columna of columnas">{{ columna.label }}</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="cargando">
+          <td [attr.colspan]="columnas.length + 2">Cargando...</td>
+        </tr>
+        <tr *ngIf="!cargando && pagina.length === 0">
+          <td [attr.colspan]="columnas.length + 2">No hay registros.</td>
+        </tr>
+        <tr *ngFor="let registro of pagina">
+          <td>{{ registro[config.idKey] }}</td>
+          <td *ngFor="let columna of columnas">{{ registro[columna.key] }}</td>
+          <td class="row-actions">
+            <button type="button" (click)="editar(registro)">Editar</button>
+            <button type="button" class="danger" (click)="eliminar(registro)">Eliminar</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="pagination">
+    <span>{{ filtrados.length }} registros</span>
+    <div>
+      <button type="button" (click)="cambiarPagina(-1)" [disabled]="paginaActual === 1">Anterior</button>
+      <strong>{{ paginaActual }} / {{ totalPaginas }}</strong>
+      <button type="button" (click)="cambiarPagina(1)" [disabled]="paginaActual === totalPaginas">Siguiente</button>
+    </div>
+  </footer>
+</section>

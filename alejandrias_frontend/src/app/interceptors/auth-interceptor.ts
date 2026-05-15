@@ -72,6 +72,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         router.navigate(['/login']);
       }
 
+      if (error.status === 403 && apiPath?.startsWith('/admin')) {
+        router.navigate(['/perfil']);
+      }
+
       return throwError(() => error);
     })
   );

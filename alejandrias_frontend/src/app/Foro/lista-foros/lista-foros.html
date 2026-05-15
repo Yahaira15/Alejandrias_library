@@ -11,7 +11,7 @@
       <button><img src="iconos/logros.png" alt="logros" width="20px"> Logros</button>
       <button (click)="irAChatIa()"><img src="iconos/notificaciones.png" alt="chat_ia" width="20px"> Chat IA</button>
       <button (click)="abrirModalPrivado()"><img src="iconos/foro.png" alt="foro privado" width="20px"> Ingresar a foro privado</button>
-      <button *ngIf="rol === 'lider'" (click)="irACrearForo()"><img src="iconos/crear_foro.png" alt="crear_foro" width="20px"> Crear foro</button>
+      <button *ngIf="rol === 'lider' || rol === 'admin'" (click)="irACrearForo()"><img src="iconos/crear_foro.png" alt="crear_foro" width="20px"> Crear foro</button>
     </nav>
 
     <div class="logout">

@@ -1,0 +1,18 @@
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <h1>Alejandria's<br>Library</h1>
+    <nav>
+      <a routerLink="/admin/usuarios" routerLinkActive="active">Usuarios</a>
+      <a routerLink="/admin/foros" routerLinkActive="active">Foros</a>
+      <a routerLink="/admin/categorias" routerLinkActive="active">Categorias</a>
+      <a routerLink="/admin/publicaciones" routerLinkActive="active">Publicaciones</a>
+      <a routerLink="/admin/comentarios" routerLinkActive="active">Comentarios</a>
+      <a routerLink="/foros">Ir a foros</a>
+    </nav>
+    <button type="button" (click)="logout()">Cerrar Sesion</button>
+  </aside>
+
+  <main class="admin-main">
+    <router-outlet></router-outlet>
+  </main>
+</div>

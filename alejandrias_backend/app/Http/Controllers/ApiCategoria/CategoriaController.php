@@ -55,4 +55,44 @@ class CategoriaController extends Controller
             ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
 
+    public function update(Request $request, $id)
+    {
+        $categoria = Categoria::find($id);
+
+        if (!$categoria) {
+            return response()->json(['message' => 'Categoria no encontrada'], 404);
+        }
+
+        $data = $request->validate([
+            'categoria_nombre' => 'required|max:200',
+            'categoria_descripcion' => 'nullable'
+        ]);
+
+        $categoria->update($data);
+
+        return response()->json([
+            'message' => 'Categoria actualizada correctamente',
+            'data' => $categoria
+        ], 200);
+    }
+
+    public function destroy($id)
+    {
+        $categoria = Categoria::find($id);
+
+        if (!$categoria) {
+            return response()->json(['message' => 'Categoria no encontrada'], 404);
+        }
+
+        if (Foro::where('foro_categoria_id', $categoria->categoria_id)->exists()) {
+            return response()->json([
+                'message' => 'No puedes eliminar una categoria con foros asociados'
+            ], 409);
+        }
+
+        $categoria->delete();
+
+        return response()->json(['message' => 'Categoria eliminada'], 200);
+    }
+
 }

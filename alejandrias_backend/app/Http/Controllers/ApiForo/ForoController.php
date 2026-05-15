@@ -27,7 +27,9 @@ class ForoController extends Controller
             return response()->json(['error' => 'No autenticado'], 401);
         }
 
-        if ($usuario->usuario_rol === 'lider') {
+        if ($usuario->usuario_rol === 'admin') {
+            $foros = Foro::with(['usuario', 'categoria'])->get();
+        } elseif ($usuario->usuario_rol === 'lider') {
             $foros = Foro::where('foro_creador_id', $usuario->usuario_id)
                 ->with(['usuario', 'categoria'])
                 ->get();
@@ -79,7 +81,7 @@ class ForoController extends Controller
                 return response()->json(['error' => 'No autenticado'], 401);
             }
 
-            if ($usuario->usuario_rol !== 'lider') {
+            if (!in_array($usuario->usuario_rol, ['lider', 'admin'], true)) {
                 return response()->json(['error' => 'No autorizado'], 403);
             }
 
@@ -117,6 +119,7 @@ class ForoController extends Controller
             $usuario = Auth::guard('sanctum')->user();
             $registrado = $usuario && (
                 $foro->foro_creador_id == $usuario->usuario_id
+                || $usuario->usuario_rol === 'admin'
                 || $foro->miembros()
                     ->where('usuario.usuario_id', $usuario->usuario_id)
                     ->exists()
@@ -147,7 +150,7 @@ class ForoController extends Controller
                 return response()->json(['error' => 'No autenticado'], 401);
             }
 
-            if ($usuario->usuario_rol !== 'lider') {
+            if (!in_array($usuario->usuario_rol, ['lider', 'admin'], true)) {
                 return response()->json(['error' => 'No autorizado'], 403);
             }
 
@@ -157,7 +160,7 @@ class ForoController extends Controller
                 return response()->json(['error' => 'Foro no encontrado'], 404);
             }
 
-            if ($foro->foro_creador_id != $usuario->usuario_id) {
+            if ($foro->foro_creador_id != $usuario->usuario_id && $usuario->usuario_rol !== 'admin') {
                 return response()->json(['error' => 'No puedes editar este foro'], 403);
             }
 
@@ -210,7 +213,7 @@ class ForoController extends Controller
                 return response()->json(['error' => 'No autenticado'], 401);
             }
 
-            if ($usuario->usuario_rol !== 'lider') {
+            if (!in_array($usuario->usuario_rol, ['lider', 'admin'], true)) {
                 return response()->json(['error' => 'No autorizado'], 403);
             }
 
@@ -220,7 +223,7 @@ class ForoController extends Controller
                 return response()->json(['error' => 'Foro no encontrado'], 404);
             }
 
-            if ($foro->foro_creador_id != $usuario->usuario_id) {
+            if ($foro->foro_creador_id != $usuario->usuario_id && $usuario->usuario_rol !== 'admin') {
                 return response()->json(['error' => 'No puedes eliminar este foro'], 403);
             }
 
@@ -253,6 +256,7 @@ class ForoController extends Controller
 
         if (
             $foro->foro_creador_id == $usuario->usuario_id
+            || $usuario->usuario_rol === 'admin'
             || $foro->miembros()
                 ->where('usuario.usuario_id', $usuario->usuario_id)
                 ->exists()
@@ -315,6 +319,7 @@ class ForoController extends Controller
 
         $registrado = $foro && (
             $foro->foro_creador_id == $usuario->usuario_id
+            || $usuario->usuario_rol === 'admin'
             || $foro->miembros()
                 ->where('usuario.usuario_id', $usuario->usuario_id)
                 ->exists()
@@ -341,7 +346,7 @@ class ForoController extends Controller
             return response()->json(['error' => 'Foro no encontrado'], 404);
         }
 
-        if ($foro->foro_creador_id != $usuario->usuario_id || $usuario->usuario_rol !== 'lider') {
+        if (($foro->foro_creador_id != $usuario->usuario_id || $usuario->usuario_rol !== 'lider') && $usuario->usuario_rol !== 'admin') {
             return response()->json(['error' => 'No autorizado'], 403);
         }
 

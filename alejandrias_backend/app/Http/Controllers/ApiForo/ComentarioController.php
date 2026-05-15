@@ -23,6 +23,7 @@ class ComentarioController extends Controller
             $usuario = Auth::guard('sanctum')->user();
             $registrado = $usuario && (
                 $publicacion->foro->foro_creador_id == $usuario->usuario_id
+                || $usuario->usuario_rol === 'admin'
                 || $publicacion->foro->miembros()
                     ->where('usuario.usuario_id', $usuario->usuario_id)
                     ->exists()
@@ -58,6 +59,7 @@ class ComentarioController extends Controller
         $foro = $publicacion->foro;
         $registrado = $foro && (
             $foro->foro_creador_id == $usuario->usuario_id
+            || $usuario->usuario_rol === 'admin'
             || $foro->miembros()
                 ->where('usuario.usuario_id', $usuario->usuario_id)
                 ->exists()
@@ -134,7 +136,7 @@ class ComentarioController extends Controller
 
         $usuario = Auth::guard('sanctum')->user();
 
-        if (!$usuario || $comentario->comentario_usuario_id != $usuario->usuario_id) {
+        if (!$usuario || ($comentario->comentario_usuario_id != $usuario->usuario_id && $usuario->usuario_rol !== 'admin')) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
@@ -157,7 +159,7 @@ class ComentarioController extends Controller
 
         $usuario = Auth::guard('sanctum')->user();
 
-        if (!$usuario || $comentario->comentario_usuario_id != $usuario->usuario_id) {
+        if (!$usuario || ($comentario->comentario_usuario_id != $usuario->usuario_id && $usuario->usuario_rol !== 'admin')) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
