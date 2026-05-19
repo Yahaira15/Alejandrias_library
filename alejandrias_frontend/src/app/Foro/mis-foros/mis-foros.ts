@@ -210,7 +210,8 @@ export class MisForos implements OnInit, OnDestroy {
   }
 
   editarForo(id: number): void {
-    this.router.navigate(['/foros/editar', id]);
+    const foro = this.foros.find(item => item.foro_id === id);
+    this.router.navigate(['/foros/editar', id], { state: { foro } });
   }
 
   eliminarForo(id: number): void {
@@ -387,4 +388,6 @@ export class MisForos implements OnInit, OnDestroy {
     localStorage.removeItem('token');
     this.router.navigate(['/login']);
   }
+
+  
 }

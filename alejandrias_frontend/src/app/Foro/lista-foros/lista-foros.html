@@ -180,44 +180,7 @@
         </p>
       </div>
 
-      <div class="topics-panel" *ngIf="categoriasTematicas.length > 0">
-        <div class="topics-heading">
-          <div>
-            <p class="section-kicker">Navega por temas</p>
-            <h3>Categorias y subcategorias</h3>
-          </div>
-          <button type="button" class="clear-search" *ngIf="hayFiltrosActivos" (click)="limpiarBusqueda()">
-            Ver todos
-          </button>
-        </div>
-
-        <div class="topics-grid">
-          <article
-            class="topic-card"
-            *ngFor="let categoria of categoriasTematicas"
-            [class.active]="categoriaSeleccionada === categoria.categoria_id"
-          >
-            <button
-              type="button"
-              class="topic-title"
-              (click)="seleccionarCategoria(categoria.categoria_id)"
-            >
-              {{ categoria.categoria_nombre }}
-            </button>
-
-            <div class="topic-tags" aria-label="Subcategorias">
-              <button
-                type="button"
-                *ngFor="let subcategoria of categoria.subcategorias"
-                [class.active]="temaSeleccionado === subcategoria && categoriaSeleccionada === categoria.categoria_id"
-                (click)="seleccionarTema(categoria, subcategoria)"
-              >
-                {{ subcategoria }}
-              </button>
-            </div>
-          </article>
-        </div>
-      </div>
+     
 
       <div class="loading" *ngIf="cargando">Cargando foros...</div>
 

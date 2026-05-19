@@ -263,7 +263,8 @@ export class ListaForos implements OnInit, OnDestroy {
   }
 
   editarForo(id: number): void {
-    this.router.navigate(['/foros/editar', id]);
+    const foro = this.foros.find(item => item.foro_id === id);
+    this.router.navigate(['/foros/editar', id], { state: { foro } });
   }
 
   abrirModalForo(foro: any): void {

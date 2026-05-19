@@ -1,60 +1,113 @@
-<div class="img-fondo">
-    <img src="FondoCrearForo.png" alt="Fondo de crear foro">
-</div>
+<main class="foro-page">
+  <aside class="foro-art" aria-hidden="true">
+    <img src="FondoCrearForo.png" alt="" />
+  </aside>
 
-<div class="crear_foro">
+  <section class="foro-panel" aria-labelledby="crear-foro-title">
+    <button class="back" type="button" (click)="regresar()">Regresar</button>
 
-  <div class="back" (click)="regresar()">
-    ← Regresar
-  </div>
+    <form [formGroup]="foroForm" class="foro-form" (ngSubmit)="crearForo()" novalidate>
+      <h1 id="crear-foro-title">CREAR FORO</h1>
 
-  <div class="card">
-
-    <h2>Crear foro</h2>
-
-    <div class="form-grid">
-
-      <form [formGroup]="foroForm">
-
-        <input type="text" placeholder="Nombre" formControlName="foro_titulo"/>
-
-        <select formControlName="foro_categoria_id">
-          <option class="opt" value="">Selecciona categoría</option>
-          <option class="opt" *ngFor="let cat of categorias" [value]="cat.categoria_id">
-            {{ cat.categoria_nombre }}
-          </option>
-        </select>
-
-        <textarea placeholder="Descripción" formControlName="foro_descripcion"></textarea>
-
-        <div class="options">
-          <button type="button" (click)="setPrivado(false)">Público</button>
-          <button type="button" (click)="setPrivado(true)">Privado</button>
-          <div class="indicator" id="indicator"></div>
-        </div>
-
-        <div *ngIf="foroForm.get('foro_privado')?.value" class="password-field">
-          <input
-            type="text"
-            maxlength="8"
-            placeholder="Contraseña privada (8 caracteres)"
-            formControlName="foro_password"
-          />
-          <p
-            class="field-error"
-            *ngIf="foroForm.get('foro_password')?.invalid && foroForm.get('foro_password')?.touched"
-          >
-            La contraseña debe tener exactamente 8 caracteres alfanuméricos.
+      <div class="form-grid">
+        <div class="form-column">
+          <label class="field">
+            <span>Nombre</span>
+            <input type="text" formControlName="foro_titulo" />
+          </label>
+          <p *ngIf="foroForm.get('foro_titulo')?.invalid && foroForm.get('foro_titulo')?.touched" class="field-error">
+            Ingresa el nombre del foro.
           </p>
+
+          <label class="field">
+            <span>Categoría</span>
+            <select formControlName="foro_categoria_id">
+              <option value="">Selecciona</option>
+              <option *ngFor="let cat of categorias" [value]="cat.categoria_id">{{ cat.categoria_nombre }}</option>
+            </select>
+          </label>
+          <p *ngIf="foroForm.get('foro_categoria_id')?.invalid && foroForm.get('foro_categoria_id')?.touched" class="field-error">
+            Selecciona una categoría.
+          </p>
+
+          <fieldset class="state-field">
+            <legend>Estado</legend>
+            <div class="state-actions">
+              <button
+                type="button"
+                class="state-button"
+                [class.active]="!foroForm.get('foro_privado')?.value"
+                (click)="setPrivado(false)"
+              >
+                Público
+              </button>
+              <button
+                type="button"
+                class="state-button"
+                [class.active]="foroForm.get('foro_privado')?.value"
+                (click)="setPrivado(true)"
+              >
+                Privado
+              </button>
+            </div>
+          </fieldset>
+
+          <div *ngIf="foroForm.get('foro_privado')?.value" class="password-area">
+            <label class="field password-field">
+              <span class="sr-only">Contraseña</span>
+              <input
+                [type]="passwordVisible ? 'text' : 'password'"
+                maxlength="8"
+                placeholder="Contraseña"
+                formControlName="foro_password"
+                autocomplete="new-password"
+              />
+              
+            </label>
+            <p *ngIf="foroForm.get('foro_password')?.invalid && foroForm.get('foro_password')?.touched" class="field-error">
+              La contraseña debe tener 8 caracteres alfanuméricos.
+            </p>
+            <label class="visualizar-checkbox">
+              <input type="checkbox" [checked]="passwordVisible" (change)="togglePasswordVisibility()" />
+              <span>Visualizar</span>
+            </label>
+          </div>
         </div>
 
-      </form>
+        <div class="form-column">
+          <label class="field description-field">
+            <span>Descripción</span>
+            <textarea formControlName="foro_descripcion"></textarea>
+          </label>
+          <p *ngIf="foroForm.get('foro_descripcion')?.invalid && foroForm.get('foro_descripcion')?.touched" class="field-error">
+            Agrega una descripción.
+          </p>
 
-
-    </div>
-
-  </div>
-
-  <button class="save-btn" (click)="crearForo()">Guardar</button>
-
-</div>
+          <div class="field image-field">
+            <span>Imagen</span>
+            <button class="image-uploader" type="button" (click)="imageInput.click()">
+              <input #imageInput type="file" accept="image/png,image/jpeg" (change)="onImageSelected($event)" hidden />
+              <ng-container *ngIf="!imagePreview; else preview">
+                <span>Cargar imagen en formato<br />jpg, png</span>
+              </ng-container>
+              <ng-template #preview>
+                <img [src]="imagePreview" alt="Vista previa de imagen" />
+              </ng-template>
+            </button>
+            <button *ngIf="imagePreview" type="button" class="clear-image" (click)="clearImage($event, imageInput)">
+              Quitar imagen
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <button class="save-btn" type="submit" [disabled]="guardando">
+          <span *ngIf="!guardando">Guardar</span>
+          <span *ngIf="guardando" class="loading-label">
+              <span class="spinner" aria-hidden="true"></span>
+              Guardando
+          </span>
+      </button>
+    </form>
+  </section>
+</main>

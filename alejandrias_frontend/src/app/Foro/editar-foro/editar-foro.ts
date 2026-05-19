@@ -1,9 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, ChangeDetectorRef } from '@angular/core'; // Añadimos ChangeDetectorRef
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
-import { ForoService } from '../../services/foro';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-
+import { ForoService } from '../../services/foro';
 
 @Component({
   selector: 'app-editar-foro',
@@ -18,17 +17,21 @@ import { ActivatedRoute, Router } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EditarForo implements OnInit {
-
   foroForm: FormGroup;
   categorias: any[] = [];
   foroId!: number;
+  passwordVisible = false;
+  selectedImage: File | null = null;
+  imagePreview: string | null = null;
+  guardando = false;
+  private teniaPasswordPrivado = false;
 
   constructor(
     private fb: FormBuilder,
     private foroService: ForoService,
     private route: ActivatedRoute,
     private router: Router,
-    private cdr: ChangeDetectorRef 
+    private cdr: ChangeDetectorRef
   ) {
     this.foroForm = this.fb.group({
       foro_titulo: ['', Validators.required],
@@ -45,19 +48,19 @@ export class EditarForo implements OnInit {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.foroId = Number(id);
+      const foroNavegado = history.state?.foro;
+      if (foroNavegado?.foro_id === this.foroId) {
+        this.aplicarForoEnFormulario(foroNavegado);
+      }
       this.cargarForo(this.foroId);
     }
-  }
-
-  get esPublico(): boolean {
-    return !this.foroForm.get('foro_privado')?.value;
   }
 
   cargarCategorias() {
     this.foroService.getCategorias().subscribe({
       next: (res: any) => {
-        this.categorias = res;
-        this.cdr.markForCheck(); 
+        this.categorias = res?.data ?? res;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error cargando categorías', err);
@@ -68,64 +71,91 @@ export class EditarForo implements OnInit {
   cargarForo(id: number) {
     this.foroService.getForo(id).subscribe({
       next: (res: any) => {
-        this.foroForm.patchValue({
-          foro_titulo: res.foro_titulo,
-          foro_descripcion: res.foro_descripcion,
-          foro_categoria_id: res.foro_categoria_id,
-          foro_privado: !!res.foro_privado,
-          foro_password: null
-        });
-        this.actualizarValidadoresPassword(!!res.foro_privado);
-        this.indicatorStyle(!!res.foro_privado);
-        this.cdr.markForCheck(); 
+        const foro = res?.data ?? res;
+        this.aplicarForoEnFormulario(foro);
       },
       error: (err) => {
-        console.error("Error cargando foro", err);
+        console.error('Error cargando foro', err);
+        alert('No se pudo cargar el foro');
       }
     });
   }
 
+  private aplicarForoEnFormulario(foro: any) {
+    const privado = !!foro.foro_privado;
+    this.teniaPasswordPrivado = privado;
+
+    this.foroForm.patchValue({
+      foro_titulo: foro.foro_titulo,
+      foro_descripcion: foro.foro_descripcion,
+      foro_categoria_id: foro.foro_categoria_id,
+      foro_privado: privado,
+      foro_password: null
+    }, { emitEvent: false });
+
+    if (foro.foro_imagen_url) {
+      this.imagePreview = foro.foro_imagen_url;
+    }
+
+    this.actualizarValidadoresPassword(privado);
+    this.cdr.markForCheck();
+  }
+
   actualizarForo() {
-    if (this.foroForm.invalid) {
-      this.foroForm.markAllAsTouched();
-      alert("⚠️ Completa todos los campos");
+    if (this.guardando) {
       return;
     }
+
+    if (this.foroForm.invalid) {
+      this.foroForm.markAllAsTouched();
+      alert('Completa todos los campos');
+      return;
+    }
+
+    this.guardando = true;
+    this.cdr.markForCheck();
 
     const data = {
       ...this.foroForm.value,
       foro_categoria_id: Number(this.foroForm.value.foro_categoria_id),
-      foro_password: this.foroForm.value.foro_privado ? this.foroForm.value.foro_password : null
+      foro_password: this.foroForm.value.foro_privado ? this.foroForm.value.foro_password || null : null
     };
 
     this.foroService.actualizarForo(this.foroId, data).subscribe({
       next: () => {
-        alert("Foro actualizado correctamente");
+        alert('Foro actualizado correctamente');
         this.router.navigate(['/foros']);
       },
       error: (err) => {
-        console.error("Error", err);
-        alert("Error al actualizar");
+        console.error('Error al actualizar foro:', err);
+        alert('Error al actualizar el foro');
+        this.guardando = false;
+        this.cdr.markForCheck();
       }
     });
   }
 
-
   setEstado(privado: boolean) {
     this.foroForm.patchValue({ foro_privado: privado });
-    this.actualizarValidadoresPassword(privado);
-    this.indicatorStyle(privado);
-    this.cdr.markForCheck(); 
+    this.actualizarValidadoresPassword(privado, true);
+    if (!privado) {
+      this.passwordVisible = false;
+    }
+    this.cdr.markForCheck();
   }
 
-  private actualizarValidadoresPassword(privado: boolean) {
+  private actualizarValidadoresPassword(privado: boolean, cambioManual = false) {
     const passwordControl = this.foroForm.get('foro_password');
 
     if (privado) {
-      passwordControl?.setValidators([
-        Validators.required,
-        Validators.pattern(/^[A-Za-z0-9]{8}$/)
-      ]);
+      const validators = [Validators.pattern(/^[A-Za-z0-9]{8}$/)];
+      if (!this.teniaPasswordPrivado || cambioManual) {
+        validators.unshift(Validators.required);
+      }
+      passwordControl?.setValidators(validators);
+      if (cambioManual) {
+        passwordControl?.setValue('');
+      }
     } else {
       passwordControl?.clearValidators();
       passwordControl?.setValue(null);
@@ -134,14 +164,48 @@ export class EditarForo implements OnInit {
     passwordControl?.updateValueAndValidity();
   }
 
-  indicatorStyle(privado: boolean) {
-    const indicator = document.getElementById('indicator-editar');
-    if (indicator) {
-      indicator.style.backgroundColor = privado ? '#FF6347' : '#7edd8a';
+  togglePasswordVisibility() {
+    this.passwordVisible = !this.passwordVisible;
+    this.cdr.markForCheck();
+  }
+
+  onImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) {
+      return;
     }
+
+    const file = input.files[0];
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      alert('Solo se permiten imágenes JPG y PNG.');
+      input.value = '';
+      return;
+    }
+
+    this.selectedImage = file;
+    if (this.imagePreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.imagePreview);
+    }
+    this.imagePreview = URL.createObjectURL(file);
+    this.cdr.markForCheck();
+  }
+
+  clearImage(event: Event, input: HTMLInputElement) {
+    event.stopPropagation();
+    if (this.imagePreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.imagePreview);
+    }
+    this.selectedImage = null;
+    this.imagePreview = null;
+    input.value = '';
+    this.cdr.markForCheck();
   }
 
   volver() {
     this.router.navigate(['/foros']);
+  }
+
+  regresar() {
+    this.volver();
   }
 }

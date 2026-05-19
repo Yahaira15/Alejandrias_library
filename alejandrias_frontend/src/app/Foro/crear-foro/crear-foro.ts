@@ -1,67 +1,80 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormsModule, Validators } from '@angular/forms';
-import { ForoService } from '../../services/foro';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ForoService } from '../../services/foro';
 
 @Component({
   selector: 'app-crear-foro',
-  standalone: true, 
+  standalone: true,
   imports: [
     CommonModule,
     FormsModule,
     ReactiveFormsModule
   ],
   templateUrl: './crear-foro.html',
-  styleUrls: ['./crear-foro.scss'], 
+  styleUrls: ['./crear-foro.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CrearForo implements OnInit {
-
   foroForm: FormGroup;
   categorias: any[] = [];
-  id: number = 0;
+  id = 0;
+  passwordVisible = false;
+  selectedImage: File | null = null;
+  imagePreview: string | null = null;
+  guardando = false;
 
   constructor(
     private fb: FormBuilder,
     private foroService: ForoService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {
     this.foroForm = this.fb.group({
-    foro_titulo: ['', Validators.required],
-    foro_descripcion: ['', Validators.required],
-    foro_categoria_id: ['', Validators.required],
-    foro_privado: [false],
-    foro_password: [null]
-});
+      foro_titulo: ['', Validators.required],
+      foro_descripcion: ['', Validators.required],
+      foro_categoria_id: ['', Validators.required],
+      foro_privado: [true],
+      foro_password: ['', [
+        Validators.required,
+        Validators.pattern(/^[A-Za-z0-9]{8}$/)
+      ]]
+    });
   }
 
   ngOnInit(): void {
     this.cargarCategorias();
-  }
-
-  cargarCategorias() {
-    this.foroService.getCategorias().subscribe({
-      next: (res: any) => {
-        this.categorias = res;
-      },
-      error: (err) => {
-        console.error('Error cargando categorías', err);
-      }
-    });
 
     const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     this.id = usuario.usuario_id;
   }
 
-    crearForo() {
+  cargarCategorias() {
+    this.foroService.getCategorias().subscribe({
+      next: (res: any) => {
+        this.categorias = res?.data ?? res;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error cargando categorías', err);
+      }
+    });
+  }
 
-   
-    if (this.foroForm.invalid) {
-      this.foroForm.markAllAsTouched();
-      alert("Por favor completa todos los campos");
+  crearForo() {
+    if (this.guardando) {
       return;
     }
+
+    if (this.foroForm.invalid) {
+      this.foroForm.markAllAsTouched();
+      alert('Por favor completa todos los campos');
+      return;
+    }
+
+    this.guardando = true;
+    this.cdr.markForCheck();
 
     const data = {
       ...this.foroForm.value,
@@ -71,51 +84,81 @@ export class CrearForo implements OnInit {
     };
 
     this.foroService.crearForo(data).subscribe({
-      next: (res) => {
-        console.log('Foro creado', res);
-
-        alert("Foro creado correctamente");
-
+      next: () => {
+        alert('Foro creado correctamente');
         this.router.navigate(['/foros']);
       },
       error: (err) => {
-        console.error('Error completo:', err.error);
-
-        alert("Error al crear el foro");
+        console.error('Error al crear foro:', err);
+        alert('Error al crear el foro');
+        this.guardando = false;
+        this.cdr.markForCheck();
       }
     });
   }
 
-  setPrivado(valor: boolean) {
-    this.foroForm.patchValue({ foro_privado: valor });
+  setPrivado(privado: boolean) {
+    this.foroForm.patchValue({ foro_privado: privado });
+    this.actualizarValidadoresPassword(privado);
+    this.cdr.markForCheck();
+  }
+
+  private actualizarValidadoresPassword(privado: boolean) {
     const passwordControl = this.foroForm.get('foro_password');
 
-    if (valor) {
+    if (privado) {
       passwordControl?.setValidators([
         Validators.required,
         Validators.pattern(/^[A-Za-z0-9]{8}$/)
       ]);
+      passwordControl?.setValue('');
     } else {
       passwordControl?.clearValidators();
       passwordControl?.setValue(null);
+      this.passwordVisible = false;
     }
 
     passwordControl?.updateValueAndValidity();
-    this.indicatorStyle(valor);
+  }
+
+  togglePasswordVisibility() {
+    this.passwordVisible = !this.passwordVisible;
+    this.cdr.markForCheck();
+  }
+
+  onImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) {
+      return;
+    }
+
+    const file = input.files[0];
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      alert('Solo se permiten imágenes JPG y PNG.');
+      input.value = '';
+      return;
+    }
+
+    this.selectedImage = file;
+    if (this.imagePreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.imagePreview);
+    }
+    this.imagePreview = URL.createObjectURL(file);
+    this.cdr.markForCheck();
+  }
+
+  clearImage(event: Event, input: HTMLInputElement) {
+    event.stopPropagation();
+    if (this.imagePreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(this.imagePreview);
+    }
+    this.selectedImage = null;
+    this.imagePreview = null;
+    input.value = '';
+    this.cdr.markForCheck();
   }
 
   regresar() {
     this.router.navigate(['/foros']);
-  }
-
-  indicatorStyle(privado: boolean) {
-    const indicator = document.getElementById('indicator');
-    if (indicator) {
-      if (privado) {
-        indicator.style.backgroundColor = '#FF6347'; // Rojo para privado
-      } else {
-        indicator.style.backgroundColor = '#7edd8a'; // Azul para público
-      }
-    }
   }
 }

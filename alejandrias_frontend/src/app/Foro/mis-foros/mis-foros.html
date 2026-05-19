@@ -115,13 +115,23 @@
       </div>
     </header>
 
+    
+
     <!-- SECCIÓN -->
     <section>
       @if (rol === 'lider' || rol === 'admin') {
-        <h2>Foros que creaste</h2>
+        <div class="section-heading">
+          <p class="section-kicker">Tus comunidades</p>
+          <h2>Foros que lideras</h2>
+        </div>
       } @else {
-        <h2>Foros en los que estás registrado</h2>
+        <div>
+          <p class="section-kicker">Tus exploraciones</p>
+          <h2>Foros que sigues</h2>
+        </div>
       }
+
+      <div class="loading" *ngIf="cargando">Cargando foros...</div>
 
       <div class="foros-container">
         <div class="foro-card" *ngFor="let foro of foros">

@@ -90,7 +90,7 @@
     /* TOPBAR */
     .topbar {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       margin-bottom: 30px;
 
       input {
@@ -109,6 +109,21 @@
       }
     }
 
+    .section-heading h2 {
+      margin: 0;
+      color: #306289;
+      font-size: 30px;
+      letter-spacing: 0;
+      font-family: 'Lora', serif;
+    }
+
+    .section-kicker {
+      margin: 0 0 4px;
+      color: #6d87a7;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'Lora', serif;
+    }
 
 
     /* CONTENEDOR FOROS */
@@ -309,7 +324,6 @@
   cursor: not-allowed;
 }
 
-/* 🔔 CONTENEDOR */
 
 .notificaciones-container {
 
