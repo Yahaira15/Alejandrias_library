@@ -8,6 +8,9 @@ export interface AdminField {
   required?: boolean;
   options?: { label: string; value: any }[];
   hideInTable?: boolean;
+  clearOnEdit?: boolean;
+  placeholder?: string;
+  helpText?: string;
 }
 
 export interface AdminCrudConfig {
@@ -29,6 +32,7 @@ export abstract class AdminCrudBase implements OnInit {
   filasPorPagina = 10;
   cargando = false;
   guardando = false;
+  mostrandoFormulario = false;
   mensaje = '';
   error = '';
 
@@ -64,9 +68,10 @@ export abstract class AdminCrudBase implements OnInit {
     if (this.guardando) return;
 
     this.guardando = true;
+    const payload = this.prepararPayload({ ...this.formulario });
     const request = this.editandoId
-      ? this.adminService.actualizar(this.config.recurso, this.editandoId, this.formulario)
-      : this.adminService.crear(this.config.recurso, this.formulario);
+      ? this.adminService.actualizar(this.config.recurso, this.editandoId, payload)
+      : this.adminService.crear(this.config.recurso, payload);
 
     request.subscribe({
       next: () => {
@@ -85,12 +90,22 @@ export abstract class AdminCrudBase implements OnInit {
 
   editar(registro: any): void {
     this.editandoId = Number(registro[this.config.idKey]);
+    this.mostrandoFormulario = true;
     this.formulario = {};
 
     for (const field of this.config.fields) {
-      this.formulario[field.key] = registro[field.key] ?? (field.type === 'checkbox' ? false : '');
+      this.formulario[field.key] = field.clearOnEdit
+        ? ''
+        : registro[field.key] ?? (field.type === 'checkbox' ? false : '');
     }
 
+    this.cdr.detectChanges();
+  }
+
+  nuevo(): void {
+    this.editandoId = null;
+    this.resetFormulario();
+    this.mostrandoFormulario = true;
     this.cdr.detectChanges();
   }
 
@@ -112,6 +127,7 @@ export abstract class AdminCrudBase implements OnInit {
 
   cancelar(): void {
     this.editandoId = null;
+    this.mostrandoFormulario = false;
     this.resetFormulario();
     this.cdr.detectChanges();
   }
@@ -152,5 +168,13 @@ export abstract class AdminCrudBase implements OnInit {
 
   cambiarPagina(delta: number): void {
     this.paginaActual = Math.min(this.totalPaginas, Math.max(1, this.paginaActual + delta));
+  }
+
+  esRequerido(field: AdminField): boolean {
+    return field.required || false;
+  }
+
+  protected prepararPayload(payload: any): any {
+    return payload;
   }
 }

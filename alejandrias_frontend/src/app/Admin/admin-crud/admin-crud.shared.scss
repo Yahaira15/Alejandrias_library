@@ -46,6 +46,17 @@
   max-width: 280px;
 }
 
+.admin-new-button {
+  border: 0;
+  border-radius: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  background: #fbefd9;
+  color: #050505;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .admin-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -61,6 +72,12 @@
   color: #284358;
   font-size: 13px;
   font-weight: 700;
+}
+
+.admin-form small {
+  color: #2d5c7e;
+  font-size: 12px;
+  font-weight: 400;
 }
 
 .admin-form label.full {
@@ -79,6 +96,7 @@
 }
 
 .admin-actions button,
+.admin-new-button,
 .row-actions button,
 .pagination button {
   border: 0;
@@ -92,6 +110,7 @@
 }
 
 .admin-actions button:hover,
+.admin-new-button:hover,
 .row-actions button:hover,
 .pagination button:hover {
   background: #eadbc0;

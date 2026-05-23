@@ -11,9 +11,10 @@
       placeholder="Buscar"
       class="admin-search"
     >
+    <button type="button" class="admin-new-button" (click)="nuevo()">Agregar</button>
   </header>
 
-  <form class="admin-form" (ngSubmit)="guardar()">
+  <form *ngIf="mostrandoFormulario" class="admin-form" (ngSubmit)="guardar()">
     <ng-container *ngFor="let field of config.fields">
       <label [class.full]="field.type === 'textarea'">
         <span>{{ field.label }}</span>
@@ -22,14 +23,15 @@
           *ngIf="field.type === 'textarea'"
           [(ngModel)]="formulario[field.key]"
           [name]="field.key"
-          [required]="field.required || false"
+          [required]="esRequerido(field)"
+          [placeholder]="field.placeholder || ''"
         ></textarea>
 
         <select
           *ngIf="field.type === 'select'"
           [(ngModel)]="formulario[field.key]"
           [name]="field.key"
-          [required]="field.required || false"
+          [required]="esRequerido(field)"
         >
           <option value="">Seleccionar</option>
           <option *ngFor="let option of field.options || []" [ngValue]="option.value">{{ option.label }}</option>
@@ -40,7 +42,8 @@
           [type]="field.type || 'text'"
           [(ngModel)]="formulario[field.key]"
           [name]="field.key"
-          [required]="field.required || false"
+          [required]="esRequerido(field)"
+          [placeholder]="field.placeholder || ''"
         >
 
         <input
@@ -49,6 +52,8 @@
           [(ngModel)]="formulario[field.key]"
           [name]="field.key"
         >
+
+        <small *ngIf="field.helpText">{{ field.helpText }}</small>
       </label>
     </ng-container>
 

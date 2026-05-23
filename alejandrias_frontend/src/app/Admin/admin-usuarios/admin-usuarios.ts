@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
-import { AdminCrudBase, AdminCrudConfig } from '../admin-crud/admin-crud-base';
+import { AdminCrudBase, AdminCrudConfig, AdminField } from '../admin-crud/admin-crud-base';
 
 @Component({
   selector: 'app-admin-usuarios',
@@ -29,12 +29,36 @@ export class AdminUsuarios extends AdminCrudBase {
         { label: 'Administrador', value: 'admin' }
       ] },
       { key: 'usuario_bloqueado', label: 'Bloqueado', type: 'checkbox' },
-      { key: 'usuario_password', label: 'Contrasena', type: 'password', hideInTable: true },
+      {
+        key: 'usuario_password',
+        label: 'Nueva contrasena',
+        type: 'password',
+        hideInTable: true,
+        clearOnEdit: true,
+        placeholder: 'Dejar vacia para conservarla',
+        helpText: 'En edicion solo escribe una contrasena si quieres cambiarla.'
+      },
       { key: 'usuario_bio', label: 'Biografia', type: 'textarea' }
     ]
   };
 
   constructor(adminService: AdminService, cdr: ChangeDetectorRef) {
     super(adminService, cdr);
+  }
+
+  override esRequerido(field: AdminField): boolean {
+    if (field.key === 'usuario_password') {
+      return !this.editandoId;
+    }
+
+    return super.esRequerido(field);
+  }
+
+  protected override prepararPayload(payload: any): any {
+    if (this.editandoId && !payload.usuario_password?.trim()) {
+      delete payload.usuario_password;
+    }
+
+    return payload;
   }
 }

@@ -34,6 +34,10 @@ class Usuario extends Authenticatable
         'usuario_intereses' => 'array',
     ];
 
+    protected $hidden = [
+        'usuario_password',
+    ];
+
     public function comentarios()
     {
         return $this->hasMany(Comentario::class, 'comentario_usuario_id');

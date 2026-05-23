@@ -8,6 +8,7 @@ import { RouterModule } from '@angular/router';
 interface LoginResponse {
   usuario: {
     usuario_intereses?: string[] | string | null;
+    usuario_rol?: string;
   };
   token: string;
   mensaje?: string;
@@ -61,7 +62,12 @@ export class Login {
           localStorage.setItem('token', res.token);
 
           const intereses = this.normalizarIntereses(res.usuario?.usuario_intereses);
-          this.router.navigate([intereses.length > 0 ? '/foros' : '/intereses']);
+          
+          if (res.usuario?.usuario_rol === 'admin'){
+            this.router.navigate(['/admin']);
+          }else{
+            this.router.navigate([intereses.length > 0 ? '/foros' : '/intereses']);
+          }
         },
         error: (err) => {
           this.cargandoLogin = false;
