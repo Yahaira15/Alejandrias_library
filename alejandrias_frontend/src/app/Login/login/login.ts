@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
+import { EmailjsRecuperacionService } from '../../services/emailjs-recuperacion.service';
 
 interface LoginResponse {
   usuario: {
@@ -11,6 +12,14 @@ interface LoginResponse {
     usuario_rol?: string;
   };
   token: string;
+  mensaje?: string;
+}
+
+interface RecuperacionResponse {
+  usuario_nombre: string;
+  usuario_apodo: string;
+  usuario_email: string;
+  password_temporal: string;
   mensaje?: string;
 }
 
@@ -24,6 +33,7 @@ export class Login {
   constructor(
     private http: HttpClient,
     private router: Router,
+    private emailjsRecuperacionService: EmailjsRecuperacionService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -36,6 +46,11 @@ export class Login {
 
   errorMensaje = '';
   cargandoLogin = false;
+  modalRecuperacionAbierto = false;
+  emailRecuperacion = '';
+  errorRecuperacion = '';
+  exitoRecuperacion = '';
+  cargandoRecuperacion = false;
 
   iniciarSesion(form: any): void {
     this.errorMensaje = '';
@@ -94,6 +109,65 @@ export class Login {
           this.errorMensaje = err.status === 401
             ? 'Credenciales incorrectas'
             : 'Error en el servidor';
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  abrirModalRecuperacion(): void {
+    this.modalRecuperacionAbierto = true;
+    this.emailRecuperacion = '';
+    this.errorRecuperacion = '';
+    this.exitoRecuperacion = '';
+  }
+
+  cerrarModalRecuperacion(): void {
+    if (this.cargandoRecuperacion) return;
+
+    this.modalRecuperacionAbierto = false;
+    this.emailRecuperacion = '';
+    this.errorRecuperacion = '';
+    this.exitoRecuperacion = '';
+  }
+
+  recuperarPassword(form: any): void {
+    this.errorRecuperacion = '';
+    this.exitoRecuperacion = '';
+
+    if (this.cargandoRecuperacion) return;
+
+    if (form.invalid) {
+      this.errorRecuperacion = 'Ingresa un correo valido';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    const usuarioEmail = this.emailRecuperacion.trim();
+    this.cargandoRecuperacion = true;
+    this.cdr.detectChanges();
+
+    this.http.post<RecuperacionResponse>('http://localhost:8000/api/recuperar-password', { usuario_email: usuarioEmail })
+      .subscribe({
+        next: (res) => {
+          this.emailjsRecuperacionService.enviarPasswordTemporal({
+            toEmail: res.usuario_email,
+            usuarioNombre: res.usuario_nombre,
+            usuarioApodo: res.usuario_apodo,
+            passwordTemporal: res.password_temporal
+          }).then(() => {
+            this.cargandoRecuperacion = false;
+            this.exitoRecuperacion = 'Te enviamos una contrasena temporal. Revisa tu correo.';
+            this.emailRecuperacion = '';
+            this.cdr.detectChanges();
+          }).catch((err) => {
+            this.cargandoRecuperacion = false;
+            this.errorRecuperacion = err?.message || 'No se pudo enviar el correo de recuperacion.';
+            this.cdr.detectChanges();
+          });
+        },
+        error: (err) => {
+          this.cargandoRecuperacion = false;
+          this.errorRecuperacion = err.error?.mensaje || err.error?.error || 'No se pudo recuperar la contrasena.';
           this.cdr.detectChanges();
         }
       });

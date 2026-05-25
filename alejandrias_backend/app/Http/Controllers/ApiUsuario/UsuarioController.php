@@ -7,6 +7,7 @@ use App\Models\Usuario;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class UsuarioController extends Controller
 {
@@ -136,6 +137,45 @@ class UsuarioController extends Controller
         }
     }
 
+    public function recuperarPassword(Request $request)
+    {
+        try {
+            $request->validate([
+                'usuario_email' => 'required|email'
+            ], [
+                'usuario_email.required' => 'Ingresa el correo de tu cuenta',
+                'usuario_email.email' => 'Ingresa un correo valido',
+            ]);
+
+            $usuario = Usuario::where('usuario_email', $request->usuario_email)->first();
+
+            if (!$usuario) {
+                return response()->json([
+                    'mensaje' => 'No encontramos una cuenta con ese correo'
+                ], 404);
+            }
+
+            $passwordTemporal = $this->generarPasswordTemporal();
+            $usuario->usuario_password = Hash::make($passwordTemporal);
+            $usuario->tokens()->delete();
+            $usuario->save();
+
+            return response()->json([
+                'mensaje' => 'Contrasena temporal generada',
+                'usuario_nombre' => $usuario->usuario_nombre,
+                'usuario_apodo' => $usuario->usuario_apodo,
+                'usuario_email' => $usuario->usuario_email,
+                'password_temporal' => $passwordTemporal,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al recuperar la contrasena',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function perfil()
     {
         return response()->json(auth()->user(), 200);
@@ -234,5 +274,22 @@ class UsuarioController extends Controller
                 'detalle' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function generarPasswordTemporal(): string
+    {
+        $mayusculas = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $minusculas = 'abcdefghijkmnopqrstuvwxyz';
+        $numeros = '23456789';
+        $especiales = '@#$%&*?';
+        $base = $mayusculas . $minusculas . $numeros . $especiales;
+
+        return str_shuffle(
+            $mayusculas[random_int(0, strlen($mayusculas) - 1)] .
+            $minusculas[random_int(0, strlen($minusculas) - 1)] .
+            $numeros[random_int(0, strlen($numeros) - 1)] .
+            $especiales[random_int(0, strlen($especiales) - 1)] .
+            Str::random(6)
+        ) . $base[random_int(0, strlen($base) - 1)];
     }
 }

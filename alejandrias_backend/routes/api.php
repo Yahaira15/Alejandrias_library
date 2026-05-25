@@ -14,6 +14,7 @@ use App\Http\Controllers\ApiReporte\SancionController;
 
 Route::post('/register', [UsuarioController::class, 'register']);
 Route::post('/login', [UsuarioController::class, 'login']);
+Route::post('/recuperar-password', [UsuarioController::class, 'recuperarPassword']);
 Route::get('/verificar-apodo/{apodo}', [UsuarioController::class, 'verificarApodo']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/perfil', [UsuarioController::class, 'perfil']);

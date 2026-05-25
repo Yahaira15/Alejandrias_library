@@ -37,6 +37,14 @@
                 <span>Visualizar</span>
             </label>
 
+            <button
+                type="button"
+                class="forgot-password"
+                (click)="abrirModalRecuperacion()"
+                [disabled]="cargandoLogin">
+                Olvide mi contrasena
+            </button>
+
             <div *ngIf="errorMensaje" class="error-msg">
                 {{ errorMensaje }}
             </div>
@@ -55,6 +63,58 @@
             </p>
         </form>
     </section>
+
+    <div
+        *ngIf="modalRecuperacionAbierto"
+        class="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recuperacion-title">
+        <section class="recovery-modal">
+            <button
+                type="button"
+                class="modal-close"
+                aria-label="Cerrar"
+                (click)="cerrarModalRecuperacion()"
+                [disabled]="cargandoRecuperacion">
+                x
+            </button>
+
+            <h2 id="recuperacion-title">Recuperar contrasena</h2>
+            <p>Ingresa el correo de tu cuenta y te enviaremos una contrasena temporal.</p>
+
+            <form #recuperacionForm="ngForm" (ngSubmit)="recuperarPassword(recuperacionForm)" novalidate>
+                <div class="input-group">
+                    <label for="email_recuperacion">Correo electronico</label>
+                    <input
+                        id="email_recuperacion"
+                        type="email"
+                        name="email_recuperacion"
+                        [(ngModel)]="emailRecuperacion"
+                        (input)="errorRecuperacion = ''; exitoRecuperacion = ''"
+                        required
+                        email
+                        [disabled]="cargandoRecuperacion">
+                </div>
+
+                <div *ngIf="errorRecuperacion" class="error-msg recovery-message">
+                    {{ errorRecuperacion }}
+                </div>
+
+                <div *ngIf="exitoRecuperacion" class="success-msg recovery-message">
+                    {{ exitoRecuperacion }}
+                </div>
+
+                <button type="submit" [disabled]="recuperacionForm.invalid || cargandoRecuperacion">
+                    <span *ngIf="!cargandoRecuperacion">Enviar correo</span>
+                    <span *ngIf="cargandoRecuperacion" class="loading-label">
+                        <span class="spinner" aria-hidden="true"></span>
+                        Enviando
+                    </span>
+                </button>
+            </form>
+        </section>
+    </div>
 
     <div class="img-fondo" aria-hidden="true">
         <img src="fondoLogin.png" alt="">
