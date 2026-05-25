@@ -109,6 +109,12 @@
     padding: 46px 74px 58px;
 }
 
+.register-form.verify-form {
+    width: min(100%, 520px);
+    min-height: 390px;
+    padding: 46px 68px 48px;
+}
+
 .register-form h1 {
     margin: 0 0 30px;
     text-align: center;
@@ -377,6 +383,70 @@
 .finish-action {
     display: block;
     margin: 30px auto 0;
+}
+
+.step-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-top: 30px;
+}
+
+.step-actions .finish-action {
+    margin: 0;
+}
+
+.secondary-action,
+.resend-button {
+    min-width: 112px;
+    height: 38px;
+    border: 1.5px solid #9fb5cd;
+    border-radius: 10px;
+    background: #fff;
+    color: #5a7fa6;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.secondary-action:disabled,
+.resend-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.verification-panel {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    color: #557aa1;
+    text-align: center;
+}
+
+.verification-panel p {
+    margin: 0;
+    font-size: 15px;
+}
+
+.verification-panel strong {
+    color: #244f73;
+    overflow-wrap: anywhere;
+}
+
+.verification-input {
+    width: min(100%, 240px);
+    margin-top: 10px;
+    text-align: left;
+}
+
+.verification-input input {
+    height: 42px;
+    text-align: center;
+    letter-spacing: 6px;
+    font-size: 21px;
+    font-weight: 700;
 }
 
 .loading-label {

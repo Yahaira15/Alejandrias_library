@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { FormsModule, NgForm } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { EmailjsVerificacionService } from '../../services/emailjs-verificacion.service';
 
 interface Interes {
   id: string;
@@ -21,6 +22,7 @@ export class Register implements OnInit {
     private http: HttpClient,
     private router: Router,
     private route: ActivatedRoute,
+    private emailjsVerificacionService: EmailjsVerificacionService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -28,8 +30,13 @@ export class Register implements OnInit {
   errorMensaje = '';
   mostrarPassword = false;
   rol = 'explorador';
-  pasoActual: 1 | 2 = 1;
+  pasoActual: 1 | 2 | 3 = 1;
   cargandoRegistro = false;
+  enviandoCodigo = false;
+  codigoVerificacion = '';
+  codigoIngresado = '';
+  codigoEnviadoA = '';
+  codigoExpiraEn: number | null = null;
 
   readonly intereses: Interes[] = [
     { id: 'programacion', nombre: 'Programacion', icono: 'intereses/laptop.png' },
@@ -145,14 +152,66 @@ export class Register implements OnInit {
     return this.usuario.usuario_intereses.includes(interesId);
   }
 
+  enviarCodigoVerificacion(): void {
+    this.errorMensaje = '';
+    this.errores = {};
+
+    if (this.enviandoCodigo || this.cargandoRegistro) return;
+
+    if (this.usuario.usuario_intereses.length === 0) {
+      this.errorMensaje = 'Selecciona al menos un interes';
+      return;
+    }
+
+    const codigo = this.generarCodigoVerificacion();
+    this.enviandoCodigo = true;
+    this.codigoVerificacion = codigo;
+    this.codigoIngresado = '';
+    this.codigoEnviadoA = this.usuario.usuario_email.trim();
+    this.codigoExpiraEn = Date.now() + 10 * 60 * 1000;
+
+    this.emailjsVerificacionService.enviarCodigo({
+      toEmail: this.codigoEnviadoA,
+      usuarioNombre: this.usuario.usuario_nombre.trim() || this.usuario.usuario_apodo.trim(),
+      codigoVerificacion: codigo
+    }).then(() => {
+      this.enviandoCodigo = false;
+      this.pasoActual = 3;
+      this.cdr.detectChanges();
+    }).catch((err) => {
+      this.enviandoCodigo = false;
+      this.errorMensaje = err?.message || 'No se pudo enviar el codigo de verificacion';
+      this.cdr.detectChanges();
+    });
+  }
+
+  reenviarCodigo(): void {
+    this.enviarCodigoVerificacion();
+  }
+
   registrar(): void {
     this.errorMensaje = '';
     this.errores = {};
 
     if (this.cargandoRegistro) return;
 
-    if (this.usuario.usuario_intereses.length === 0) {
-      this.errorMensaje = 'Selecciona al menos un interes';
+    if (!this.codigoVerificacion || !this.codigoExpiraEn) {
+      this.errorMensaje = 'Solicita un codigo de verificacion antes de finalizar';
+      return;
+    }
+
+    if (Date.now() > this.codigoExpiraEn) {
+      this.errorMensaje = 'El codigo vencio. Solicita uno nuevo';
+      return;
+    }
+
+    if (this.codigoEnviadoA !== this.usuario.usuario_email.trim()) {
+      this.errorMensaje = 'El correo cambio. Solicita un nuevo codigo de verificacion';
+      return;
+    }
+
+    if (this.codigoIngresado.trim() !== this.codigoVerificacion) {
+      this.errorMensaje = 'El codigo ingresado no coincide';
       return;
     }
 
@@ -187,5 +246,20 @@ export class Register implements OnInit {
           this.cdr.detectChanges();
         }
       });
+  }
+
+  volverAPaso(paso: 1 | 2): void {
+    if (this.cargandoRegistro || this.enviandoCodigo) return;
+
+    this.errorMensaje = '';
+    this.pasoActual = paso;
+  }
+
+  normalizarCodigo(): void {
+    this.codigoIngresado = this.codigoIngresado.replace(/\D/g, '').slice(0, 6);
+  }
+
+  private generarCodigoVerificacion(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }

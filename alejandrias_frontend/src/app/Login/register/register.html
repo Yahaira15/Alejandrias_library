@@ -4,15 +4,20 @@
     </div>
 
     <div class="progress-tracker" aria-label="Progreso de registro">
-        <div class="progress-step" [class.done]="pasoActual === 2" [class.active]="pasoActual === 1">
+        <div class="progress-step" [class.done]="pasoActual > 1" [class.active]="pasoActual === 1">
             <span *ngIf="pasoActual === 1">01</span>
-            <img *ngIf="pasoActual === 2" src="intereses/done.png" alt="">
+            <img *ngIf="pasoActual > 1" src="intereses/done.png" alt="">
         </div>
-        <div class="progress-line" [class.complete]="pasoActual === 2"></div>
-        <div class="progress-step" [class.active]="pasoActual === 2">02</div>
+        <div class="progress-line" [class.complete]="pasoActual > 1"></div>
+        <div class="progress-step" [class.done]="pasoActual > 2" [class.active]="pasoActual === 2">
+            <span *ngIf="pasoActual <= 2">02</span>
+            <img *ngIf="pasoActual > 2" src="intereses/done.png" alt="">
+        </div>
+        <div class="progress-line" [class.complete]="pasoActual === 3"></div>
+        <div class="progress-step" [class.active]="pasoActual === 3">03</div>
     </div>
 
-    <section class="register-form" [class.interests-form]="pasoActual === 2" aria-labelledby="register-title">
+    <section class="register-form" [class.interests-form]="pasoActual === 2" [class.verify-form]="pasoActual === 3" aria-labelledby="register-title">
         <ng-container *ngIf="pasoActual === 1; else interesesTemplate">
             <h1 id="register-title">REGISTRO</h1>
 
@@ -138,6 +143,7 @@
         </ng-container>
 
         <ng-template #interesesTemplate>
+            <ng-container *ngIf="pasoActual === 2; else verificacionTemplate">
             <h1 id="register-title">INTERESES</h1>
 
             <div class="interests-grid" role="group" aria-label="Seleccion de intereses">
@@ -159,13 +165,57 @@
 
             <p *ngIf="errorMensaje" class="form-error interests-error">{{ errorMensaje }}</p>
 
-            <button class="primary-action finish-action" type="button" [disabled]="cargandoRegistro" (click)="registrar()">
-                <span *ngIf="!cargandoRegistro">Finalizar</span>
-                <span *ngIf="cargandoRegistro" class="loading-label">
+            <div class="step-actions">
+                <button class="secondary-action" type="button" [disabled]="enviandoCodigo" (click)="volverAPaso(1)">Atras</button>
+                <button class="primary-action finish-action" type="button" [disabled]="enviandoCodigo" (click)="enviarCodigoVerificacion()">
+                <span *ngIf="!enviandoCodigo">Validar correo</span>
+                <span *ngIf="enviandoCodigo" class="loading-label">
                     <span class="spinner" aria-hidden="true"></span>
-                    Guardando
+                    Enviando
                 </span>
-            </button>
+                </button>
+            </div>
+            </ng-container>
+        </ng-template>
+
+        <ng-template #verificacionTemplate>
+            <h1 id="register-title">VALIDAR CORREO</h1>
+
+            <div class="verification-panel">
+                <p>Enviamos un codigo de 6 digitos a</p>
+                <strong>{{ codigoEnviadoA }}</strong>
+
+                <div class="input-group verification-input">
+                    <label for="codigo">Codigo</label>
+                    <input
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="6"
+                        pattern="[0-9]{6}"
+                        [(ngModel)]="codigoIngresado"
+                        id="codigo"
+                        name="codigo"
+                        (input)="normalizarCodigo()"
+                        [disabled]="cargandoRegistro">
+                </div>
+
+                <button type="button" class="resend-button" [disabled]="enviandoCodigo || cargandoRegistro" (click)="reenviarCodigo()">
+                    {{ enviandoCodigo ? 'Enviando...' : 'Reenviar codigo' }}
+                </button>
+            </div>
+
+            <p *ngIf="errorMensaje" class="form-error interests-error">{{ errorMensaje }}</p>
+
+            <div class="step-actions">
+                <button class="secondary-action" type="button" [disabled]="cargandoRegistro" (click)="volverAPaso(2)">Atras</button>
+                <button class="primary-action finish-action" type="button" [disabled]="cargandoRegistro || codigoIngresado.length !== 6" (click)="registrar()">
+                    <span *ngIf="!cargandoRegistro">Finalizar</span>
+                    <span *ngIf="cargandoRegistro" class="loading-label">
+                        <span class="spinner" aria-hidden="true"></span>
+                        Guardando
+                    </span>
+                </button>
+            </div>
         </ng-template>
     </section>
 </main>
