@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ForoService } from '../../services/foro';
+import { ReportePayload, ReporteService } from '../../services/reporte.service';
 
 @Component({
   selector: 'app-ver-foro',
@@ -34,6 +35,11 @@ export class VerForoComponent implements OnInit {
   errorPasswordForo = '';
   consultandoPasswordForo = false;
   copiandoPasswordForo = false;
+  reporteModalAbierto = false;
+  reporteObjetivo: { tipo: ReportePayload['reporte_tipo']; id: number; titulo: string } | null = null;
+  reporteMotivo = '';
+  reporteDescripcion = '';
+  enviandoReporte = false;
 
   nuevaPublicacion = {
     publicacion_titulo: '',
@@ -43,6 +49,7 @@ export class VerForoComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private foroService: ForoService,
+    private reporteService: ReporteService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -306,6 +313,62 @@ export class VerForoComponent implements OnInit {
         this.errorPasswordForo = 'No se pudo copiar la contraseña.';
         this.cdr.detectChanges();
       });
+  }
+
+  abrirReporte(tipo: ReportePayload['reporte_tipo'], id: number, titulo: string): void {
+    this.reporteObjetivo = { tipo, id, titulo };
+    this.reporteMotivo = '';
+    this.reporteDescripcion = '';
+    this.reporteModalAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarReporte(): void {
+    this.reporteModalAbierto = false;
+    this.reporteObjetivo = null;
+    this.reporteMotivo = '';
+    this.reporteDescripcion = '';
+    this.enviandoReporte = false;
+    this.cdr.detectChanges();
+  }
+
+  enviarReporte(): void {
+    if (!this.reporteObjetivo || !this.reporteMotivo || this.enviandoReporte) {
+      this.mostrarFeedback('error', 'Selecciona un motivo para reportar.');
+      return;
+    }
+
+    this.enviandoReporte = true;
+    this.reporteService.crearReporte({
+      reporte_tipo: this.reporteObjetivo.tipo,
+      reporte_referencia_id: this.reporteObjetivo.id,
+      reporte_motivo: this.reporteMotivo,
+      reporte_descripcion: this.reporteDescripcion
+    }).subscribe({
+      next: () => {
+        this.cerrarReporte();
+        this.mostrarFeedback('success', 'Reporte enviado a administracion.');
+      },
+      error: (err) => {
+        console.error('Error enviando reporte:', err);
+        this.enviandoReporte = false;
+        this.mostrarFeedback('error', err?.error?.error || 'No se pudo enviar el reporte.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  motivosReporte(tipo: ReportePayload['reporte_tipo'] | undefined): string[] {
+    switch (tipo) {
+      case 'foro':
+        return ['tematica ilegal', 'contenido extremista', 'spam', 'fraude'];
+      case 'publicacion':
+        return ['spam', 'insultos', 'contenido sexual', 'violencia', 'odio', 'acoso', 'informacion falsa', 'contenido ilegal'];
+      case 'usuario':
+        return ['acoso', 'suplantacion', 'amenazas', 'spam masivo'];
+      default:
+        return ['spam', 'insultos', 'acoso', 'contenido ilegal'];
+    }
   }
 
   get esCreadorDelForo(): boolean {

@@ -1,0 +1,90 @@
+<section class="admin-card reportes-card">
+  <header class="admin-header">
+    <div>
+      <p>Panel de administracion</p>
+      <h2>Reportes y sanciones</h2>
+    </div>
+  </header>
+
+  <p class="admin-message" *ngIf="mensaje">{{ mensaje }}</p>
+  <p class="admin-error" *ngIf="error">{{ error }}</p>
+
+  <div class="reportes-layout">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Motivo</th>
+            <th>Prioridad</th>
+            <th>Estado</th>
+            <th>Referencia</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="cargando">
+            <td colspan="7">Cargando...</td>
+          </tr>
+          <tr *ngFor="let reporte of reportes" [class.selected]="reporteSeleccionado?.reporte_id === reporte.reporte_id">
+            <td>{{ reporte.reporte_id }}</td>
+            <td>{{ reporte.reporte_tipo }}</td>
+            <td>{{ reporte.reporte_motivo }}</td>
+            <td>{{ reporte.reporte_prioridad }}</td>
+            <td>{{ reporte.reporte_estado }}</td>
+            <td>{{ resumenReferencia(reporte) }}</td>
+            <td class="row-actions">
+              <button type="button" (click)="seleccionarReporte(reporte)">Evaluar</button>
+              <button type="button" (click)="actualizarEstado(reporte, 'revisando')">Revisando</button>
+              <button type="button" (click)="actualizarEstado(reporte, 'rechazado')">Rechazar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="reporte-panel" *ngIf="reporteSeleccionado">
+      <h3>Evaluacion #{{ reporteSeleccionado.reporte_id }}</h3>
+      <p><strong>Reportado:</strong> {{ resumenReferencia(reporteSeleccionado) }}</p>
+      <p><strong>Descripcion:</strong> {{ reporteSeleccionado.reporte_descripcion || 'Sin descripcion' }}</p>
+
+      <label>
+        Usuario sancionado
+        <input type="number" [(ngModel)]="sancion.sancion_usuario_id">
+      </label>
+
+      <label>
+        Nivel
+        <select [(ngModel)]="sancion.sancion_tipo">
+          <option value="advertencia">Nivel 1 - Advertencia</option>
+          <option value="restriccion">Nivel 2 - Restriccion temporal</option>
+          <option value="suspension">Nivel 3 - Suspension</option>
+          <option value="ban">Nivel 4 - Ban permanente</option>
+        </select>
+      </label>
+
+      <label>
+        Duracion
+        <select [(ngModel)]="sancion.duracion">
+          <option value="permanente">Permanente / historial</option>
+          <option value="1h">1 hora</option>
+          <option value="24h">24 horas</option>
+          <option value="7d">7 dias</option>
+          <option value="30d">30 dias</option>
+        </select>
+      </label>
+
+      <label>
+        Motivo
+        <textarea [(ngModel)]="sancion.sancion_motivo"></textarea>
+      </label>
+
+      <div class="admin-actions">
+        <button type="button" (click)="aplicarSancion()">Aplicar sancion</button>
+        <button type="button" (click)="actualizarEstado(reporteSeleccionado, 'aprobado')">Aprobar sin sancion</button>
+        <button type="button" (click)="cancelar()">Cancelar</button>
+      </div>
+    </aside>
+  </div>
+</section>

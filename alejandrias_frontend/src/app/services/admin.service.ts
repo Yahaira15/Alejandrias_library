@@ -23,4 +23,8 @@ export class AdminService {
   eliminar(recurso: string, id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${recurso}/${id}`);
   }
+
+  sancionarReporte(reporteId: number, data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reportes/${reporteId}/sancionar`, data);
+  }
 }

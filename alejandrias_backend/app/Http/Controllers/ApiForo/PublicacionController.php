@@ -9,6 +9,7 @@ use App\Models\Publicacion;
 use App\Models\Notificacion;
 use App\Services\IA\Moderation\ContentModerationService;
 use App\Services\Notifications\LeaderNotificationService;
+use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
 
 class PublicacionController extends Controller
@@ -59,6 +60,10 @@ class PublicacionController extends Controller
 
             if (!$usuario) {
                 return response()->json(['error' => 'No autenticado'], 401);
+            }
+
+            if (app(SanctionService::class)->hasActiveBlock($usuario, 'publicar')) {
+                return response()->json(['error' => 'Tu cuenta tiene una restriccion activa para publicar'], 403);
             }
 
             $foro = Foro::find($foroId);

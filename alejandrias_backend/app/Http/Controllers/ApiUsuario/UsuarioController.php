@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ApiUsuario;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
+use App\Services\Sanctions\SanctionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -105,9 +106,13 @@ class UsuarioController extends Controller
                 ], 401);
             }
 
-            if ($usuario->usuario_bloqueado) {
+            $sanctionService = app(SanctionService::class);
+            $sanctionService->expireOldSanctions($usuario->usuario_id);
+            $usuario->refresh();
+
+            if ($usuario->usuario_bloqueado || $sanctionService->hasActiveBlock($usuario, 'login')) {
                 return response()->json([
-                    'mensaje' => 'Usuario bloqueado'
+                    'mensaje' => 'Usuario suspendido o baneado'
                 ], 403);
             }
 

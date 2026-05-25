@@ -32,6 +32,20 @@
         <span>Publicaciones: {{ publicaciones.length }}</span>
       </div>
 
+      <div class="publication-actions">
+        <button type="button" class="btn btn-secondary" (click)="abrirReporte('foro', foro.foro_id, foro.foro_titulo)">
+          Reportar foro
+        </button>
+        <button
+          type="button"
+          class="btn btn-secondary"
+          *ngIf="foro.foro_creador_id"
+          (click)="abrirReporte('usuario', foro.foro_creador_id, foro.usuario?.usuario_apodo || foro.usuario?.usuario_nombre || 'Usuario')"
+        >
+          Reportar usuario
+        </button>
+      </div>
+
       <button
         *ngIf="esCreadorDelForo && foro.foro_privado"
         type="button"
@@ -162,6 +176,21 @@
                   {{ eliminandoPublicacionId === publicacion.publicacion_id ? 'Eliminando...' : 'Eliminar publicacion' }}
                 </button>
               </ng-container>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                (click)="abrirReporte('publicacion', publicacion.publicacion_id, publicacion.publicacion_titulo)"
+              >
+                Reportar
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                *ngIf="publicacion.publicacion_usuario_id"
+                (click)="abrirReporte('usuario', publicacion.publicacion_usuario_id, publicacion.usuario?.usuario_apodo || publicacion.usuario?.usuario_nombre || 'Usuario')"
+              >
+                Reportar usuario
+              </button>
             </div>
           </div>
 
@@ -200,6 +229,30 @@
           </ng-template>
         </article>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="reporteModalAbierto && reporteObjetivo" (click)="cerrarReporte()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarReporte()">x</button>
+    <p class="modal-kicker">Reporte</p>
+    <h2>{{ reporteObjetivo.titulo }}</h2>
+
+    <div class="modal-form">
+      <select class="modal-input" [(ngModel)]="reporteMotivo">
+        <option value="">Selecciona un motivo</option>
+        <option *ngFor="let motivo of motivosReporte(reporteObjetivo.tipo)" [value]="motivo">{{ motivo }}</option>
+      </select>
+      <textarea
+        class="modal-input"
+        [(ngModel)]="reporteDescripcion"
+        rows="4"
+        placeholder="Describe brevemente lo ocurrido"
+      ></textarea>
+      <button type="button" class="modal-action" (click)="enviarReporte()" [disabled]="enviandoReporte">
+        {{ enviandoReporte ? 'Enviando...' : 'Enviar reporte' }}
+      </button>
     </div>
   </div>
 </div>

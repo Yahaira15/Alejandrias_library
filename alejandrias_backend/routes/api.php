@@ -8,6 +8,8 @@ use App\Http\Controllers\ApiForo\PublicacionController;
 use App\Http\Controllers\ApiForo\ComentarioController;
 use App\Http\Controllers\ApiForo\NotificacionController;
 use App\Http\Controllers\ApiAdmin\AdminController;
+use App\Http\Controllers\ApiReporte\ReporteController;
+use App\Http\Controllers\ApiReporte\SancionController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -46,6 +48,16 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('/comentarios', [AdminController::class, 'crearComentario']);
     Route::put('/comentarios/{id}', [AdminController::class, 'actualizarComentario']);
     Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy']);
+
+    Route::get('/reportes', [ReporteController::class, 'index']);
+    Route::put('/reportes/{id}', [ReporteController::class, 'update']);
+    Route::delete('/reportes/{id}', [ReporteController::class, 'destroy']);
+    Route::post('/reportes/{id}/sancionar', [ReporteController::class, 'sancionar']);
+
+    Route::get('/sanciones', [SancionController::class, 'index']);
+    Route::post('/sanciones', [SancionController::class, 'store']);
+    Route::put('/sanciones/{id}', [SancionController::class, 'update']);
+    Route::delete('/sanciones/{id}', [SancionController::class, 'destroy']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -84,4 +96,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notificaciones', [NotificacionController::class, 'index']);
     Route::put('/notificaciones/{id}/leer', [NotificacionController::class, 'marcarLeida']);
     Route::get('/notificaciones-contador', [NotificacionController::class, 'contador']);
+    Route::post('/reportes', [ReporteController::class, 'store']);
 });

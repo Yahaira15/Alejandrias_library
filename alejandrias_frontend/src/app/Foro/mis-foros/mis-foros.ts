@@ -34,6 +34,8 @@ export class MisForos implements OnInit, OnDestroy {
   mostrarPanelNotificaciones = false;
   cantidadNoLeidas = 0;
   intervaloNotificaciones: any;
+  sancionNotificacionModalAbierto = false;
+  sancionNotificacionSeleccionada: any = null;
 
   constructor(
     private foroService: ForoService,
@@ -267,6 +269,10 @@ export class MisForos implements OnInit, OnDestroy {
     }
   
     abrirNotificacion(notificacion: any): void {
+      if (this.esNotificacionSancion(notificacion)) {
+        this.verMasSancion(notificacion);
+        return;
+      }
   
       // ✅ Marcar leída
       this.notificacionService
@@ -325,6 +331,10 @@ export class MisForos implements OnInit, OnDestroy {
     }
   
     irANotificacion(notificacion: any): void {
+      if (this.esNotificacionSancion(notificacion)) {
+        this.verMasSancion(notificacion);
+        return;
+      }
   
       if (!notificacion.notificacion_leida) {
   
@@ -368,7 +378,11 @@ export class MisForos implements OnInit, OnDestroy {
           ]);
   
           break;
-  
+
+        case 'nuevo_reporte':
+          this.router.navigate(['/admin/reportes']);
+          break;
+
         default:
   
           console.warn(
@@ -378,6 +392,42 @@ export class MisForos implements OnInit, OnDestroy {
   
       this.mostrarPanelNotificaciones = false;
     }
+
+  esNotificacionSancion(notificacion: any): boolean {
+    return ['sancion_advertencia', 'sancion_restriccion'].includes(notificacion?.notificacion_tipo);
+  }
+
+  verMasSancion(notificacion: any): void {
+    if (!notificacion.notificacion_leida) {
+      this.notificacionService.marcarComoLeida(notificacion.notificacion_id).subscribe({
+        next: () => {
+          notificacion.notificacion_leida = true;
+          if (this.cantidadNoLeidas > 0) {
+            this.cantidadNoLeidas--;
+          }
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.error(err)
+      });
+    }
+
+    this.sancionNotificacionSeleccionada = notificacion;
+    this.sancionNotificacionModalAbierto = true;
+    this.mostrarPanelNotificaciones = false;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalSancion(): void {
+    this.sancionNotificacionModalAbierto = false;
+    this.sancionNotificacionSeleccionada = null;
+    this.cdr.detectChanges();
+  }
+
+  tituloSancion(notificacion: any): string {
+    return notificacion?.notificacion_tipo === 'sancion_restriccion'
+      ? 'Restriccion temporal'
+      : 'Advertencia';
+  }
 
   trackByForoId(index: number, foro: any): number {
     return foro.foro_id;

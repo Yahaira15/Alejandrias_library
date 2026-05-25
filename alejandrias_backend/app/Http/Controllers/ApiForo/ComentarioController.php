@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Notificacion;
 use App\Services\IA\Moderation\ContentModerationService;
 use App\Services\Notifications\LeaderNotificationService;
+use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
 
 class ComentarioController extends Controller
@@ -63,6 +64,10 @@ class ComentarioController extends Controller
 
         if (!$usuario) {
             return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if (app(SanctionService::class)->hasActiveBlock($usuario, 'comentar')) {
+            return response()->json(['error' => 'Tu cuenta tiene una restriccion activa para comentar'], 403);
         }
 
         $foro = $publicacion->foro;

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ForoService } from '../../services/foro';
 import { NotificacionService } from '../../services/notificacion.service';
+import { ReportePayload, ReporteService } from '../../services/reporte.service';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { formatDistanceToNow } from 'date-fns';
@@ -48,12 +49,20 @@ export class ListaForos implements OnInit, OnDestroy {
   errorRegistro = '';
   registrandoForo = false;
   buscandoPrivado = false;
+  reporteModalAbierto = false;
+  reporteObjetivo: { tipo: ReportePayload['reporte_tipo']; id: number; titulo: string } | null = null;
+  reporteMotivo = '';
+  reporteDescripcion = '';
+  enviandoReporte = false;
+  sancionNotificacionModalAbierto = false;
+  sancionNotificacionSeleccionada: any = null;
 
   constructor(
     private foroService: ForoService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private notificacionService: NotificacionService
+    private notificacionService: NotificacionService,
+    private reporteService: ReporteService
   ) {}
 
   @HostListener('document:click', ['$event'])
@@ -287,6 +296,54 @@ export class ListaForos implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  abrirReporte(tipo: ReportePayload['reporte_tipo'], id: number, titulo: string): void {
+    this.reporteObjetivo = { tipo, id, titulo };
+    this.reporteMotivo = '';
+    this.reporteDescripcion = '';
+    this.reporteModalAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarReporte(): void {
+    this.reporteModalAbierto = false;
+    this.reporteObjetivo = null;
+    this.reporteMotivo = '';
+    this.reporteDescripcion = '';
+    this.enviandoReporte = false;
+    this.cdr.detectChanges();
+  }
+
+  enviarReporte(): void {
+    if (!this.reporteObjetivo || !this.reporteMotivo || this.enviandoReporte) {
+      this.errorRegistro = 'Selecciona un motivo para reportar.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.enviandoReporte = true;
+    this.reporteService.crearReporte({
+      reporte_tipo: this.reporteObjetivo.tipo,
+      reporte_referencia_id: this.reporteObjetivo.id,
+      reporte_motivo: this.reporteMotivo,
+      reporte_descripcion: this.reporteDescripcion
+    }).subscribe({
+      next: () => {
+        this.cerrarReporte();
+        alert('Reporte enviado a administracion.');
+      },
+      error: (err) => {
+        this.enviandoReporte = false;
+        this.errorRegistro = err?.error?.error || 'No se pudo enviar el reporte.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  motivosReporte(tipo: ReportePayload['reporte_tipo'] | undefined): string[] {
+    if (tipo === 'usuario') return ['acoso', 'suplantacion', 'amenazas', 'spam masivo'];
+    return ['tematica ilegal', 'contenido extremista', 'spam', 'fraude'];
+  }
+
   registrarForoPublico(): void {
     if (!this.foroSeleccionado || this.registrandoForo) return;
 
@@ -426,6 +483,10 @@ export class ListaForos implements OnInit, OnDestroy {
   }
 
   abrirNotificacion(notificacion: any): void {
+    if (this.esNotificacionSancion(notificacion)) {
+      this.verMasSancion(notificacion);
+      return;
+    }
 
     // ✅ Marcar leída
     this.notificacionService
@@ -484,6 +545,10 @@ export class ListaForos implements OnInit, OnDestroy {
   }
 
   irANotificacion(notificacion: any): void {
+    if (this.esNotificacionSancion(notificacion)) {
+      this.verMasSancion(notificacion);
+      return;
+    }
 
     if (!notificacion.notificacion_leida) {
 
@@ -528,6 +593,10 @@ export class ListaForos implements OnInit, OnDestroy {
 
         break;
 
+      case 'nuevo_reporte':
+        this.router.navigate(['/admin/reportes']);
+        break;
+
       default:
 
         console.warn(
@@ -536,6 +605,42 @@ export class ListaForos implements OnInit, OnDestroy {
     }
 
     this.mostrarPanelNotificaciones = false;
+  }
+
+  esNotificacionSancion(notificacion: any): boolean {
+    return ['sancion_advertencia', 'sancion_restriccion'].includes(notificacion?.notificacion_tipo);
+  }
+
+  verMasSancion(notificacion: any): void {
+    if (!notificacion.notificacion_leida) {
+      this.notificacionService.marcarComoLeida(notificacion.notificacion_id).subscribe({
+        next: () => {
+          notificacion.notificacion_leida = true;
+          if (this.cantidadNoLeidas > 0) {
+            this.cantidadNoLeidas--;
+          }
+          this.cdr.detectChanges();
+        },
+        error: (err) => console.error(err)
+      });
+    }
+
+    this.sancionNotificacionSeleccionada = notificacion;
+    this.sancionNotificacionModalAbierto = true;
+    this.mostrarPanelNotificaciones = false;
+    this.cdr.detectChanges();
+  }
+
+  cerrarModalSancion(): void {
+    this.sancionNotificacionModalAbierto = false;
+    this.sancionNotificacionSeleccionada = null;
+    this.cdr.detectChanges();
+  }
+
+  tituloSancion(notificacion: any): string {
+    return notificacion?.notificacion_tipo === 'sancion_restriccion'
+      ? 'Restriccion temporal'
+      : 'Advertencia';
   }
 
   trackByForoId(index: number, foro: any): number {

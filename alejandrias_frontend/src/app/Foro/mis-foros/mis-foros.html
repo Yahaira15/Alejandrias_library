@@ -88,7 +88,7 @@
 
                   <button
                     *ngIf="!notificacion.notificacion_leida"
-                    (click)="marcarComoLeida(notificacion)">
+                    (click)="marcarComoLeida(notificacion); $event.stopPropagation()">
 
                     Marcar leída
 
@@ -97,9 +97,18 @@
                   <!-- 🔹 IR A -->
 
                   <button
-                    (click)="irANotificacion(notificacion)">
+                    *ngIf="!esNotificacionSancion(notificacion)"
+                    (click)="irANotificacion(notificacion); $event.stopPropagation()">
 
                     Ir a
+
+                  </button>
+
+                  <button
+                    *ngIf="esNotificacionSancion(notificacion)"
+                    (click)="verMasSancion(notificacion); $event.stopPropagation()">
+
+                    Ver mas
 
                   </button>
 
@@ -153,6 +162,20 @@
       </div>
     </section>
 
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="sancionNotificacionModalAbierto && sancionNotificacionSeleccionada" (click)="cerrarModalSancion()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarModalSancion()">x</button>
+    <p class="modal-kicker">Sancion</p>
+    <h2>{{ tituloSancion(sancionNotificacionSeleccionada) }}</h2>
+    <p>{{ sancionNotificacionSeleccionada.notificacion_contenido }}</p>
+    <div class="modal-meta">
+      <span>{{ obtenerTiempo(sancionNotificacionSeleccionada.notificacion_fecha) }}</span>
+      <span>Referencia #{{ sancionNotificacionSeleccionada.notificacion_referencia_id }}</span>
+    </div>
+    <button type="button" class="modal-action" (click)="cerrarModalSancion()">Entendido</button>
   </div>
 </div>
 

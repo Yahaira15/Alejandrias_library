@@ -111,7 +111,7 @@
 
                   <button
                     *ngIf="!notificacion.notificacion_leida"
-                    (click)="marcarComoLeida(notificacion)">
+                    (click)="marcarComoLeida(notificacion); $event.stopPropagation()">
 
                     Marcar leída
 
@@ -120,9 +120,18 @@
                   <!-- 🔹 IR A -->
 
                   <button
-                    (click)="irANotificacion(notificacion)">
+                    *ngIf="!esNotificacionSancion(notificacion)"
+                    (click)="irANotificacion(notificacion); $event.stopPropagation()">
 
                     Ir a
+
+                  </button>
+
+                  <button
+                    *ngIf="esNotificacionSancion(notificacion)"
+                    (click)="verMasSancion(notificacion); $event.stopPropagation()">
+
+                    Ver mas
 
                   </button>
 
@@ -195,6 +204,9 @@
           <button type="button" class="btn-ver-foro" (click)="abrirModalForo(foro)">
             Ver foro
           </button>
+          <button type="button" class="btn-ver-foro" (click)="abrirReporte('foro', foro.foro_id, foro.foro_titulo)">
+            Reportar foro
+          </button>
 
         </div>
       </div>
@@ -220,11 +232,59 @@
       <span>Comentarios: {{ foroSeleccionado.comentarios_count_total || 0 }}</span>
     </div>
     <p class="modal-error" *ngIf="errorRegistro">{{ errorRegistro }}</p>
+    <button type="button" class="modal-action secondary" (click)="abrirReporte('foro', foroSeleccionado.foro_id, foroSeleccionado.foro_titulo)">
+      Reportar foro
+    </button>
+    <button
+      type="button"
+      class="modal-action secondary"
+      *ngIf="foroSeleccionado.foro_creador_id"
+      (click)="abrirReporte('usuario', foroSeleccionado.foro_creador_id, foroSeleccionado.usuario?.usuario_apodo || foroSeleccionado.usuario?.usuario_nombre || 'Usuario')"
+    >
+      Reportar usuario
+    </button>
     @if (rol === 'explorador'){
       <button type="button" class="modal-action" (click)="registrarForoPublico()" [disabled]="registrandoForo">
       {{ registrandoForo ? 'Registrando...' : 'Registrarse' }}
     </button>
     }
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="sancionNotificacionModalAbierto && sancionNotificacionSeleccionada" (click)="cerrarModalSancion()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarModalSancion()">x</button>
+    <p class="modal-kicker">Sancion</p>
+    <h2>{{ tituloSancion(sancionNotificacionSeleccionada) }}</h2>
+    <p>{{ sancionNotificacionSeleccionada.notificacion_contenido }}</p>
+    <div class="modal-meta">
+      <span>{{ obtenerTiempo(sancionNotificacionSeleccionada.notificacion_fecha) }}</span>
+      <span>Referencia #{{ sancionNotificacionSeleccionada.notificacion_referencia_id }}</span>
+    </div>
+    <button type="button" class="modal-action" (click)="cerrarModalSancion()">Entendido</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="reporteModalAbierto && reporteObjetivo" (click)="cerrarReporte()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarReporte()">x</button>
+    <p class="modal-kicker">Reporte</p>
+    <h2>{{ reporteObjetivo.titulo }}</h2>
+
+    <select class="modal-input" [(ngModel)]="reporteMotivo">
+      <option value="">Selecciona un motivo</option>
+      <option *ngFor="let motivo of motivosReporte(reporteObjetivo.tipo)" [value]="motivo">{{ motivo }}</option>
+    </select>
+    <textarea
+      class="modal-input"
+      [(ngModel)]="reporteDescripcion"
+      rows="4"
+      placeholder="Describe brevemente lo ocurrido"
+    ></textarea>
+    <p class="modal-error" *ngIf="errorRegistro">{{ errorRegistro }}</p>
+    <button type="button" class="modal-action" (click)="enviarReporte()" [disabled]="enviandoReporte">
+      {{ enviandoReporte ? 'Enviando...' : 'Enviar reporte' }}
+    </button>
   </div>
 </div>
 

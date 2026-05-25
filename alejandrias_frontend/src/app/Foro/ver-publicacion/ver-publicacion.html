@@ -28,6 +28,20 @@
         </div>
 
         <p class="publication-body">{{ publicacion.publicacion_contenido }}</p>
+
+        <div class="comment-actions">
+          <button type="button" class="btn btn-secondary" (click)="abrirReporte('publicacion', publicacion.publicacion_id, publicacion.publicacion_titulo)">
+            Reportar publicacion
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            *ngIf="publicacion.publicacion_usuario_id"
+            (click)="abrirReporte('usuario', publicacion.publicacion_usuario_id, publicacion.usuario?.usuario_apodo || publicacion.usuario?.usuario_nombre || 'Usuario')"
+          >
+            Reportar usuario
+          </button>
+        </div>
       </div>
     </section>
 
@@ -109,10 +123,23 @@
 
             <p class="comment-content">{{ comentario.comentario_contenido }}</p>
 
-            <div class="comment-actions" *ngIf="esComentarioPropio(comentario)">
-              <button (click)="iniciarEdicionComentario(comentario)" class="btn btn-secondary">Editar comentario</button>
-              <button (click)="eliminarComentario(comentario.comentario_id)" class="btn btn-danger" [disabled]="eliminandoComentarioId === comentario.comentario_id">
-                {{ eliminandoComentarioId === comentario.comentario_id ? 'Eliminando...' : 'Eliminar comentario' }}
+            <div class="comment-actions">
+              <ng-container *ngIf="esComentarioPropio(comentario)">
+                <button (click)="iniciarEdicionComentario(comentario)" class="btn btn-secondary">Editar comentario</button>
+                <button (click)="eliminarComentario(comentario.comentario_id)" class="btn btn-danger" [disabled]="eliminandoComentarioId === comentario.comentario_id">
+                  {{ eliminandoComentarioId === comentario.comentario_id ? 'Eliminando...' : 'Eliminar comentario' }}
+                </button>
+              </ng-container>
+              <button type="button" class="btn btn-secondary" (click)="abrirReporte('comentario', comentario.comentario_id, 'Comentario de ' + (comentario.usuario?.usuario_apodo || comentario.usuario?.usuario_nombre || 'usuario'))">
+                Reportar
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                *ngIf="comentario.comentario_usuario_id"
+                (click)="abrirReporte('usuario', comentario.comentario_usuario_id, comentario.usuario?.usuario_apodo || comentario.usuario?.usuario_nombre || 'Usuario')"
+              >
+                Reportar usuario
               </button>
             </div>
           </div>
@@ -142,5 +169,29 @@
         </button>
       </div>
     </section>
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="reporteModalAbierto && reporteObjetivo" (click)="cerrarReporte()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarReporte()">x</button>
+    <p class="modal-kicker">Reporte</p>
+    <h2>{{ reporteObjetivo.titulo }}</h2>
+
+    <div class="modal-form">
+      <select class="modal-input" [(ngModel)]="reporteMotivo">
+        <option value="">Selecciona un motivo</option>
+        <option *ngFor="let motivo of motivosReporte(reporteObjetivo.tipo)" [value]="motivo">{{ motivo }}</option>
+      </select>
+      <textarea
+        class="modal-input"
+        [(ngModel)]="reporteDescripcion"
+        rows="4"
+        placeholder="Describe brevemente lo ocurrido"
+      ></textarea>
+      <button type="button" class="modal-action" (click)="enviarReporte()" [disabled]="enviandoReporte">
+        {{ enviandoReporte ? 'Enviando...' : 'Enviar reporte' }}
+      </button>
+    </div>
   </div>
 </div>

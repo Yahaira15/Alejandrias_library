@@ -1,0 +1,54 @@
+.reportes-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+}
+
+.reporte-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.reporte-panel h3,
+.reporte-panel p {
+  margin: 0;
+}
+
+.reporte-panel label {
+  display: grid;
+  gap: 6px;
+  color: #284358;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reporte-panel input,
+.reporte-panel select,
+.reporte-panel textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #284358;
+  font-family: inherit;
+}
+
+.reporte-panel textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+tr.selected td {
+  background: rgba(251, 239, 217, 0.82);
+}
+
+@media (max-width: 980px) {
+  .reportes-layout {
+    grid-template-columns: 1fr;
+  }
+}

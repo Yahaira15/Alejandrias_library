@@ -12,6 +12,7 @@ use App\Models\Foro;
 use App\Models\Notificacion;
 use App\Services\IA\Moderation\ContentModerationService;
 use App\Services\Notifications\LeaderNotificationService;
+use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
 
 class ForoController extends Controller
@@ -96,6 +97,10 @@ class ForoController extends Controller
 
             if (!in_array($usuario->usuario_rol, ['lider', 'admin'], true)) {
                 return response()->json(['error' => 'No autorizado'], 403);
+            }
+
+            if (app(SanctionService::class)->hasActiveBlock($usuario, 'publicar')) {
+                return response()->json(['error' => 'Tu cuenta tiene una restriccion activa para publicar'], 403);
             }
 
             $moderationService = app(ContentModerationService::class);

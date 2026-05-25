@@ -21,6 +21,8 @@ import { AdminForos } from './Admin/admin-foros/admin-foros';
 import { AdminCategorias } from './Admin/admin-categorias/admin-categorias';
 import { AdminPublicaciones } from './Admin/admin-publicaciones/admin-publicaciones';
 import { AdminComentarios } from './Admin/admin-comentarios/admin-comentarios';
+import { AdminReportes } from './Admin/admin-reportes/admin-reportes';
+import { AdminSanciones } from './Admin/admin-sanciones/admin-sanciones';
  
 export const routes: Routes = [
     {path: 'home',component:Home},
@@ -46,7 +48,9 @@ export const routes: Routes = [
             { path: 'foros', component: AdminForos },
             { path: 'categorias', component: AdminCategorias },
             { path: 'publicaciones', component: AdminPublicaciones },
-            { path: 'comentarios', component: AdminComentarios }
+            { path: 'comentarios', component: AdminComentarios },
+            { path: 'reportes', component: AdminReportes },
+            { path: 'sanciones', component: AdminSanciones }
         ]
     }
 ];
