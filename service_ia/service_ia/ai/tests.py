@@ -93,7 +93,8 @@ class OrquestacionIATests(SimpleTestCase):
         )
 
         self.assertIn("REGLAS SOBRE VIDEOJUEGOS:", ejecucion["prompt"])
-        self.assertIn("builds avanzadas", ejecucion["prompt"].lower())
+        self.assertIn("no es una guia gaming especializada", ejecucion["prompt"].lower())
+        self.assertIn("no respondas guias", ejecucion["prompt"].lower())
 
     def test_respuesta_foros_recomienda_existentes(self):
         respuesta = construir_respuesta_foros(
@@ -165,6 +166,38 @@ class OrquestacionIATests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'"origen": "modelo"', response.content)
         self.assertIn(b"Historia de Roma", response.content)
+        generar_texto.assert_called_once()
+
+    @patch(VIEW_GENERAR_TEXTO)
+    def test_chat_view_redirige_guia_gaming_sin_llamar_modelo(self, generar_texto):
+        request = RequestFactory().post(
+            "/api/ia/chat/",
+            data='{"tipo":"chat","data":{"mensaje":"Como consigo la mejor arma y desbloqueo esa mision en Elden Ring?"}}',
+            content_type="application/json",
+        )
+
+        response = chat_view(request)
+        payload = json.loads(response.content.decode("utf-8"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["origen"], "politica_videojuegos")
+        self.assertIn("no una guia gaming especializada", payload["data"]["mensaje"])
+        generar_texto.assert_not_called()
+
+    @patch(VIEW_GENERAR_TEXTO, return_value="Los videojuegos pueden estudiarse como industria cultural.")
+    def test_chat_view_permite_enfoque_cultural_videojuegos(self, generar_texto):
+        request = RequestFactory().post(
+            "/api/ia/chat/",
+            data='{"tipo":"chat","data":{"mensaje":"Explica el impacto cultural de los videojuegos"}}',
+            content_type="application/json",
+        )
+
+        response = chat_view(request)
+        payload = json.loads(response.content.decode("utf-8"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payload["origen"], "modelo")
+        self.assertIn("industria cultural", payload["data"]["mensaje"])
         generar_texto.assert_called_once()
 
     def test_moderacion_permite_contexto_historico_educativo(self):

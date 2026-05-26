@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
@@ -14,6 +14,8 @@ import { ChatIaService, ChatMensaje } from '../services/chat-ia';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatIaComponent {
+  @ViewChild('mensajesContainer') private mensajesContainer?: ElementRef<HTMLElement>;
+
   mensajes: ChatMensaje[] = [
     {
       rol: 'asistente',
@@ -49,6 +51,7 @@ export class ChatIaComponent {
     this.mensajeActual = '';
     this.cargando = true;
     this.cdr.detectChanges();
+    this.scrollAlUltimoMensaje();
 
     this.chatIaService.enviarMensaje(texto, this.mensajes).subscribe({
       next: (respuesta) => {
@@ -64,11 +67,13 @@ export class ChatIaComponent {
         ];
         this.cargando = false;
         this.cdr.detectChanges();
+        this.scrollAlUltimoMensaje();
       },
       error: () => {
         this.error = 'No se pudo obtener respuesta de la IA.';
         this.cargando = false;
         this.cdr.detectChanges();
+        this.scrollAlUltimoMensaje();
       }
     });
   }
@@ -84,6 +89,7 @@ export class ChatIaComponent {
     this.error = '';
     this.mensajeActual = '';
     this.cdr.detectChanges();
+    this.scrollAlUltimoMensaje();
   }
 
   onKeydown(event: KeyboardEvent): void {
@@ -95,5 +101,19 @@ export class ChatIaComponent {
 
   trackByIndex(index: number): number {
     return index;
+  }
+
+  private scrollAlUltimoMensaje(): void {
+    requestAnimationFrame(() => {
+      const contenedor = this.mensajesContainer?.nativeElement;
+      if (!contenedor) {
+        return;
+      }
+
+      contenedor.scrollTo({
+        top: contenedor.scrollHeight,
+        behavior: 'smooth',
+      });
+    });
   }
 }

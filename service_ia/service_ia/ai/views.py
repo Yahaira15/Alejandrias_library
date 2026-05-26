@@ -1,7 +1,9 @@
 import json
 import logging
 import os
+import re
 import time
+import unicodedata
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -21,6 +23,55 @@ from .response_formatter import formatear_respuesta
 
 logger = logging.getLogger(__name__)
 MAX_INTENTOS_PARSE_MODELO = int(os.getenv("MODERATION_MODEL_PARSE_RETRIES", "2"))
+
+
+def _normalizar_texto(valor):
+    texto = unicodedata.normalize("NFKD", str(valor or ""))
+    texto = "".join(caracter for caracter in texto if not unicodedata.combining(caracter))
+    return " ".join(texto.lower().split())
+
+
+def _es_peticion_gaming_especifica(mensaje):
+    texto = _normalizar_texto(mensaje)
+    if not texto:
+        return False
+
+    referencias_videojuegos = [
+        r"\bvideojuego(s)?\b",
+        r"\bjuego(s)?\b",
+        r"\bgaming\b",
+        r"\bpartida(s)?\b",
+        r"\bmis(i|io)n(es)?\b",
+        r"\bnivel(es)?\b",
+        r"\bjefe(s)?\b|\bboss(es)?\b",
+        r"\bskin(s)?\b",
+        r"\bitem(s)?\b|\bobjeto(s)?\b",
+        r"\barma(s)?\b",
+        r"\bpersonaje(s)?\b",
+        r"\bbuild(s)?\b",
+        r"\bserver(s)?\b",
+        r"\bfortnite\b|\bminecraft\b|\broblox\b|\bfree fire\b|\bvalorant\b|\blol\b|\bleague of legends\b|\bgta\b|\bzelda\b|\bpokemon\b|\bdark souls\b|\belden ring\b|\bgenshin\b|\bclash royale\b",
+    ]
+    solicitudes_operativas = [
+        r"\bcomo\b.*\b(ganar|pasar|avanzar|subir|farmear|conseguir|obtener|desbloquear|completar|derrotar|matar|vencer)\b",
+        r"\b(dime|dame|explica|recomienda|recomendame)\b.*\b(build|estrategia|truco|guia|ruta|pasos|mision|arma|objeto|nivel|desbloqueo|farming|farmear)\b",
+        r"\b(mejor|mejores)\b.*\b(build|arma|armas|objeto|objetos|personaje|personajes|estrategia|equipo|clase)\b",
+        r"\b(secretos?|logros?|codigos?|cheats?|trucos?|exploit(s)?|meta competitivo|tier list)\b",
+        r"\b(progresion|farmeo|farming|farmear|desbloqueos?|misiones?|niveles?|objetos?|items?|armas?)\b",
+    ]
+
+    menciona_videojuego = any(re.search(patron, texto) for patron in referencias_videojuegos)
+    pide_operacion = any(re.search(patron, texto) for patron in solicitudes_operativas)
+
+    return menciona_videojuego and pide_operacion
+
+
+def _respuesta_limite_videojuegos():
+    return (
+        "Puedo hablar de videojuegos solo de forma general, educativa, historica o cultural. "
+        "Alejandrias es una plataforma educativa, no una guia gaming especializada, asi que no doy "
+        "estrategias, misiones, builds, trucos, farming, objetos, niveles, desbloqueos ni pasos detallados."
+    )
 
 
 def _detalle_fallo_modelo(error):
@@ -128,30 +179,8 @@ def _respuesta_chat_respaldo(contexto):
 
     mensaje_min = mensaje.lower()
     historial_texto = " ".join(item.get("texto", "") for item in historial).lower()
-    gaming_avanzado = any(
-        termino in mensaje_min
-        for termino in [
-            "build",
-            "mejor arma",
-            "mejores armas",
-            "objeto raro",
-            "items raros",
-            "farmear",
-            "farming",
-            "meta competitivo",
-            "como ganar partidas",
-            "estrategia avanzada",
-            "exploit",
-        ]
-    )
-
-    if gaming_avanzado:
-        return (
-            "Puedo ayudarte con una vision introductoria del juego, sus mecanicas principales, "
-            "su historia o algun aprendizaje tecnico y cultural relacionado. El enfoque principal "
-            "de Alejandrias es educativo y conversacional, asi que no profundizo en guias "
-            "competitivas, builds avanzadas ni optimizacion extrema."
-        )
+    if _es_peticion_gaming_especifica(mensaje):
+        return _respuesta_limite_videojuegos()
 
     if any(palabra in mensaje_min for palabra in ["hola", "buenas", "hey"]):
         return "Hola. Estoy listo para ayudarte con foros, estudio y dudas generales."
@@ -286,6 +315,19 @@ def chat_view(request):
 
     if not contexto["mensaje"].strip():
         return JsonResponse({"ok": False, "error": "El mensaje es obligatorio"}, status=400)
+
+    if _es_peticion_gaming_especifica(contexto["mensaje"]):
+        return JsonResponse(
+            {
+                "ok": True,
+                "tipo": tipo,
+                "origen": "politica_videojuegos",
+                "data": {
+                    "mensaje": _respuesta_limite_videojuegos(),
+                },
+            },
+            status=200,
+        )
 
     prompt = ejecucion["prompt"]
 
