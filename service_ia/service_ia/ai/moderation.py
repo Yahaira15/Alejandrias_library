@@ -20,6 +20,8 @@ CATEGORIAS_VALIDAS = {
     "otro",
 }
 
+NIVELES_ALERTA_SEGURIDAD = {"ninguno", "riesgo_medio", "riesgo_alto", "riesgo_critico"}
+
 MODERATION_RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
@@ -261,6 +263,7 @@ def _patrones_riesgo_real():
     return [
         r"\bte voy a matar\b|\bvoy a matarte\b|\bquiero matarte\b|\bte matare\b|\bte mato\b",
         r"\bte voy a asesinar\b|\bvoy a asesinarte\b|\bquiero asesinarte\b|\bte asesinare\b|\bte asesino\b|\bvoy a asesinarlo\b|\basesinarlo\b",
+        r"\bvoy a matar a\b|\bvoy a asesinar a\b|\bplaneo matar\b|\bplaneo asesinar\b|\bvoy a disparar\b|\bvoy a apunalar\b",
         r"\bmatar a todos\b|\bmatare a todos\b|\bmataremos a todos\b|\bmatar personas\b|\bmatarlos a todos\b",
         r"\bmejor muere\b|\bmatate\b|\bquiero que mueras\b",
         r"\bporn(o|ografia)\b|\bsexo explicito\b|\bxxx\b",
@@ -280,6 +283,81 @@ def _patrones_riesgo_real():
     ]
 
 
+def _detectar_alerta_seguridad(texto):
+    if not texto:
+        return {
+            "requiere_alerta": False,
+            "nivel": "ninguno",
+            "tipo": "ninguno",
+            "razon": "",
+        }
+
+    reglas_criticas = [
+        (
+            r"\b(me voy a matar|voy a suicidarme|me suicidare|quiero suicidarme hoy|hoy me mato)\b"
+            r"|\b(tengo un plan|ya tengo plan|tengo la cuerda|tengo pastillas|tengo un arma)\b.*\b(matarme|suicid|hacerme dano)\b",
+            "autolesion",
+            "Intencion directa o planificacion de autolesion.",
+        ),
+        (
+            r"\b(voy a matar a|voy a asesinar a|planeo matar|planeo asesinar|voy a disparar|voy a apunalar)\b"
+            r"|\b(tengo un arma|tengo un cuchillo)\b.*\b(matar|asesinar|herir|atacar)\b",
+            "violencia",
+            "Amenaza grave o planificacion de dano contra otras personas.",
+        ),
+    ]
+
+    reglas_altas = [
+        (
+            r"\b(me quiero matar|quiero matarme|quiero suicidarme|suicidarme|suicidio)\b"
+            r"|\b(me voy a cortar|quiero cortarme|me quiero cortar|autolesion|hacerme dano|hacerme mucho dano)\b",
+            "autolesion",
+            "Senales explicitas de autolesion o suicidio.",
+        ),
+        (
+            r"\b(te voy a matar|voy a matarte|quiero matarte|te matare|te voy a asesinar|voy a asesinarte|matar a todos)\b"
+            r"|\b(quiero matar a alguien|quiero hacerle dano|quiero herir a alguien)\b",
+            "violencia",
+            "Amenaza o intencion explicita de violencia grave.",
+        ),
+    ]
+
+    reglas_medias = [
+        (
+            r"\b(no quiero vivir|ya no quiero vivir|no puedo mas|no aguanto mas|quiero desaparecer)\b"
+            r"|\b(no le importo a nadie|no tengo esperanza|sin esperanza|todo estaria mejor sin mi)\b",
+            "salud_mental",
+            "Senales de desesperanza o crisis emocional intensa.",
+        ),
+        (
+            r"\b(me siento vacio|me siento vacia|estoy desesperado|estoy desesperada|tristeza extrema)\b",
+            "salud_mental",
+            "Expresion de tristeza extrema o malestar emocional.",
+        ),
+    ]
+
+    for reglas, nivel in [
+        (reglas_criticas, "riesgo_critico"),
+        (reglas_altas, "riesgo_alto"),
+        (reglas_medias, "riesgo_medio"),
+    ]:
+        for patron, tipo, razon in reglas:
+            if re.search(patron, texto):
+                return {
+                    "requiere_alerta": True,
+                    "nivel": nivel,
+                    "tipo": tipo,
+                    "razon": razon,
+                }
+
+    return {
+        "requiere_alerta": False,
+        "nivel": "ninguno",
+        "tipo": "ninguno",
+        "razon": "",
+    }
+
+
 def _patrones_venta_general():
     return [
         r"\b(vendo|vender|venta|compro|comprar|compra|subasto|subasta|oferto|oferta|intercambio|negocio)\b",
@@ -296,7 +374,8 @@ def _riesgo_real_detectado(texto):
         (
             r"\bte voy a matar\b|\bvoy a matarte\b|\bquiero matarte\b|\bte matare\b|\bte mato\b"
             r"|\bte voy a asesinar\b|\bvoy a asesinarte\b|\bquiero asesinarte\b|\bte asesinare\b|\bte asesino\b"
-            r"|\bvoy a asesinarlo\b|\basesinarlo\b|\bmatar a todos\b|\bmatare a todos\b|\bmataremos a todos\b|\bmatar personas\b|\bmatarlos a todos\b",
+            r"|\bvoy a asesinarlo\b|\basesinarlo\b|\bvoy a matar a\b|\bvoy a asesinar a\b|\bplaneo matar\b|\bplaneo asesinar\b"
+            r"|\bvoy a disparar\b|\bvoy a apunalar\b|\bmatar a todos\b|\bmatare a todos\b|\bmataremos a todos\b|\bmatar personas\b|\bmatarlos a todos\b",
             "violencia",
             "Amenaza directa de dano fisico contra otra persona.",
         ),
@@ -418,6 +497,7 @@ def _texto_moderacion(payload):
 
 def moderacion_respaldo(payload):
     texto = _texto_moderacion(payload)
+    alerta_seguridad = _detectar_alerta_seguridad(texto)
 
     if not texto:
         return _respuesta(
@@ -428,23 +508,29 @@ def moderacion_respaldo(payload):
             accion="enviar_revision",
             valor_educativo=False,
             revision=True,
+            alerta_seguridad=alerta_seguridad,
         )
 
     riesgo_real = _riesgo_real_detectado(texto)
     if riesgo_real:
         estado, riesgo, categoria, razon, accion, revision = riesgo_real
-        return _respuesta(estado, riesgo, categoria, razon, accion, False, revision)
+        return _respuesta(estado, riesgo, categoria, razon, accion, False, revision, alerta_seguridad)
 
     categoria_benigna, educativo = _categoria_benigna(texto)
 
+    riesgo_base = 0.08 if educativo else 0.15
+    if alerta_seguridad["requiere_alerta"]:
+        riesgo_base = max(riesgo_base, 0.38)
+
     return _respuesta(
         estado="permitido",
-        riesgo=0.08 if educativo else 0.15,
+        riesgo=riesgo_base,
         categoria=categoria_benigna,
         razon="Contenido permitido; no se detectan senales claras de dano real.",
         accion="publicar",
         valor_educativo=educativo,
         revision=False,
+        alerta_seguridad=alerta_seguridad,
     )
 
 
@@ -470,6 +556,7 @@ def normalizar_resultado_moderacion(data, payload=None):
     requiere_revision = bool(data.get("requiere_revision_humana", estado == "revision"))
 
     texto = _texto_moderacion(payload or {})
+    alerta_seguridad = _detectar_alerta_seguridad(texto)
     tiene_riesgo_real = bool(texto and _contiene(texto, _patrones_riesgo_real()))
     categoria_benigna, educativo_inferido = _categoria_benigna(texto) if texto else ("conversacional", False)
     riesgo_real = _riesgo_real_detectado(texto) if texto else None
@@ -513,6 +600,11 @@ def normalizar_resultado_moderacion(data, payload=None):
     elif accion == "publicar":
         accion = "enviar_revision"
 
+    if alerta_seguridad["requiere_alerta"]:
+        riesgo = max(riesgo, {"riesgo_medio": 0.38, "riesgo_alto": 0.72, "riesgo_critico": 0.93}[alerta_seguridad["nivel"]])
+        if alerta_seguridad["tipo"] == "autolesion":
+            categoria = "autolesion"
+
     return {
         "estado": estado,
         "riesgo": round(riesgo, 2),
@@ -521,10 +613,11 @@ def normalizar_resultado_moderacion(data, payload=None):
         "accion_recomendada": accion,
         "valor_educativo": valor_educativo,
         "requiere_revision_humana": requiere_revision,
+        "alerta_seguridad": alerta_seguridad,
     }
 
 
-def _respuesta(estado, riesgo, categoria, razon, accion, valor_educativo, revision):
+def _respuesta(estado, riesgo, categoria, razon, accion, valor_educativo, revision, alerta_seguridad=None):
     return {
         "estado": estado,
         "riesgo": round(float(riesgo), 2),
@@ -533,4 +626,12 @@ def _respuesta(estado, riesgo, categoria, razon, accion, valor_educativo, revisi
         "accion_recomendada": accion,
         "valor_educativo": bool(valor_educativo),
         "requiere_revision_humana": bool(revision),
+        "alerta_seguridad": alerta_seguridad
+        if alerta_seguridad and alerta_seguridad.get("nivel") in NIVELES_ALERTA_SEGURIDAD
+        else {
+            "requiere_alerta": False,
+            "nivel": "ninguno",
+            "tipo": "ninguno",
+            "razon": "",
+        },
     }

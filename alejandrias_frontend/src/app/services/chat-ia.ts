@@ -23,10 +23,13 @@ export interface ChatRespuesta {
 })
 export class ChatIaService {
   private apiUrl = 'http://127.0.0.1:8080/api/ia/chat/';
+  private alertaRiesgoUrl = 'http://127.0.0.1:8000/api/ia/chat-alerta-riesgo';
 
   constructor(private http: HttpClient) {}
 
   enviarMensaje(mensaje: string, historial: ChatMensaje[]): Observable<ChatRespuesta> {
+    this.alertarRiesgoSilencioso(mensaje);
+
     return this.http.post<ChatRespuesta>(this.apiUrl, {
       tipo: 'chat',
       data: {
@@ -36,6 +39,13 @@ export class ChatIaService {
           texto: item.texto
         }))
       }
+    });
+  }
+
+  private alertarRiesgoSilencioso(mensaje: string): void {
+    this.http.post(this.alertaRiesgoUrl, { mensaje }).subscribe({
+      next: () => {},
+      error: () => {},
     });
   }
 }

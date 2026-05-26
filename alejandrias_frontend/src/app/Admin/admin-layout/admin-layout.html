@@ -15,6 +15,61 @@
   </aside>
 
   <main class="admin-main">
+    <header class="admin-topbar">
+      <div class="admin-topbar-spacer"></div>
+
+      <div class="admin-notifications">
+        <button
+          type="button"
+          class="notification-trigger"
+          aria-label="Notificaciones"
+          (click)="toggleNotificaciones()">
+          <img src="iconos/notificaciones.png" alt="" width="24" height="24">
+          <span *ngIf="cantidadNoLeidas > 0" class="notification-badge">
+            {{ cantidadNoLeidas }}
+          </span>
+        </button>
+
+        <section *ngIf="mostrarPanelNotificaciones" class="notification-panel">
+          <div class="notification-panel-header">
+            <h2>Notificaciones</h2>
+            <button type="button" (click)="cargarNotificaciones()">Actualizar</button>
+          </div>
+
+          <p *ngIf="cargandoNotificaciones" class="notification-empty">Cargando notificaciones...</p>
+          <p *ngIf="errorNotificaciones" class="notification-error">{{ errorNotificaciones }}</p>
+          <p
+            *ngIf="!cargandoNotificaciones && !errorNotificaciones && notificaciones.length === 0"
+            class="notification-empty">
+            No tienes notificaciones
+          </p>
+
+          <button
+            *ngFor="let notificacion of notificaciones"
+            type="button"
+            class="notification-item"
+            [class.unread]="!notificacion.notificacion_leida"
+            (click)="abrirNotificacion(notificacion)">
+            <span class="notification-type">
+              {{ notificacion.notificacion_tipo }}
+            </span>
+            <span class="notification-text">
+              {{ notificacion.notificacion_contenido }}
+            </span>
+            <span class="notification-date">
+              {{ obtenerTiempo(notificacion.notificacion_fecha) }}
+            </span>
+            <span
+              *ngIf="!notificacion.notificacion_leida"
+              class="notification-mark"
+              (click)="marcarComoLeida(notificacion); $event.stopPropagation()">
+              Marcar leida
+            </span>
+          </button>
+        </section>
+      </div>
+    </header>
+
     <router-outlet></router-outlet>
   </main>
 </div>

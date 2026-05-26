@@ -128,6 +128,30 @@ def _respuesta_chat_respaldo(contexto):
 
     mensaje_min = mensaje.lower()
     historial_texto = " ".join(item.get("texto", "") for item in historial).lower()
+    gaming_avanzado = any(
+        termino in mensaje_min
+        for termino in [
+            "build",
+            "mejor arma",
+            "mejores armas",
+            "objeto raro",
+            "items raros",
+            "farmear",
+            "farming",
+            "meta competitivo",
+            "como ganar partidas",
+            "estrategia avanzada",
+            "exploit",
+        ]
+    )
+
+    if gaming_avanzado:
+        return (
+            "Puedo ayudarte con una vision introductoria del juego, sus mecanicas principales, "
+            "su historia o algun aprendizaje tecnico y cultural relacionado. El enfoque principal "
+            "de Alejandrias es educativo y conversacional, asi que no profundizo en guias "
+            "competitivas, builds avanzadas ni optimizacion extrema."
+        )
 
     if any(palabra in mensaje_min for palabra in ["hola", "buenas", "hey"]):
         return "Hola. Estoy listo para ayudarte con foros, estudio y dudas generales."

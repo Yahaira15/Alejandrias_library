@@ -81,6 +81,20 @@ class OrquestacionIATests(SimpleTestCase):
         self.assertIn("ORQUESTACION:", ejecucion["prompt"])
         self.assertIn("Intencion detectada: explicacion", ejecucion["prompt"])
 
+    def test_orquestador_chat_limita_videojuegos_avanzados(self):
+        ejecucion = preparar_ejecucion(
+            {
+                "tipo": "chat",
+                "data": {
+                    "mensaje": "Cual es la mejor build competitiva para farmear objetos raros?",
+                    "historial": [],
+                },
+            }
+        )
+
+        self.assertIn("REGLAS SOBRE VIDEOJUEGOS:", ejecucion["prompt"])
+        self.assertIn("builds avanzadas", ejecucion["prompt"].lower())
+
     def test_respuesta_foros_recomienda_existentes(self):
         respuesta = construir_respuesta_foros(
             {"mensaje": "Recomiendame foros sobre roma antigua", "historial": []},
@@ -313,6 +327,20 @@ class OrquestacionIATests(SimpleTestCase):
 
         self.assertEqual(resultado["estado"], "bloqueado")
         self.assertGreaterEqual(resultado["riesgo"], 0.9)
+        self.assertTrue(resultado["alerta_seguridad"]["requiere_alerta"])
+        self.assertEqual(resultado["alerta_seguridad"]["nivel"], "riesgo_alto")
+
+    def test_moderacion_alerta_riesgo_medio_sin_bloqueo_agresivo(self):
+        resultado = moderacion_respaldo(
+            {
+                "tipo_contenido": "chat_ia",
+                "contenido": {"texto": "No puedo mas, siento que no tengo esperanza."},
+            }
+        )
+
+        self.assertEqual(resultado["estado"], "permitido")
+        self.assertTrue(resultado["alerta_seguridad"]["requiere_alerta"])
+        self.assertEqual(resultado["alerta_seguridad"]["nivel"], "riesgo_medio")
 
     def test_moderacion_bloquea_asesinato_directo(self):
         resultado = moderacion_respaldo(
@@ -335,6 +363,18 @@ class OrquestacionIATests(SimpleTestCase):
 
         self.assertEqual(resultado["estado"], "bloqueado")
         self.assertEqual(resultado["categoria"], "violencia")
+
+    def test_moderacion_bloquea_plan_violento_directo(self):
+        resultado = moderacion_respaldo(
+            {
+                "tipo_contenido": "comentario",
+                "contenido": {"texto": "Voy a matar a esa persona manana."},
+            }
+        )
+
+        self.assertEqual(resultado["estado"], "bloqueado")
+        self.assertEqual(resultado["categoria"], "violencia")
+        self.assertEqual(resultado["alerta_seguridad"]["nivel"], "riesgo_critico")
 
     def test_moderacion_bloquea_bombas_hacking_y_doxxing(self):
         casos = [

@@ -73,6 +73,12 @@ class IaModerationClient
             'accion_recomendada' => 'enviar_revision',
             'valor_educativo' => false,
             'requiere_revision_humana' => true,
+            'alerta_seguridad' => [
+                'requiere_alerta' => false,
+                'nivel' => 'ninguno',
+                'tipo' => 'ninguno',
+                'razon' => '',
+            ],
             'origen' => 'respaldo_laravel',
             'modelo_ia' => 'respaldo_laravel',
         ];
@@ -96,8 +102,29 @@ class IaModerationClient
             'accion_recomendada' => (string) ($data['accion_recomendada'] ?? $this->defaultAction($estado)),
             'valor_educativo' => (bool) ($data['valor_educativo'] ?? false),
             'requiere_revision_humana' => (bool) ($data['requiere_revision_humana'] ?? $estado === 'revision'),
+            'alerta_seguridad' => $this->normalizeSafetyAlert($data['alerta_seguridad'] ?? []),
             'origen' => $origen,
             'modelo_ia' => $origen === 'modelo' ? 'gemini' : $origen,
+        ];
+    }
+
+    private function normalizeSafetyAlert(array $alert): array
+    {
+        $nivel = (string) ($alert['nivel'] ?? 'ninguno');
+        if (!in_array($nivel, ['ninguno', 'riesgo_medio', 'riesgo_alto', 'riesgo_critico'], true)) {
+            $nivel = 'ninguno';
+        }
+
+        $requiereAlerta = (bool) ($alert['requiere_alerta'] ?? false);
+        if ($nivel === 'ninguno') {
+            $requiereAlerta = false;
+        }
+
+        return [
+            'requiere_alerta' => $requiereAlerta,
+            'nivel' => $nivel,
+            'tipo' => (string) ($alert['tipo'] ?? 'ninguno'),
+            'razon' => trim((string) ($alert['razon'] ?? '')),
         ];
     }
 

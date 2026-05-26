@@ -3,6 +3,8 @@
 namespace App\Services\IA\Moderation;
 
 use App\Models\ModeracionIa;
+use App\Models\Usuario;
+use App\Services\Notifications\AdminNotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +17,7 @@ class ContentModerationService
 
     public function analyze(array $payload): array
     {
-        return $this->client->analyze($payload);
+        return $this->withLocalSafetyAlert($this->client->analyze($payload), $payload);
     }
 
     public function applyToModel(Model $model, array $analysis, string $prefix): void
@@ -55,16 +57,28 @@ class ContentModerationService
         array $analysis,
         array $payload
     ): bool {
+        $notificacionEnviada = $this->notifyAdminsIfSecurityRisk(
+            $tipoContenido,
+            $referenciaId,
+            $usuarioId,
+            $analysis,
+            $payload
+        );
+
+        if ($tipoContenido === 'chat_ia') {
+            return $notificacionEnviada;
+        }
+
         if (!Schema::hasTable('moderacion_ia')) {
             Log::warning('No existe la tabla moderacion_ia; no se pudo registrar el analisis IA', [
                 'tipo_contenido' => $tipoContenido,
                 'referencia_id' => $referenciaId,
             ]);
-            return false;
+            return $notificacionEnviada;
         }
 
         try {
-            ModeracionIa::create([
+            $registro = ModeracionIa::create([
                 'publicacion_id' => $this->publicacionIdFor($tipoContenido, $referenciaId, $payload),
                 'foro_id' => $this->foroIdFor($tipoContenido, $referenciaId, $payload),
                 'usuario_id' => $usuarioId,
@@ -114,7 +128,7 @@ class ContentModerationService
                 'error' => $exception->getMessage(),
             ]);
 
-            return false;
+            return $notificacionEnviada;
         }
     }
 
@@ -158,6 +172,11 @@ class ContentModerationService
 
     private function tipoRiesgo(array $analysis): string
     {
+        $alerta = $analysis['alerta_seguridad'] ?? [];
+        if (($alerta['requiere_alerta'] ?? false) && !empty($alerta['tipo'])) {
+            return (string) $alerta['tipo'];
+        }
+
         $categoria = (string) ($analysis['categoria'] ?? 'otro');
 
         if (($analysis['estado'] ?? 'revision') === 'permitido' && in_array($categoria, ['educativo', 'conversacional', 'ocio', 'tecnologia', 'otro'], true)) {
@@ -165,5 +184,210 @@ class ContentModerationService
         }
 
         return $categoria;
+    }
+
+    public function notifyAdminsIfSecurityRisk(
+        string $tipoContenido,
+        int|string|null $referenciaId,
+        ?int $usuarioId,
+        array $analysis,
+        array $payload,
+        int|string|null $moderacionId = null
+    ): bool {
+        $alerta = $analysis['alerta_seguridad'] ?? [];
+
+        if (!($alerta['requiere_alerta'] ?? false)) {
+            return false;
+        }
+
+        $usuario = $usuarioId ? Usuario::find($usuarioId) : null;
+
+        try {
+            app(AdminNotificationService::class)->notifyAiRiskDetected([
+                'requiere_alerta' => true,
+                'usuario_id' => $usuarioId,
+                'usuario_nombre' => $this->nombreUsuario($usuario),
+                'contenido' => $this->contenidoAnalizado($payload),
+                'nivel' => $alerta['nivel'] ?? $this->nivelRiesgo($analysis),
+                'tipo' => $alerta['tipo'] ?? $this->tipoRiesgo($analysis),
+                'fecha' => now()->toDateTimeString(),
+                'url' => $this->urlContenido($tipoContenido, $referenciaId, $payload),
+                'referencia_id' => $referenciaId ?? $moderacionId,
+            ]);
+
+            Log::warning('Notificacion interna por riesgo IA creada para admins', [
+                'tipo_contenido' => $tipoContenido,
+                'referencia_id' => $referenciaId,
+                'usuario_id' => $usuarioId,
+                'nivel' => $alerta['nivel'] ?? null,
+                'tipo_riesgo' => $alerta['tipo'] ?? null,
+            ]);
+
+            return true;
+        } catch (\Throwable $exception) {
+            Log::warning('No se pudo crear notificacion interna por riesgo IA', [
+                'tipo_contenido' => $tipoContenido,
+                'referencia_id' => $referenciaId,
+                'usuario_id' => $usuarioId,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    private function nombreUsuario(?Usuario $usuario): string
+    {
+        if (!$usuario) {
+            return 'Usuario desconocido';
+        }
+
+        return $usuario->usuario_apodo
+            ?: trim(($usuario->usuario_nombre ?? '') . ' ' . ($usuario->usuario_apellido ?? ''))
+            ?: $usuario->usuario_email
+            ?: 'Usuario ' . $usuario->usuario_id;
+    }
+
+    private function nivelRiesgo(array $analysis): string
+    {
+        $riesgo = (float) ($analysis['riesgo'] ?? 0);
+
+        if ($riesgo >= 0.9) {
+            return 'riesgo_critico';
+        }
+
+        if ($riesgo >= 0.7) {
+            return 'riesgo_alto';
+        }
+
+        return 'riesgo_medio';
+    }
+
+    private function urlContenido(string $tipoContenido, int|string|null $referenciaId, array $payload): string
+    {
+        if ($tipoContenido === 'chat_ia') {
+            return '/admin/reportes';
+        }
+
+        if ($tipoContenido === 'foro' && $referenciaId) {
+            return '/foro/' . $referenciaId;
+        }
+
+        if ($tipoContenido === 'publicacion' && $referenciaId) {
+            $foroId = $payload['contexto']['foro_id'] ?? null;
+            return $foroId ? '/foro/' . $foroId . '/publicacion/' . $referenciaId : '/admin/publicaciones';
+        }
+
+        if ($tipoContenido === 'comentario') {
+            $publicacionId = $payload['contexto']['publicacion_id'] ?? null;
+            $foroId = $payload['contexto']['foro_id'] ?? null;
+
+            if ($foroId && $publicacionId) {
+                return '/foro/' . $foroId . '/publicacion/' . $publicacionId;
+            }
+        }
+
+        return '/admin/reportes';
+    }
+
+    private function withLocalSafetyAlert(array $analysis, array $payload): array
+    {
+        $alertaActual = $analysis['alerta_seguridad'] ?? [];
+        if (($alertaActual['requiere_alerta'] ?? false) === true) {
+            return $analysis;
+        }
+
+        $alertaLocal = $this->detectarAlertaSeguridadLocal($payload, $analysis);
+        $analysis['alerta_seguridad'] = $alertaLocal;
+
+        if ($alertaLocal['requiere_alerta']) {
+            $analysis['riesgo'] = max((float) ($analysis['riesgo'] ?? 0), $this->riesgoMinimoPorNivel($alertaLocal['nivel']));
+            if ($alertaLocal['tipo'] === 'autolesion') {
+                $analysis['categoria'] = 'autolesion';
+            }
+        }
+
+        return $analysis;
+    }
+
+    private function detectarAlertaSeguridadLocal(array $payload, array $analysis): array
+    {
+        $texto = $this->normalizarTexto($this->contenidoAnalizado($payload));
+        $categoria = (string) ($analysis['categoria'] ?? 'otro');
+        $riesgo = (float) ($analysis['riesgo'] ?? 0);
+
+        $reglasCriticas = [
+            '/\b(me voy a matar|voy a suicidarme|me suicidare|hoy me mato|quiero suicidarme hoy)\b/u' => ['autolesion', 'Intencion directa de suicidio o autolesion.'],
+            '/\b(tengo un plan|ya tengo plan|tengo la cuerda|tengo pastillas|tengo un arma)\b.*\b(matarme|suicid|hacerme dano)\b/u' => ['autolesion', 'Planificacion de autolesion.'],
+            '/\b(voy a matar a|voy a asesinar a|planeo matar|planeo asesinar|voy a disparar|voy a apunalar)\b/u' => ['violencia', 'Amenaza grave o planificacion de dano contra otras personas.'],
+        ];
+
+        $reglasAltas = [
+            '/\b(me quiero matar|quiero matarme|quiero suicidarme|suicidarme|suicidio|me voy a cortar|quiero cortarme|autolesion|hacerme dano)\b/u' => ['autolesion', 'Senales explicitas de autolesion o suicidio.'],
+            '/\b(te voy a matar|voy a matarte|quiero matarte|te matare|te voy a asesinar|voy a asesinarte|matar a todos|quiero matar a alguien)\b/u' => ['violencia', 'Amenaza o intencion explicita de violencia grave.'],
+            '/\b(como puedo matar|como matar|como asesinar|matar a alguien|hacerle dano a alguien)\b/u' => ['violencia', 'Solicitud relacionada con violencia grave contra personas.'],
+        ];
+
+        $reglasMedias = [
+            '/\b(no quiero vivir|ya no quiero vivir|no puedo mas|no aguanto mas|quiero desaparecer|no tengo esperanza|sin esperanza|todo estaria mejor sin mi)\b/u' => ['salud_mental', 'Senales de desesperanza o crisis emocional intensa.'],
+            '/\b(me siento vacio|me siento vacia|estoy desesperado|estoy desesperada|tristeza extrema)\b/u' => ['salud_mental', 'Expresion de tristeza extrema o malestar emocional.'],
+        ];
+
+        foreach ($reglasCriticas as $patron => [$tipo, $razon]) {
+            if (preg_match($patron, $texto)) {
+                return $this->alertaSeguridad(true, 'riesgo_critico', $tipo, $razon);
+            }
+        }
+
+        foreach ($reglasAltas as $patron => [$tipo, $razon]) {
+            if (preg_match($patron, $texto)) {
+                return $this->alertaSeguridad(true, 'riesgo_alto', $tipo, $razon);
+            }
+        }
+
+        if (in_array($categoria, ['autolesion', 'violencia'], true) && $riesgo >= 0.9) {
+            return $this->alertaSeguridad(
+                true,
+                'riesgo_critico',
+                $categoria,
+                'La moderacion IA clasifico el contenido como riesgo grave.'
+            );
+        }
+
+        foreach ($reglasMedias as $patron => [$tipo, $razon]) {
+            if (preg_match($patron, $texto)) {
+                return $this->alertaSeguridad(true, 'riesgo_medio', $tipo, $razon);
+            }
+        }
+
+        return $this->alertaSeguridad(false, 'ninguno', 'ninguno', '');
+    }
+
+    private function alertaSeguridad(bool $requiereAlerta, string $nivel, string $tipo, string $razon): array
+    {
+        return [
+            'requiere_alerta' => $requiereAlerta,
+            'nivel' => $nivel,
+            'tipo' => $tipo,
+            'razon' => $razon,
+        ];
+    }
+
+    private function riesgoMinimoPorNivel(string $nivel): float
+    {
+        return match ($nivel) {
+            'riesgo_critico' => 0.93,
+            'riesgo_alto' => 0.72,
+            'riesgo_medio' => 0.38,
+            default => 0.0,
+        };
+    }
+
+    private function normalizarTexto(string $texto): string
+    {
+        $texto = mb_strtolower($texto, 'UTF-8');
+        $transliterado = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $texto);
+
+        return preg_replace('/\s+/', ' ', $transliterado !== false ? $transliterado : $texto) ?? $texto;
     }
 }

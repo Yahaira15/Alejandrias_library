@@ -10,6 +10,7 @@ use App\Http\Controllers\ApiForo\NotificacionController;
 use App\Http\Controllers\ApiAdmin\AdminController;
 use App\Http\Controllers\ApiReporte\ReporteController;
 use App\Http\Controllers\ApiReporte\SancionController;
+use App\Http\Controllers\ApiIa\ChatRiskAlertController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -98,4 +99,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/notificaciones/{id}/leer', [NotificacionController::class, 'marcarLeida']);
     Route::get('/notificaciones-contador', [NotificacionController::class, 'contador']);
     Route::post('/reportes', [ReporteController::class, 'store']);
+    Route::post('/ia/chat-alerta-riesgo', [ChatRiskAlertController::class, 'store']);
 });
