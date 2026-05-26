@@ -12,6 +12,18 @@ export class PerfilService {
     return this.http.get(`${this.apiUrl}/perfil`);
   }
 
+  getLogros() {
+    return this.http.get(`${this.apiUrl}/logros`);
+  }
+
+  sincronizarLogros() {
+    return this.http.post(`${this.apiUrl}/logros/sincronizar`, {});
+  }
+
+  cargarLogrosDemo() {
+    return this.http.post(`${this.apiUrl}/logros/demo`, {});
+  }
+
   updatePerfil(data: any) {
     return this.http.put(`${this.apiUrl}/perfil`, data);
   }

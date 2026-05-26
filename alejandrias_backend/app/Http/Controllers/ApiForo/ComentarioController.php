@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Notificacion;
 use App\Services\IA\Moderation\ContentModerationService;
+use App\Services\Gamification\GamificationService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
@@ -121,6 +122,15 @@ class ComentarioController extends Controller
         // 🔔 Notificar dueño de publicación
 
             $duenoPublicacion = $publicacion->usuario;
+            if (($moderation['estado'] ?? 'revision') === 'permitido') {
+                app(GamificationService::class)->award($usuario, 'comentario_creado', $comentario);
+
+                if ($duenoPublicacion && $duenoPublicacion->usuario_id != $usuario->usuario_id) {
+                    app(GamificationService::class)->award($duenoPublicacion, 'comentario_recibido', $comentario, [
+                        'publicacion_id' => $publicacion->publicacion_id,
+                    ]);
+                }
+            }
 
             // ❌ Evitar auto notificación
             if (($moderation['estado'] ?? 'revision') === 'permitido' &&

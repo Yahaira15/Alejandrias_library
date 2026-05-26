@@ -8,7 +8,6 @@
     <nav>
       <button class="active" (click)="irAInicio()"><img src="iconos/home.png" alt="home" width="20px"> Inicio</button>
       <button (click)="irAMisForos()"><img src="iconos/mis_foros.png" alt="mis_foros" width="20px"> Mis foros</button>
-      <button><img src="iconos/logros.png" alt="logros" width="20px"> Logros</button>
       <button (click)="irAChatIa()"><img src="iconos/notificaciones.png" alt="chat_ia" width="20px"> Chat IA</button>
       <button (click)="abrirModalPrivado()"><img src="iconos/foro.png" alt="foro privado" width="20px"> Ingresar a foro privado</button>
       <button *ngIf="rol === 'lider' || rol === 'admin'" (click)="irACrearForo()"><img src="iconos/crear_foro.png" alt="crear_foro" width="20px"> Crear foro</button>
@@ -143,7 +142,12 @@
 
         </div>
           <p>{{ apodoUsuario }}</p>
-         <img [routerLink]="['/perfil']" src="iconos/foto_perfil.png" alt="Foto de perfil" width="35px">
+         <img
+          class="profile-avatar"
+          [class.default-avatar]="!fotoPerfilUsuario"
+          [routerLink]="['/perfil']"
+          [src]="fotoPerfilUsuario || 'iconos/foto_perfil.png'"
+          alt="Foto de perfil">
       </div>
     </header>
 

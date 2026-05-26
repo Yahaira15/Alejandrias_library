@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ApiUsuario;
 
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
+use App\Services\Gamification\GamificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -159,6 +160,7 @@ class UsuarioController extends Controller
             $usuario->usuario_password = Hash::make($passwordTemporal);
             $usuario->tokens()->delete();
             $usuario->save();
+            app(GamificationService::class)->award($usuario, 'perfil_completo', $usuario);
 
             return response()->json([
                 'mensaje' => 'Contrasena temporal generada',
@@ -242,6 +244,7 @@ class UsuarioController extends Controller
             $usuario = auth()->user();
             $usuario->usuario_intereses = $request->usuario_intereses;
             $usuario->save();
+            app(GamificationService::class)->award($usuario, 'perfil_completo', $usuario);
 
             return response()->json([
                 'mensaje' => 'Intereses actualizados',

@@ -18,7 +18,11 @@ export class Perfil implements OnInit {
   perfilOriginal: any = {}; // para cancelar cambios
   modoEdicion: boolean = false;
   mensaje: string = '';
+  seccionActiva: 'perfil' | 'logros' = 'perfil';
   modalSolicitudLider = false;
+  logros: any = null;
+  cargandoLogros = false;
+  rutaLogrosActiva: 'lider' | 'explorador' = 'explorador';
   enviandoSolicitudLider = false;
   solicitudLiderMensaje = '';
   solicitudLiderError = '';
@@ -93,8 +97,89 @@ export class Perfil implements OnInit {
       this.perfil = { ...this.perfil, ...res };
       this.perfilOriginal = { ...this.perfil };
       this.cargarMateriasGuardadas();
+      this.cargarLogros();
       this.cdr.detectChanges();
     });
+  }
+
+  cargarLogros() {
+    this.cargandoLogros = true;
+
+    this.perfilService.getLogros().subscribe({
+      next: (res: any) => {
+        this.logros = res;
+        this.rutaLogrosActiva = res?.ruta_principal === 'lider' ? 'lider' : 'explorador';
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  sincronizarLogros() {
+    this.cargandoLogros = true;
+
+    this.perfilService.sincronizarLogros().subscribe({
+      next: (res: any) => {
+        this.logros = res;
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cargarLogrosDemo() {
+    this.cargandoLogros = true;
+
+    this.perfilService.cargarLogrosDemo().subscribe({
+      next: (res: any) => {
+        this.logros = res;
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  catalogoPorRuta(ruta: 'lider' | 'explorador') {
+    return (this.logros?.catalogo || []).filter((insignia: any) => insignia.ruta === ruta);
+  }
+
+  logrosCompletados(ruta: 'lider' | 'explorador') {
+    return this.catalogoPorRuta(ruta).filter((insignia: any) => insignia.obtenida);
+  }
+
+  logrosPendientes(ruta: 'lider' | 'explorador') {
+    return this.catalogoPorRuta(ruta).filter((insignia: any) => !insignia.obtenida);
+  }
+
+  get xpTotal(): number {
+    return Number(this.logros?.xp_total || 0);
+  }
+
+  get nivelRutaActiva(): number {
+    return this.rutaLogrosActiva === 'lider'
+      ? Number(this.logros?.nivel_lider || 0)
+      : Number(this.logros?.nivel_explorador || 0);
+  }
+
+  get siguienteMetaXp(): number {
+    const escala = [0, 120, 280, 500, 760, 1050, 1350, 1700, 2200];
+    return escala[Math.min(this.nivelRutaActiva + 1, escala.length - 1)] || 2200;
+  }
+
+  get progresoXp(): number {
+    return Math.min(100, Math.round((this.xpTotal / this.siguienteMetaXp) * 100));
   }
 
   // 🔹 activar/desactivar edición
@@ -159,6 +244,11 @@ export class Perfil implements OnInit {
   }
 
   volverAtras() {
+    if (this.seccionActiva === 'logros') {
+      this.seccionActiva = 'perfil';
+      return;
+    }
+
     this.location.back();
   }
 
@@ -168,6 +258,14 @@ export class Perfil implements OnInit {
 
   irAAdmin() {
     this.router.navigate(['/admin']);
+  }
+
+  irALogros() {
+    this.seccionActiva = 'logros';
+    this.modoEdicion = false;
+    if (!this.logros) {
+      this.cargarLogros();
+    }
   }
 
   abrirSolicitudLider() {
@@ -263,7 +361,7 @@ actualizar() {
     data.usuario_password = this.passwordNueva;
   }
 
-  this.perfilService.updatePerfil(data).subscribe({
+    this.perfilService.updatePerfil(data).subscribe({
     next: () => {
       this.mensaje = 'Perfil actualizado correctamente';
       this.passwordNueva = '';
@@ -272,6 +370,7 @@ actualizar() {
       this.materiasOriginal = [...this.materiasFavoritas];
       localStorage.setItem(this.obtenerClaveMaterias(), JSON.stringify(this.materiasFavoritas));
       localStorage.setItem('usuario', JSON.stringify(this.perfil));
+      this.sincronizarLogros();
     },
     error: () => {
       this.mensaje = 'Error al actualizar';

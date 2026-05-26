@@ -11,6 +11,7 @@ use App\Http\Controllers\ApiAdmin\AdminController;
 use App\Http\Controllers\ApiReporte\ReporteController;
 use App\Http\Controllers\ApiReporte\SancionController;
 use App\Http\Controllers\ApiIa\ChatRiskAlertController;
+use App\Http\Controllers\ApiGamification\LogroController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -22,6 +23,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/perfil', [UsuarioController::class, 'update']);
     Route::put('/perfil/intereses', [UsuarioController::class, 'updateIntereses']);
     Route::delete('/perfil', [UsuarioController::class, 'destroy']);
+    Route::get('/logros', [LogroController::class, 'perfil']);
+    Route::post('/logros/sincronizar', [LogroController::class, 'sincronizar']);
+    Route::post('/logros/demo', [LogroController::class, 'demo']);
+    Route::post('/logros/eventos', [LogroController::class, 'registrarEvento']);
 
 });
 

@@ -83,9 +83,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
       // 🔥 Si el token falla
       if (error.status === 401 && token && isProtectedApiRequest && isAuthenticationFailure(error)) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('usuario');
-        router.navigate(['/login']);
+        console.warn('Solicitud autenticada rechazada:', apiPath);
       }
 
       if (error.status === 403 && apiPath?.startsWith('/admin')) {
