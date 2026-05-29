@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Notificacion;
 use App\Services\IA\Moderation\ContentModerationService;
+use App\Services\Gamification\GamificationService;
+use App\Services\Gamification\XpService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
@@ -92,6 +94,7 @@ class ComentarioController extends Controller
 
         $data['comentario_publicacion_id'] = $publicacionId;
         $data['comentario_usuario_id'] = $usuario->usuario_id;
+        $data['comentario_fecha_creacion'] = now();
 
         $moderationService = app(ContentModerationService::class);
         $moderationPayload = [
@@ -124,6 +127,19 @@ class ComentarioController extends Controller
         // 🔔 Notificar dueño de publicación
 
             $duenoPublicacion = $publicacion->usuario;
+            if (($moderation['estado'] ?? 'revision') === 'permitido') {
+                app(XpService::class)->track($usuario, 'comentario_creado');
+
+                if (mb_strlen(trim($comentario->comentario_contenido)) >= 20) {
+                    app(XpService::class)->award($usuario, 'comentario_creado', $comentario, ['skip_mission_progress' => true]);
+                }
+
+                if ($duenoPublicacion && $duenoPublicacion->usuario_id != $usuario->usuario_id) {
+                    app(XpService::class)->award($duenoPublicacion, 'comentario_recibido', $comentario, [
+                        'publicacion_id' => $publicacion->publicacion_id,
+                    ]);
+                }
+            }
 
             // ❌ Evitar auto notificación
             if (($moderation['estado'] ?? 'revision') === 'permitido' &&

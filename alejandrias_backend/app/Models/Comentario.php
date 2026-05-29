@@ -18,6 +18,7 @@ class Comentario extends Model
         'comentario_publicacion_id',
         'comentario_padre_id',
         'comentario_contenido',
+        'comentario_fecha_creacion',
         'estado_moderacion',
         'ia_riesgo',
         'ia_razon',
@@ -25,6 +26,7 @@ class Comentario extends Model
     ];
 
     protected $casts = [
+        'comentario_fecha_creacion' => 'datetime',
         'ia_riesgo' => 'float',
         'ia_fecha_analisis' => 'datetime',
     ];

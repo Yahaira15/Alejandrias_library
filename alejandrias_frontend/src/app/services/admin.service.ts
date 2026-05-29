@@ -17,6 +17,11 @@ export class AdminService {
   }
 
   actualizar(recurso: string, id: number, data: any): Observable<any> {
+    if (data instanceof FormData) {
+      data.append('_method', 'PUT');
+      return this.http.post(`${this.apiUrl}/${recurso}/${id}`, data);
+    }
+
     return this.http.put(`${this.apiUrl}/${recurso}/${id}`, data);
   }
 
@@ -45,5 +50,26 @@ export class AdminService {
 
   rechazarModeracion(id: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/moderacion/${id}/rechazar`, {});
+  }
+
+  listarSubcategoriasCategoria(categoriaId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/categorias/${categoriaId}/subcategorias`);
+  }
+
+  crearSubcategoria(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/subcategorias`, data);
+  }
+
+  actualizarSubcategoria(id: number, data: any): Observable<any> {
+    if (data instanceof FormData) {
+      data.append('_method', 'PUT');
+      return this.http.post(`${this.apiUrl}/subcategorias/${id}`, data);
+    }
+
+    return this.http.put(`${this.apiUrl}/subcategorias/${id}`, data);
+  }
+
+  eliminarSubcategoria(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/subcategorias/${id}`);
   }
 }

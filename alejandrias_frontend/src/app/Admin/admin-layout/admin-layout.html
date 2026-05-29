@@ -2,17 +2,20 @@
   <aside class="admin-sidebar">
     <h1>Alejandria's<br>Library</h1>
     <nav>
-      <a *ngIf="esAdmin" routerLink="/admin/usuarios" routerLinkActive="active">Usuarios</a>
-      <a *ngIf="esAdmin" routerLink="/admin/foros" routerLinkActive="active">Foros</a>
-      <a *ngIf="esAdmin" routerLink="/admin/categorias" routerLinkActive="active">Categorias</a>
-      <a *ngIf="esAdmin" routerLink="/admin/publicaciones" routerLinkActive="active">Publicaciones</a>
-      <a *ngIf="esAdmin" routerLink="/admin/comentarios" routerLinkActive="active">Comentarios</a>
-      <a routerLink="/admin/moderacion" routerLinkActive="active">Moderacion IA</a>
-      <a *ngIf="esAdmin" routerLink="/admin/reportes" routerLinkActive="active">Reportes</a>
-      <a *ngIf="esAdmin" routerLink="/admin/sanciones" routerLinkActive="active">Sanciones</a>
-      <a routerLink="/foros">Ir a foros</a>
+      <a *ngIf="esAdmin" routerLink="/admin/usuarios" routerLinkActive="active"><img src="menuAdmin/usuarios.png" alt="">Usuarios</a>
+      <a *ngIf="esAdmin" routerLink="/admin/foros" routerLinkActive="active"><img src="menuAdmin/foros.png" alt="">Foros</a>
+      <a *ngIf="esAdmin" routerLink="/admin/categorias" routerLinkActive="active"><img src="menuAdmin/categorias.png" alt="">Categorias</a>
+      <a *ngIf="esAdmin" routerLink="/admin/publicaciones" routerLinkActive="active"><img src="menuAdmin/publicaciones.png" alt="">Publicaciones</a>
+      <a *ngIf="esAdmin" routerLink="/admin/comentarios" routerLinkActive="active"><img src="menuAdmin/comentarios.png" alt="">Comentarios</a>
+      <a routerLink="/admin/moderacion" routerLinkActive="active"><img src="menuAdmin/reportes.png" alt="">Moderacion IA</a>
+      <a *ngIf="esAdmin" routerLink="/admin/reportes" routerLinkActive="active"><img src="menuAdmin/reportes.png" alt="">Reportes</a>
+      <a *ngIf="esAdmin" routerLink="/admin/sanciones" routerLinkActive="active"><img src="menuAdmin/sanciones.png" alt="">Sanciones</a>
+      <a routerLink="/foros"><img src="menuAdmin/ir_a_foros.png" alt="">Ir a foros</a>
     </nav>
-    <button type="button" (click)="logout()">Cerrar Sesion</button>
+    <button type="button" (click)="logout()">
+      <img src="iconos/salida.png" alt="">
+      <span>Cerrar<br>Sesion</span>
+    </button>
   </aside>
 
   <main class="admin-main">

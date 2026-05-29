@@ -8,6 +8,8 @@ use App\Models\Foro;
 use App\Models\Publicacion;
 use App\Models\Notificacion;
 use App\Services\IA\Moderation\ContentModerationService;
+use App\Services\Gamification\GamificationService;
+use App\Services\Gamification\XpService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
@@ -125,6 +127,14 @@ class PublicacionController extends Controller
 
             // 🔔 Notificar miembros registrados
             if (($moderation['estado'] ?? 'revision') === 'permitido') {
+            app(XpService::class)->track($usuario, 'crear_publicacion');
+            app(XpService::class)->award($usuario, 'crear_publicacion', $publicacion, ['skip_mission_progress' => true]);
+            if (mb_strlen(strip_tags($publicacion->publicacion_contenido)) >= 700) {
+                app(XpService::class)->award($usuario, 'publicacion_larga', $publicacion);
+            }
+            if ($publicacion->publicacion_destacada) {
+                app(XpService::class)->award($usuario, 'publicacion_destacada', $publicacion);
+            }
             foreach ($foro->miembros as $miembro) {
 
                 // ❌ No notificarse a sí mismo
@@ -290,6 +300,9 @@ class PublicacionController extends Controller
             $publicacion->publicacion_fecha_actualizacion = now();
             $moderationService->applyToModel($publicacion, $moderation, 'publicacion');
             $publicacion->save();
+            if ($publicacion->publicacion_destacada) {
+                app(XpService::class)->award($usuario, 'publicacion_destacada', $publicacion);
+            }
             $moderationPersisted = $moderationService->record(
                 'publicacion',
                 $publicacion->publicacion_id,
@@ -331,6 +344,7 @@ class PublicacionController extends Controller
             }
 
             $publicacion->delete();
+            app(GamificationService::class)->award($usuario, 'publicacion_eliminada', $publicacion);
 
             return response()->json(['mensaje' => 'Eliminada correctamente'], 200);
         } catch (\Exception $e) {

@@ -3,7 +3,7 @@
     <h1>Alejandria's<br>Library</h1>
 
     <nav class="perfil-nav" aria-label="Menu de perfil">
-      <button type="button" class="nav-item">
+      <button type="button" class="nav-item" (click)="irALogros()">
         <img src="iconos/logros.png" alt="">
         <span>Mis Logros</span>
       </button>
@@ -30,10 +30,11 @@
       <span aria-hidden="true">&#8592;</span>
     </button>
 
-    <section class="perfil-content" *ngIf="!modoEdicion">
+    <section class="perfil-content" *ngIf="!modoEdicion && seccionActiva === 'perfil'">
       <div class="avatar-wrap">
         <img
           [src]="perfil.usuario_foto_perfil || 'iconos/foto_perfil.png'"
+          [class.default-avatar]="!perfil.usuario_foto_perfil"
           alt="Foto de perfil">
       </div>
 
@@ -71,6 +72,219 @@
       <p class="mensaje" *ngIf="mensaje">{{ mensaje }}</p>
     </section>
 
+    <section class="perfil-content logros-content" *ngIf="!modoEdicion && seccionActiva === 'logros'">
+      <section id="mis-logros" class="logros-panel">
+        <div class="logros-header">
+          <div>
+            <span class="logros-kicker">Viaje del conocimiento</span>
+            <h2>Mis Logros</h2>
+            <p>Revisa las insignias completadas y las que faltan por desbloquear.</p>
+          </div>
+          <button type="button" (click)="sincronizarLogros()" [disabled]="cargandoLogros">
+            {{ cargandoLogros ? 'Actualizando...' : 'Actualizar' }}
+          </button>
+          <button type="button" class="demo-btn" (click)="cargarLogrosDemo()" [disabled]="cargandoLogros">
+            Cargar ejemplo
+          </button>
+        </div>
+
+        <div class="progress-card" *ngIf="logros">
+          <div class="route-mark" [class.lider]="logros.ruta_principal === 'lider'">
+            {{ logros.ruta_principal === 'lider' ? 'Ruta Lider' : 'Ruta Explorador' }}
+          </div>
+
+          <div class="xp-summary">
+            <strong>{{ xpTotal }} XP</strong>
+            <span>Nivel {{ nivelRutaActiva }} · meta {{ siguienteMetaXp }} XP</span>
+          </div>
+
+          <div class="xp-bar" aria-label="Progreso de experiencia">
+            <span [style.width.%]="progresoXp"></span>
+          </div>
+
+          <div class="metric-grid">
+            <div>
+              <strong>{{ logros.metricas?.publicaciones || 0 }}</strong>
+              <span>Publicaciones</span>
+            </div>
+            <div>
+              <strong>{{ logros.metricas?.foros || 0 }}</strong>
+              <span>Foros</span>
+            </div>
+            <div>
+              <strong>{{ logros.metricas?.comentarios || 0 }}</strong>
+              <span>Comentarios</span>
+            </div>
+            <div>
+              <strong>{{ logros.insignias_obtenidas?.length || 0 }}</strong>
+              <span>Completadas</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gamification-grid" *ngIf="logros">
+          <section class="streak-card" [class.claimable]="racha && !racha.recompensa_reclamada">
+            <div class="streak-flame" aria-hidden="true">🔥</div>
+            <div class="streak-copy">
+              <span>Racha diaria</span>
+              <h3>{{ racha?.mensaje || 'Empieza tu racha de aprendizaje' }}</h3>
+              <p>Mejor racha: {{ racha?.mejor_racha || 0 }} dias · recompensa: {{ racha?.siguiente_recompensa?.xp || 10 }} XP</p>
+            </div>
+
+            <div class="streak-calendar" aria-label="Calendario de racha">
+              <span *ngFor="let dia of racha?.calendario || []" [class.active]="dia.activo">
+                {{ dia.activo ? '🔥' : '•' }}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              class="claim-btn"
+              (click)="reclamarRacha()"
+              [disabled]="!racha || racha.recompensa_reclamada || reclamandoRacha"
+            >
+              {{ racha?.recompensa_reclamada ? 'Reclamada' : (reclamandoRacha ? 'Reclamando...' : 'Reclamar') }}
+            </button>
+          </section>
+
+          <section class="missions-panel">
+            <div class="compact-title">
+              <span>📜 Misiones diarias</span>
+              <strong>{{ misionesCompletadas }}/{{ misiones.length }}</strong>
+            </div>
+
+            <article class="mission-item" *ngFor="let mision of misiones" [class.done]="mision.completada">
+              <div class="mission-icon">{{ mision.completada ? '✅' : '🎯' }}</div>
+              <div class="mission-body">
+                <div>
+                  <strong>{{ mision.titulo }}</strong>
+                  <small>{{ mision.progreso }}/{{ mision.objetivo }} · +{{ mision.xp_recompensa }} XP</small>
+                </div>
+                <p>{{ mision.descripcion }}</p>
+                <div class="mission-bar">
+                  <span [style.width.%]="progresoMision(mision)"></span>
+                </div>
+              </div>
+              <button type="button" (click)="reclamarMision(mision)" [disabled]="!mision.completada || mision.reclamada">
+                {{ mision.reclamada ? 'OK' : 'Cofre' }}
+              </button>
+            </article>
+          </section>
+        </div>
+
+        <section class="ranking-panel" *ngIf="logros">
+          <div class="ranking-head">
+            <div>
+              <span class="logros-kicker">Competencia sana</span>
+              <h3>Ranking de aprendizaje</h3>
+            </div>
+            <div class="ranking-tabs">
+              <button type="button" [class.active]="rankingTab === 'global'" (click)="rankingTab = 'global'">Global</button>
+              <button type="button" [class.active]="rankingTab === 'semanal'" (click)="rankingTab = 'semanal'">Semanal</button>
+            </div>
+          </div>
+
+          <div class="podium" *ngIf="rankingActivo.length">
+            <article *ngFor="let usuario of rankingActivo.slice(0, 3)" [class]="'podium-user ' + (usuario.medalla || '')">
+              <span>{{ medallaIcono(usuario.medalla) }}</span>
+              <strong>{{ usuario.apodo || usuario.nombre }}</strong>
+              <small>Nivel {{ usuario.nivel }} · {{ usuario.total }} XP</small>
+            </article>
+          </div>
+
+          <div class="leaderboard">
+            <article *ngFor="let usuario of rankingActivo" class="leader-row">
+              <span class="rank">#{{ usuario.posicion }}</span>
+              <img [src]="usuario.avatar || 'iconos/foto_perfil.png'" alt="">
+              <div>
+                <strong>{{ usuario.apodo || usuario.nombre }}</strong>
+                <small>Nivel {{ usuario.nivel }} · {{ usuario.puntos }} puntos</small>
+                <div class="mini-xp"><span [style.width.%]="usuario.xp % 100"></span></div>
+              </div>
+              <em>{{ usuario.total }}</em>
+            </article>
+
+            <p class="ranking-empty" *ngIf="!rankingActivo.length">
+              Aun no hay datos de ranking. Suma XP con publicaciones, comentarios, IA o racha diaria.
+            </p>
+          </div>
+        </section>
+
+        <div class="route-tabs" *ngIf="logros">
+          <button
+            type="button"
+            [class.active]="rutaLogrosActiva === 'explorador'"
+            (click)="rutaLogrosActiva = 'explorador'"
+          >
+            Explorador
+          </button>
+          <button
+            type="button"
+            [class.active]="rutaLogrosActiva === 'lider'"
+            (click)="rutaLogrosActiva = 'lider'"
+          >
+            Lider
+          </button>
+        </div>
+
+        <div class="logros-section" *ngIf="logros">
+          <div class="section-title">
+            <h3>Completados</h3>
+            <span>{{ logrosCompletados(rutaLogrosActiva).length }}</span>
+          </div>
+
+          <div class="badges-grid" *ngIf="logrosCompletados(rutaLogrosActiva).length; else sinCompletados">
+            <article
+              *ngFor="let insignia of logrosCompletados(rutaLogrosActiva)"
+              class="badge-card completed"
+            >
+              <div class="badge-icon" [style.--badge-color]="insignia.color">
+                <span>{{ insignia.emoji }}</span>
+              </div>
+              <div>
+                <small>Nivel {{ insignia.nivel }}</small>
+                <h4>{{ insignia.nombre }}</h4>
+                <p>{{ insignia.descripcion }}</p>
+                <em>Completado</em>
+              </div>
+            </article>
+          </div>
+
+          <ng-template #sinCompletados>
+            <p class="logros-empty">Aun no has completado insignias en esta ruta.</p>
+          </ng-template>
+        </div>
+
+        <div class="logros-section" *ngIf="logros">
+          <div class="section-title">
+            <h3>Por completar</h3>
+            <span>{{ logrosPendientes(rutaLogrosActiva).length }}</span>
+          </div>
+
+          <div class="badges-grid">
+            <article
+              *ngFor="let insignia of logrosPendientes(rutaLogrosActiva)"
+              class="badge-card locked"
+            >
+              <div class="badge-icon" [style.--badge-color]="insignia.color">
+                <span>{{ insignia.emoji }}</span>
+              </div>
+              <div>
+                <small>Nivel {{ insignia.nivel }}</small>
+                <h4>{{ insignia.nombre }}</h4>
+                <p>{{ insignia.descripcion }}</p>
+                <em>{{ insignia.requisito }}</em>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <p class="logros-empty" *ngIf="!logros && !cargandoLogros">
+          No se pudieron cargar los logros por ahora.
+        </p>
+      </section>
+    </section>
+
     <section *ngIf="modoEdicion" class="perfil-content edit-content">
       <div class="edit-card">
         <h2>Editar perfil</h2>
@@ -80,6 +294,7 @@
             <div class="photo-preview">
               <img
                 [src]="perfil.usuario_foto_perfil || 'iconos/foto_perfil.png'"
+                [class.default-avatar]="!perfil.usuario_foto_perfil"
                 alt="Foto de perfil">
             </div>
             <label class="photo-upload">
@@ -185,5 +400,14 @@
       </button>
       <button type="button" (click)="cerrarSolicitudLider()" [disabled]="enviandoSolicitudLider">Cerrar</button>
     </div>
+  </section>
+</div>
+
+<div class="reward-popup" *ngIf="recompensaRachaVisible" (click)="cerrarRecompensa()">
+  <section (click)="$event.stopPropagation()">
+    <button type="button" (click)="cerrarRecompensa()">x</button>
+    <div class="reward-burst">✨</div>
+    <h2>{{ recompensaMensaje || 'Recompensa diaria disponible' }}</h2>
+    <p>Nuevo impulso para tu viaje en Alejandria's Library.</p>
   </section>
 </div>

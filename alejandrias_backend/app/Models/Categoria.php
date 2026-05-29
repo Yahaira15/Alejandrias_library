@@ -16,7 +16,8 @@ class Categoria extends Model
     protected $primaryKey = 'categoria_id';
     protected $fillable = [
         'categoria_nombre',
-        'categoria_descripcion'
+        'categoria_descripcion',
+        'categoria_imagen'
     ];
 
     public function foros()

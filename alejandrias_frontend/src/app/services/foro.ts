@@ -63,6 +63,16 @@ export class ForoService {
     return this.http.get(`${this.apiUrl}/publicaciones/${id}`);
   }
 
+  registrarLecturaPublicacion(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/logros/eventos`, {
+      accion: 'lectura_publicacion',
+      publicacion_id: id,
+      metadata: {
+        origen: 'ver_publicacion'
+      }
+    });
+  }
+
   verificarRegistroPublicacion(id: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/publicaciones/${id}/registro`);
   }

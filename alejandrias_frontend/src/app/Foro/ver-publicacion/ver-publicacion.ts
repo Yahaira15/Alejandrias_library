@@ -59,6 +59,7 @@ export class VerPublicacionComponent implements OnInit {
       next: (data) => {
         this.publicacion = data;
         this.loading = false;
+        this.registrarLectura();
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -67,6 +68,17 @@ export class VerPublicacionComponent implements OnInit {
         this.mostrarFeedback('error', 'No se pudo cargar la publicacion.');
         this.cdr.detectChanges();
       }
+    });
+  }
+
+  private registrarLectura(): void {
+    if (!this.usuario || !this.publicacionId) {
+      return;
+    }
+
+    this.foroService.registrarLecturaPublicacion(this.publicacionId).subscribe({
+      next: () => {},
+      error: (err) => console.warn('No se pudo registrar lectura de publicacion:', err)
     });
   }
 

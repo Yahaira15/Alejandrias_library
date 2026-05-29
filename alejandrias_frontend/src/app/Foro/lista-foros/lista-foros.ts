@@ -41,6 +41,7 @@ export class ListaForos implements OnInit, OnDestroy {
   intervaloNotificaciones: any;
 
   apodoUsuario = '';
+  fotoPerfilUsuario = '';
   foroSeleccionado: any = null;
   modalForoAbierto = false;
   modalPrivadoAbierto = false;
@@ -83,6 +84,7 @@ export class ListaForos implements OnInit, OnDestroy {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     this.rol = this.usuario.usuario_rol;
     this.apodoUsuario = this.usuario.usuario_apodo || this.usuario.apodoUsuario || this.usuario.usuario_nombre || '';
+    this.fotoPerfilUsuario = this.usuario.usuario_foto_perfil || '';
     this.cargarForos();
     this.cargarCategorias();
     this.cargarNotificaciones();

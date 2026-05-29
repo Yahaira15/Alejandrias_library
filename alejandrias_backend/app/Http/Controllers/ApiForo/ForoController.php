@@ -11,6 +11,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\Foro;
 use App\Models\Notificacion;
 use App\Services\IA\Moderation\ContentModerationService;
+use App\Services\Gamification\GamificationService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
@@ -143,6 +144,7 @@ class ForoController extends Controller
             $foro->miembros()->syncWithoutDetaching([$usuario->usuario_id]);
 
             if (($moderation['estado'] ?? 'revision') === 'permitido') {
+                app(GamificationService::class)->award($usuario, 'crear_foro', $foro);
                 app(LeaderNotificationService::class)->notifyRelevantLeaders(
                     $foro,
                     'lider_foro_relevante',
@@ -377,6 +379,7 @@ class ForoController extends Controller
         }
 
         $foro->miembros()->syncWithoutDetaching([$usuario->usuario_id]);
+        app(GamificationService::class)->award($usuario, 'registro_foro', $foro);
 
         // 🔔 Notificación para el usuario registrado
         Notificacion::create([
@@ -391,6 +394,11 @@ class ForoController extends Controller
 
         // 🔔 Notificación para el líder del foro
         if ($foro->foro_creador_id != $usuario->usuario_id) {
+            if ($foro->usuario) {
+                app(GamificationService::class)->award($foro->usuario, 'foro_activo', $foro, [
+                    'nuevo_miembro_id' => $usuario->usuario_id,
+                ]);
+            }
 
             Notificacion::create([
                 'notificacion_usuario_id' => $foro->foro_creador_id,

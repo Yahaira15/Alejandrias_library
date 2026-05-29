@@ -10,7 +10,17 @@
   <p class="admin-error" *ngIf="error">{{ error }}</p>
 
   <div class="reportes-layout">
-    <div class="table-wrap">
+    <div class="table-panel">
+      <div class="panel-tabs">
+        <button type="button" class="tab active">Reportes</button>
+      </div>
+      <div class="table-search">
+        <label>
+          <span>Busqueda</span>
+          <input type="search" disabled>
+        </label>
+      </div>
+      <div class="table-wrap">
       <table>
         <thead>
           <tr>
@@ -42,6 +52,7 @@
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
 
     <aside class="reporte-panel" *ngIf="reporteSeleccionado">

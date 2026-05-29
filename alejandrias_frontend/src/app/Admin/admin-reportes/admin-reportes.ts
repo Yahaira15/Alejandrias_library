@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
@@ -12,7 +12,7 @@ import { EmailjsSancionService } from '../../services/emailjs-sancion.service';
   styleUrls: ['../admin-crud/admin-crud.shared.scss', './admin-reportes.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AdminReportes implements OnInit {
+export class AdminReportes implements OnInit, OnDestroy {
   reportes: any[] = [];
   cargando = false;
   error = '';
@@ -24,6 +24,7 @@ export class AdminReportes implements OnInit {
     duracion: 'permanente',
     sancion_motivo: ''
   };
+  private avisoTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private adminService: AdminService,
@@ -35,6 +36,10 @@ export class AdminReportes implements OnInit {
     this.cargar();
   }
 
+  ngOnDestroy(): void {
+    this.limpiarAvisoTimer();
+  }
+
   cargar(): void {
     this.cargando = true;
     this.adminService.listar('reportes').subscribe({
@@ -44,7 +49,7 @@ export class AdminReportes implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.error = err?.error?.error || 'No se pudieron cargar los reportes.';
+        this.mostrarError(err?.error?.error || 'No se pudieron cargar los reportes.');
         this.cargando = false;
         this.cdr.detectChanges();
       }
@@ -73,11 +78,11 @@ export class AdminReportes implements OnInit {
 
     this.adminService.actualizar('reportes', reporte.reporte_id, payload).subscribe({
       next: () => {
-        this.mensaje = 'Reporte actualizado.';
+        this.mostrarMensaje('Reporte actualizado.');
         this.cargar();
       },
       error: (err) => {
-        this.error = err?.error?.error || 'No se pudo actualizar el reporte.';
+        this.mostrarError(err?.error?.error || 'No se pudo actualizar el reporte.');
         this.cdr.detectChanges();
       }
     });
@@ -85,14 +90,14 @@ export class AdminReportes implements OnInit {
 
   aplicarSancion(): void {
     if (!this.reporteSeleccionado || !this.sancion.sancion_usuario_id || !this.sancion.sancion_motivo.trim()) {
-      this.error = 'Selecciona un usuario y escribe el motivo de la sancion.';
+      this.mostrarError('Selecciona un usuario y escribe el motivo de la sancion.');
       this.cdr.detectChanges();
       return;
     }
 
     this.adminService.sancionarReporte(this.reporteSeleccionado.reporte_id, this.sancion).subscribe({
       next: (sancionCreada) => {
-        this.mensaje = 'Sancion aplicada.';
+        this.mostrarMensaje('Sancion aplicada.');
 
         if (this.debeEnviarCorreo(sancionCreada)) {
           this.enviarCorreoSancion(sancionCreada);
@@ -102,7 +107,7 @@ export class AdminReportes implements OnInit {
         this.cargar();
       },
       error: (err) => {
-        this.error = err?.error?.error || 'No se pudo aplicar la sancion.';
+        this.mostrarError(err?.error?.error || 'No se pudo aplicar la sancion.');
         this.cdr.detectChanges();
       }
     });
@@ -116,7 +121,7 @@ export class AdminReportes implements OnInit {
     const usuario = sancion.usuario;
 
     if (!usuario?.usuario_email) {
-      this.mensaje = 'Sancion aplicada, pero el usuario no tiene correo registrado.';
+      this.mostrarMensaje('Sancion aplicada, pero el usuario no tiene correo registrado.');
       this.cdr.detectChanges();
       return;
     }
@@ -133,12 +138,11 @@ export class AdminReportes implements OnInit {
       reporteMotivo: sancion.reporte?.reporte_motivo || this.reporteSeleccionado?.reporte_motivo || 'Reporte revisado por administracion',
       decisionFinal: sancion.reporte?.decision_final || 'Sancion aplicada: ' + this.nombreSancion(sancion.sancion_tipo)
     }).then(() => {
-      this.mensaje = 'Sancion aplicada y correo enviado.';
+      this.mostrarMensaje('Sancion aplicada y correo enviado.');
       this.cdr.detectChanges();
     }).catch((err) => {
       console.error('Error enviando correo de sancion:', err);
-      this.mensaje = 'Sancion aplicada, pero no se pudo enviar el correo.';
-      this.error = err?.message || 'EmailJS no pudo enviar el aviso.';
+      this.mostrarError(err?.message || 'EmailJS no pudo enviar el aviso.');
       this.cdr.detectChanges();
     });
   }
@@ -195,5 +199,34 @@ export class AdminReportes implements OnInit {
     if (reporte.reporte_tipo === 'usuario') return ref.usuario_apodo || ref.usuario_email || 'Usuario';
     if (reporte.reporte_tipo === 'foro') return ref.foro_titulo || 'Foro';
     return 'Referencia';
+  }
+
+  private mostrarMensaje(mensaje: string): void {
+    this.mensaje = mensaje;
+    this.error = '';
+    this.programarOcultarAviso();
+  }
+
+  private mostrarError(error: string): void {
+    this.error = error;
+    this.mensaje = '';
+    this.programarOcultarAviso();
+  }
+
+  private programarOcultarAviso(): void {
+    this.limpiarAvisoTimer();
+    this.avisoTimer = setTimeout(() => {
+      this.mensaje = '';
+      this.error = '';
+      this.avisoTimer = null;
+      this.cdr.detectChanges();
+    }, 3500);
+  }
+
+  private limpiarAvisoTimer(): void {
+    if (this.avisoTimer) {
+      clearTimeout(this.avisoTimer);
+      this.avisoTimer = null;
+    }
   }
 }

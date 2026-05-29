@@ -12,6 +12,8 @@ use App\Http\Controllers\ApiAdmin\ModeracionIaController;
 use App\Http\Controllers\ApiReporte\ReporteController;
 use App\Http\Controllers\ApiReporte\SancionController;
 use App\Http\Controllers\ApiIa\ChatRiskAlertController;
+use App\Http\Controllers\ApiGamification\LogroController;
+use App\Http\Controllers\ApiGamification\GamificationController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -23,6 +25,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/perfil', [UsuarioController::class, 'update']);
     Route::put('/perfil/intereses', [UsuarioController::class, 'updateIntereses']);
     Route::delete('/perfil', [UsuarioController::class, 'destroy']);
+    Route::get('/logros', [LogroController::class, 'perfil']);
+    Route::post('/logros/sincronizar', [LogroController::class, 'sincronizar']);
+    Route::post('/logros/demo', [LogroController::class, 'demo']);
+    Route::post('/logros/eventos', [LogroController::class, 'registrarEvento']);
+    Route::get('/gamificacion/panel', [GamificationController::class, 'panel']);
+    Route::get('/gamificacion/racha', [GamificationController::class, 'racha']);
+    Route::post('/gamificacion/racha/reclamar', [GamificationController::class, 'reclamarRacha']);
+    Route::get('/gamificacion/misiones', [GamificationController::class, 'misiones']);
+    Route::post('/gamificacion/misiones/{usuarioMisionId}/reclamar', [GamificationController::class, 'reclamarMision']);
+    Route::get('/gamificacion/ranking', [GamificationController::class, 'ranking']);
 
 });
 
@@ -47,7 +59,13 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/categorias', [AdminController::class, 'categorias']);
     Route::post('/categorias', [CategoriaController::class, 'store']);
     Route::put('/categorias/{id}', [CategoriaController::class, 'update']);
+    Route::post('/categorias/{id}', [CategoriaController::class, 'update']);
     Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
+    Route::get('/categorias/{categoria_id}/subcategorias', [CategoriaController::class, 'subcategorias']);
+    Route::post('/subcategorias', [CategoriaController::class, 'storeSubcategoria']);
+    Route::put('/subcategorias/{id}', [CategoriaController::class, 'updateSubcategoria']);
+    Route::post('/subcategorias/{id}', [CategoriaController::class, 'updateSubcategoria']);
+    Route::delete('/subcategorias/{id}', [CategoriaController::class, 'destroySubcategoria']);
 
     Route::get('/publicaciones', [AdminController::class, 'publicaciones']);
     Route::post('/publicaciones', [AdminController::class, 'crearPublicacion']);
@@ -88,6 +106,7 @@ Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/categorias/{categoria_id}', [CategoriaController::class, 'show']);
 Route::post('/categorias', [CategoriaController::class, 'store']);
 Route::get('/categorias/{categoria_id}/foros', [CategoriaController::class, 'foros']);
+Route::get('/categorias/{categoria_id}/subcategorias', [CategoriaController::class, 'subcategorias']);
 
 Route::get('/foros/{foroId}/publicaciones', [PublicacionController::class, 'index']);
 Route::post('/foros/{foroId}/publicaciones', [PublicacionController::class, 'store']);

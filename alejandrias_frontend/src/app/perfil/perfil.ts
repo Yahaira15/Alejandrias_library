@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { PerfilService } from '../services/perfil';
+import { GamificacionService, MisionUsuario, RachaUsuario, RankingUsuario } from '../services/gamificacion.service';
 import { EmailjsLiderService } from '../services/emailjs-lider.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +19,19 @@ export class Perfil implements OnInit {
   perfilOriginal: any = {}; // para cancelar cambios
   modoEdicion: boolean = false;
   mensaje: string = '';
+  seccionActiva: 'perfil' | 'logros' = 'perfil';
   modalSolicitudLider = false;
+  logros: any = null;
+  racha: RachaUsuario | null = null;
+  misiones: MisionUsuario[] = [];
+  rankingGlobal: RankingUsuario[] = [];
+  rankingSemanal: RankingUsuario[] = [];
+  recompensaRachaVisible = false;
+  recompensaMensaje = '';
+  cargandoLogros = false;
+  reclamandoRacha = false;
+  rankingTab: 'global' | 'semanal' = 'global';
+  rutaLogrosActiva: 'lider' | 'explorador' = 'explorador';
   enviandoSolicitudLider = false;
   solicitudLiderMensaje = '';
   solicitudLiderError = '';
@@ -59,6 +72,7 @@ export class Perfil implements OnInit {
 
   constructor(
     private perfilService: PerfilService,
+    private gamificacionService: GamificacionService,
     private emailjsLiderService: EmailjsLiderService,
     private router: Router,
     private location: Location,
@@ -93,8 +107,157 @@ export class Perfil implements OnInit {
       this.perfil = { ...this.perfil, ...res };
       this.perfilOriginal = { ...this.perfil };
       this.cargarMateriasGuardadas();
+      this.cargarLogros();
       this.cdr.detectChanges();
     });
+  }
+
+  cargarLogros() {
+    this.cargandoLogros = true;
+
+    this.gamificacionService.getPanel().subscribe({
+      next: (res: any) => {
+        this.logros = res;
+        this.racha = res?.racha || null;
+        this.misiones = res?.misiones || [];
+        this.rankingGlobal = res?.ranking?.global_xp || [];
+        this.rankingSemanal = res?.ranking?.semanal_xp || [];
+        this.recompensaRachaVisible = !!this.racha && !this.racha.recompensa_reclamada;
+        this.rutaLogrosActiva = res?.ruta_principal === 'lider' ? 'lider' : 'explorador';
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  sincronizarLogros() {
+    this.cargandoLogros = true;
+
+    this.gamificacionService.getPanel().subscribe({
+      next: (res: any) => {
+        this.logros = res;
+        this.racha = res?.racha || null;
+        this.misiones = res?.misiones || [];
+        this.rankingGlobal = res?.ranking?.global_xp || [];
+        this.rankingSemanal = res?.ranking?.semanal_xp || [];
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cargarLogrosDemo() {
+    this.cargandoLogros = true;
+
+    this.perfilService.cargarLogrosDemo().subscribe({
+      next: (res: any) => {
+        this.logros = res;
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cargandoLogros = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  catalogoPorRuta(ruta: 'lider' | 'explorador') {
+    return (this.logros?.catalogo || []).filter((insignia: any) => insignia.ruta === ruta);
+  }
+
+  logrosCompletados(ruta: 'lider' | 'explorador') {
+    return this.catalogoPorRuta(ruta).filter((insignia: any) => insignia.obtenida);
+  }
+
+  logrosPendientes(ruta: 'lider' | 'explorador') {
+    return this.catalogoPorRuta(ruta).filter((insignia: any) => !insignia.obtenida);
+  }
+
+  get xpTotal(): number {
+    return Number(this.logros?.xp_total || 0);
+  }
+
+  get nivelRutaActiva(): number {
+    return this.rutaLogrosActiva === 'lider'
+      ? Number(this.logros?.nivel_lider || 0)
+      : Number(this.logros?.nivel_explorador || 0);
+  }
+
+  get siguienteMetaXp(): number {
+    const escala = [0, 120, 280, 500, 760, 1050, 1350, 1700, 2200];
+    return escala[Math.min(this.nivelRutaActiva + 1, escala.length - 1)] || 2200;
+  }
+
+  get progresoXp(): number {
+    return Math.min(100, Math.round((this.xpTotal / this.siguienteMetaXp) * 100));
+  }
+
+  get misionesCompletadas(): number {
+    return this.misiones.filter((mision) => mision.completada).length;
+  }
+
+  get rankingActivo(): RankingUsuario[] {
+    return this.rankingTab === 'global' ? this.rankingGlobal : this.rankingSemanal;
+  }
+
+  progresoMision(mision: MisionUsuario): number {
+    if (!mision.objetivo) return 0;
+    return Math.min(100, Math.round((mision.progreso / mision.objetivo) * 100));
+  }
+
+  medallaIcono(medalla: RankingUsuario['medalla']): string {
+    if (medalla === 'oro') return '🥇';
+    if (medalla === 'plata') return '🥈';
+    if (medalla === 'bronce') return '🥉';
+    return '🏅';
+  }
+
+  reclamarRacha() {
+    if (this.reclamandoRacha || !this.racha || this.racha.recompensa_reclamada) return;
+
+    this.reclamandoRacha = true;
+    this.gamificacionService.reclamarRacha().subscribe({
+      next: (res: any) => {
+        this.racha = res?.racha || this.racha;
+        this.logros = res?.progreso ? { ...this.logros, ...res.progreso } : this.logros;
+        this.recompensaMensaje = `+${this.racha?.xp_obtenida_hoy || 0} XP por tu racha diaria`;
+        this.recompensaRachaVisible = true;
+        this.reclamandoRacha = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.reclamandoRacha = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  reclamarMision(mision: MisionUsuario) {
+    if (!mision.completada || mision.reclamada) return;
+
+    this.gamificacionService.reclamarMision(mision.usuario_mision_id).subscribe({
+      next: (res: any) => {
+        this.misiones = res?.misiones || this.misiones;
+        this.logros = res?.progreso ? { ...this.logros, ...res.progreso } : this.logros;
+        this.recompensaMensaje = `Mision reclamada: +${mision.xp_recompensa} XP`;
+        this.recompensaRachaVisible = true;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cerrarRecompensa() {
+    this.recompensaRachaVisible = false;
+    this.recompensaMensaje = '';
   }
 
   // 🔹 activar/desactivar edición
@@ -159,6 +322,11 @@ export class Perfil implements OnInit {
   }
 
   volverAtras() {
+    if (this.seccionActiva === 'logros') {
+      this.seccionActiva = 'perfil';
+      return;
+    }
+
     this.location.back();
   }
 
@@ -168,6 +336,14 @@ export class Perfil implements OnInit {
 
   irAAdmin() {
     this.router.navigate(['/admin']);
+  }
+
+  irALogros() {
+    this.seccionActiva = 'logros';
+    this.modoEdicion = false;
+    if (!this.logros) {
+      this.cargarLogros();
+    }
   }
 
   abrirSolicitudLider() {
@@ -263,7 +439,7 @@ actualizar() {
     data.usuario_password = this.passwordNueva;
   }
 
-  this.perfilService.updatePerfil(data).subscribe({
+    this.perfilService.updatePerfil(data).subscribe({
     next: () => {
       this.mensaje = 'Perfil actualizado correctamente';
       this.passwordNueva = '';
@@ -272,6 +448,7 @@ actualizar() {
       this.materiasOriginal = [...this.materiasFavoritas];
       localStorage.setItem(this.obtenerClaveMaterias(), JSON.stringify(this.materiasFavoritas));
       localStorage.setItem('usuario', JSON.stringify(this.perfil));
+      this.sincronizarLogros();
     },
     error: () => {
       this.mensaje = 'Error al actualizar';

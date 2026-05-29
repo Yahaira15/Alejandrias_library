@@ -326,6 +326,7 @@ class AdminController extends Controller
             'comentario_publicacion_id' => 'required|exists:publicacion,publicacion_id',
             'comentario_contenido' => 'required|string|max:2000',
         ]);
+        $data['comentario_fecha_creacion'] = now();
 
         $moderationService = app(ContentModerationService::class);
         $publicacion = Publicacion::with(['foro.categoria'])->find($data['comentario_publicacion_id']);
