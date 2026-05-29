@@ -9,6 +9,7 @@ use App\Models\Publicacion;
 use App\Models\Notificacion;
 use App\Services\IA\Moderation\ContentModerationService;
 use App\Services\Gamification\GamificationService;
+use App\Services\Gamification\XpService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
@@ -126,9 +127,13 @@ class PublicacionController extends Controller
 
             // 🔔 Notificar miembros registrados
             if (($moderation['estado'] ?? 'revision') === 'permitido') {
-            app(GamificationService::class)->award($usuario, 'crear_publicacion', $publicacion);
+            app(XpService::class)->track($usuario, 'crear_publicacion');
+            app(XpService::class)->award($usuario, 'crear_publicacion', $publicacion, ['skip_mission_progress' => true]);
+            if (mb_strlen(strip_tags($publicacion->publicacion_contenido)) >= 700) {
+                app(XpService::class)->award($usuario, 'publicacion_larga', $publicacion);
+            }
             if ($publicacion->publicacion_destacada) {
-                app(GamificationService::class)->award($usuario, 'publicacion_destacada', $publicacion);
+                app(XpService::class)->award($usuario, 'publicacion_destacada', $publicacion);
             }
             foreach ($foro->miembros as $miembro) {
 
@@ -296,7 +301,7 @@ class PublicacionController extends Controller
             $moderationService->applyToModel($publicacion, $moderation, 'publicacion');
             $publicacion->save();
             if ($publicacion->publicacion_destacada) {
-                app(GamificationService::class)->award($usuario, 'publicacion_destacada', $publicacion);
+                app(XpService::class)->award($usuario, 'publicacion_destacada', $publicacion);
             }
             $moderationPersisted = $moderationService->record(
                 'publicacion',

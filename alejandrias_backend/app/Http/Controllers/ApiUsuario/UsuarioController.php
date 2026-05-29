@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ApiUsuario;
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
 use App\Services\Gamification\GamificationService;
+use App\Services\Gamification\XpService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -120,6 +121,7 @@ class UsuarioController extends Controller
 
             $usuario->tokens()->delete();
             $token = $usuario->createToken('auth_token')->plainTextToken;
+            app(XpService::class)->dailyAccess($usuario);
 
             return response()->json([
                 'mensaje' => 'Login exitoso',

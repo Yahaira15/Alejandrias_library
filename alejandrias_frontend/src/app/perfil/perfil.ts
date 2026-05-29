@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { PerfilService } from '../services/perfil';
+import { GamificacionService, MisionUsuario, RachaUsuario, RankingUsuario } from '../services/gamificacion.service';
 import { EmailjsLiderService } from '../services/emailjs-lider.service';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -21,7 +22,15 @@ export class Perfil implements OnInit {
   seccionActiva: 'perfil' | 'logros' = 'perfil';
   modalSolicitudLider = false;
   logros: any = null;
+  racha: RachaUsuario | null = null;
+  misiones: MisionUsuario[] = [];
+  rankingGlobal: RankingUsuario[] = [];
+  rankingSemanal: RankingUsuario[] = [];
+  recompensaRachaVisible = false;
+  recompensaMensaje = '';
   cargandoLogros = false;
+  reclamandoRacha = false;
+  rankingTab: 'global' | 'semanal' = 'global';
   rutaLogrosActiva: 'lider' | 'explorador' = 'explorador';
   enviandoSolicitudLider = false;
   solicitudLiderMensaje = '';
@@ -63,6 +72,7 @@ export class Perfil implements OnInit {
 
   constructor(
     private perfilService: PerfilService,
+    private gamificacionService: GamificacionService,
     private emailjsLiderService: EmailjsLiderService,
     private router: Router,
     private location: Location,
@@ -105,9 +115,14 @@ export class Perfil implements OnInit {
   cargarLogros() {
     this.cargandoLogros = true;
 
-    this.perfilService.getLogros().subscribe({
+    this.gamificacionService.getPanel().subscribe({
       next: (res: any) => {
         this.logros = res;
+        this.racha = res?.racha || null;
+        this.misiones = res?.misiones || [];
+        this.rankingGlobal = res?.ranking?.global_xp || [];
+        this.rankingSemanal = res?.ranking?.semanal_xp || [];
+        this.recompensaRachaVisible = !!this.racha && !this.racha.recompensa_reclamada;
         this.rutaLogrosActiva = res?.ruta_principal === 'lider' ? 'lider' : 'explorador';
         this.cargandoLogros = false;
         this.cdr.detectChanges();
@@ -122,9 +137,13 @@ export class Perfil implements OnInit {
   sincronizarLogros() {
     this.cargandoLogros = true;
 
-    this.perfilService.sincronizarLogros().subscribe({
+    this.gamificacionService.getPanel().subscribe({
       next: (res: any) => {
         this.logros = res;
+        this.racha = res?.racha || null;
+        this.misiones = res?.misiones || [];
+        this.rankingGlobal = res?.ranking?.global_xp || [];
+        this.rankingSemanal = res?.ranking?.semanal_xp || [];
         this.cargandoLogros = false;
         this.cdr.detectChanges();
       },
@@ -180,6 +199,65 @@ export class Perfil implements OnInit {
 
   get progresoXp(): number {
     return Math.min(100, Math.round((this.xpTotal / this.siguienteMetaXp) * 100));
+  }
+
+  get misionesCompletadas(): number {
+    return this.misiones.filter((mision) => mision.completada).length;
+  }
+
+  get rankingActivo(): RankingUsuario[] {
+    return this.rankingTab === 'global' ? this.rankingGlobal : this.rankingSemanal;
+  }
+
+  progresoMision(mision: MisionUsuario): number {
+    if (!mision.objetivo) return 0;
+    return Math.min(100, Math.round((mision.progreso / mision.objetivo) * 100));
+  }
+
+  medallaIcono(medalla: RankingUsuario['medalla']): string {
+    if (medalla === 'oro') return '🥇';
+    if (medalla === 'plata') return '🥈';
+    if (medalla === 'bronce') return '🥉';
+    return '🏅';
+  }
+
+  reclamarRacha() {
+    if (this.reclamandoRacha || !this.racha || this.racha.recompensa_reclamada) return;
+
+    this.reclamandoRacha = true;
+    this.gamificacionService.reclamarRacha().subscribe({
+      next: (res: any) => {
+        this.racha = res?.racha || this.racha;
+        this.logros = res?.progreso ? { ...this.logros, ...res.progreso } : this.logros;
+        this.recompensaMensaje = `+${this.racha?.xp_obtenida_hoy || 0} XP por tu racha diaria`;
+        this.recompensaRachaVisible = true;
+        this.reclamandoRacha = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.reclamandoRacha = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  reclamarMision(mision: MisionUsuario) {
+    if (!mision.completada || mision.reclamada) return;
+
+    this.gamificacionService.reclamarMision(mision.usuario_mision_id).subscribe({
+      next: (res: any) => {
+        this.misiones = res?.misiones || this.misiones;
+        this.logros = res?.progreso ? { ...this.logros, ...res.progreso } : this.logros;
+        this.recompensaMensaje = `Mision reclamada: +${mision.xp_recompensa} XP`;
+        this.recompensaRachaVisible = true;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  cerrarRecompensa() {
+    this.recompensaRachaVisible = false;
+    this.recompensaMensaje = '';
   }
 
   // 🔹 activar/desactivar edición
