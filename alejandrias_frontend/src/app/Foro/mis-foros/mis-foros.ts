@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit , OnDestroy} from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, HostListener, OnInit , OnDestroy} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
 import { ForoService } from '../../services/foro';
 import { NotificacionService } from '../../services/notificacion.service';
+import { ReportePayload, ReporteService } from '../../services/reporte.service';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -29,6 +29,13 @@ export class MisForos implements OnInit, OnDestroy {
   errorPrivado = '';
   registrandoForo = false;
   buscandoPrivado = false;
+  reporteModalAbierto = false;
+  reporteObjetivo: { tipo: ReportePayload['reporte_tipo']; id: number; titulo: string } | null = null;
+  reporteMotivo = '';
+  reporteDescripcion = '';
+  errorReporte = '';
+  enviandoReporte = false;
+  eliminandoSeguimientoId: number | null = null;
 
   notificaciones: any[] = [];
   mostrarPanelNotificaciones = false;
@@ -41,8 +48,16 @@ export class MisForos implements OnInit, OnDestroy {
     private foroService: ForoService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private notificacionService: NotificacionService
+    private notificacionService: NotificacionService,
+    private reporteService: ReporteService
   ) {}
+
+  @HostListener('document:click')
+  cerrarMenusForos(): void {
+    if (!this.foros.some(foro => foro.menuAbierto)) return;
+    this.foros = this.foros.map(foro => ({ ...foro, menuAbierto: false }));
+    this.cdr.detectChanges();
+  }
 
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
@@ -82,33 +97,13 @@ export class MisForos implements OnInit, OnDestroy {
       return;
     }
 
-    const solicitudes = foros.map(foro => this.foroService.getPublicaciones(foro.foro_id));
-
-    forkJoin(solicitudes).subscribe({
-      next: (resultados) => {
-        this.foros = foros.map((foro, index) => {
-          const publicaciones = Array.isArray(resultados[index]) ? resultados[index] : [];
-          const comentariosCount = publicaciones.reduce(
-            (total: number, publicacion: any) => total + (publicacion.comentarios_count || 0),
-            0
-          );
-
-          return {
-            ...foro,
-            publicaciones_count: publicaciones.length,
-            comentarios_count_total: comentariosCount
-          };
-        });
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error contando publicaciones de mis foros:', err);
-        this.foros = foros;
-        this.cargando = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.foros = foros.map((foro) => ({
+      ...foro,
+      publicaciones_count: foro.publicaciones_count || 0,
+      comentarios_count_total: foro.comentarios_count_total || 0
+    }));
+    this.cargando = false;
+    this.cdr.detectChanges();
   }
 
   irAInicio(): void {
@@ -146,6 +141,47 @@ export class MisForos implements OnInit, OnDestroy {
     const foroId = this.foroSeleccionado.foro_id;
     this.cerrarModalForo();
     this.router.navigate(['/foros', foroId]);
+  }
+
+  verForo(foro: any): void {
+    if (!foro?.foro_id) return;
+    this.router.navigate(['/foros', foro.foro_id]);
+  }
+
+  toggleMenuForo(foro: any): void {
+    this.foros = this.foros.map(item => ({
+      ...item,
+      menuAbierto: item.foro_id === foro.foro_id ? !item.menuAbierto : false
+    }));
+    this.cdr.detectChanges();
+  }
+
+  obtenerImagenForo(foro: any): string {
+    const imagen = foro?.foro_imagen_url || foro?.foro_imagen || foro?.imagen || '';
+
+    if (!imagen || foro?.imagenFallida) {
+      return '';
+    }
+
+    if (imagen.startsWith('http://localhost/storage')) {
+      return imagen.replace('http://localhost', 'http://127.0.0.1:8000');
+    }
+
+    if (/^(https?:|data:|blob:)/i.test(imagen)) {
+      return imagen;
+    }
+
+    const ruta = imagen.startsWith('/') ? imagen : `/${imagen}`;
+    return `http://127.0.0.1:8000${ruta.startsWith('/storage') ? ruta : `/storage${ruta}`}`;
+  }
+
+  foroTieneImagen(foro: any): boolean {
+    return !!this.obtenerImagenForo(foro);
+  }
+
+  marcarImagenFallida(foro: any): void {
+    foro.imagenFallida = true;
+    this.cdr.detectChanges();
   }
 
   abrirModalPrivado(): void {
@@ -229,6 +265,79 @@ export class MisForos implements OnInit, OnDestroy {
         console.error('Error eliminando foro', err);
       }
     });
+  }
+
+  dejarDeSeguirForo(foro: any): void {
+    if (!foro?.foro_id || this.eliminandoSeguimientoId) return;
+
+    const confirmar = confirm(`Deseas eliminar "${foro.foro_titulo}" de tu lista de seguimiento?`);
+    if (!confirmar) return;
+
+    this.eliminandoSeguimientoId = foro.foro_id;
+
+    this.foroService.dejarDeSeguirForo(foro.foro_id).subscribe({
+      next: () => {
+        this.foros = this.foros.filter(item => item.foro_id !== foro.foro_id);
+        this.eliminandoSeguimientoId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error eliminando seguimiento', err);
+        this.eliminandoSeguimientoId = null;
+        alert(err?.error?.error || 'No se pudo eliminar el foro de tu lista.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  abrirReporte(tipo: ReportePayload['reporte_tipo'], id: number, titulo: string): void {
+    this.cerrarMenusForos();
+    this.reporteObjetivo = { tipo, id, titulo };
+    this.reporteMotivo = '';
+    this.reporteDescripcion = '';
+    this.errorReporte = '';
+    this.reporteModalAbierto = true;
+    this.cdr.detectChanges();
+  }
+
+  cerrarReporte(): void {
+    this.reporteModalAbierto = false;
+    this.reporteObjetivo = null;
+    this.reporteMotivo = '';
+    this.reporteDescripcion = '';
+    this.errorReporte = '';
+    this.enviandoReporte = false;
+    this.cdr.detectChanges();
+  }
+
+  enviarReporte(): void {
+    if (!this.reporteObjetivo || !this.reporteMotivo || this.enviandoReporte) {
+      this.errorReporte = 'Selecciona un motivo para reportar.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.enviandoReporte = true;
+    this.reporteService.crearReporte({
+      reporte_tipo: this.reporteObjetivo.tipo,
+      reporte_referencia_id: this.reporteObjetivo.id,
+      reporte_motivo: this.reporteMotivo,
+      reporte_descripcion: this.reporteDescripcion
+    }).subscribe({
+      next: () => {
+        this.cerrarReporte();
+        alert('Reporte enviado a administracion.');
+      },
+      error: (err) => {
+        this.enviandoReporte = false;
+        this.errorReporte = err?.error?.error || 'No se pudo enviar el reporte.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  motivosReporte(): string[] {
+    return ['tematica ilegal', 'contenido extremista', 'spam', 'fraude'];
   }
 
   cargarNotificaciones(): void {

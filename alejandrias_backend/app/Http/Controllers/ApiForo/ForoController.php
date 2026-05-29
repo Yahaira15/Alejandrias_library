@@ -15,6 +15,7 @@ use App\Services\Gamification\GamificationService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class ForoController extends Controller
 {
@@ -27,6 +28,7 @@ class ForoController extends Controller
                 }
             })
             ->with(['usuario', 'categoria'])
+            ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
             ->get();
         return response()->json($foros, 200);
     }
@@ -40,16 +42,20 @@ class ForoController extends Controller
         }
 
         if ($usuario->usuario_rol === 'admin') {
-            $foros = Foro::with(['usuario', 'categoria'])->get();
+            $foros = Foro::with(['usuario', 'categoria'])
+                ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
+                ->get();
         } elseif ($usuario->usuario_rol === 'lider') {
             $foros = Foro::where('foro_creador_id', $usuario->usuario_id)
                 ->with(['usuario', 'categoria'])
+                ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
                 ->get();
         } else {
             $foros = Foro::whereHas('miembros', function ($query) use ($usuario) {
                 $query->where('usuario.usuario_id', $usuario->usuario_id);
             })
                 ->with(['usuario', 'categoria'])
+                ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
                 ->get();
         }
 
@@ -74,6 +80,7 @@ class ForoController extends Controller
                     });
             })
             ->with(['usuario', 'categoria'])
+            ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
             ->get();
 
         return response()->json($foros, 200);
@@ -87,6 +94,7 @@ class ForoController extends Controller
             'foro_categoria_id' => 'required|exists:categoria,categoria_id',
             'foro_privado' => 'nullable|boolean',
             'foro_password' => 'nullable|required_if:foro_privado,true|regex:/^[A-Za-z0-9]{8}$/',
+            'foro_imagen' => 'nullable',
         ]);
 
         try {
@@ -128,6 +136,9 @@ class ForoController extends Controller
             $foro->foro_password = $foro->foro_privado
                 ? Crypt::encryptString($validated['foro_password'])
                 : null;
+            if (Schema::hasColumn('foro', 'foro_imagen')) {
+                $foro->foro_imagen = $this->resolverImagenForo($request);
+            }
             $moderationService->applyToModel($foro, $moderation, 'foro');
 
             $foro->save();
@@ -160,7 +171,9 @@ class ForoController extends Controller
 
     public function show($id)
     {
-        $foro = Foro::with(['usuario', 'categoria'])->find($id);
+        $foro = Foro::with(['usuario', 'categoria'])
+            ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
+            ->find($id);
 
         if (!$foro) {
             return response()->json(['message' => 'Foro no encontrado'], 404);
@@ -202,6 +215,7 @@ class ForoController extends Controller
             'foro_categoria_id' => 'sometimes|required|exists:categoria,categoria_id',
             'foro_privado' => 'sometimes|boolean',
             'foro_password' => 'nullable|regex:/^[A-Za-z0-9]{8}$/',
+            'foro_imagen' => 'nullable',
         ]);
 
         try {
@@ -249,6 +263,10 @@ class ForoController extends Controller
                 $foro->foro_password = null;
             } elseif ($request->filled('foro_password')) {
                 $foro->foro_password = Crypt::encryptString($validated['foro_password']);
+            }
+
+            if (Schema::hasColumn('foro', 'foro_imagen')) {
+                $foro->foro_imagen = $this->resolverImagenForo($request, $foro->foro_imagen);
             }
 
             $moderationService = app(ContentModerationService::class);
@@ -341,7 +359,10 @@ class ForoController extends Controller
                 ->where('usuario.usuario_id', $usuario->usuario_id)
                 ->exists()
         ) {
-            return response()->json(['error' => 'Ya e encuentras registrado en este foro'], 409);
+            return response()->json([
+                'mensaje' => 'Ya te encuentras registrado en este foro',
+                'foro' => $foro->load(['usuario', 'categoria']),
+            ], 200);
         }
 
         if ($foro->foro_privado) {
@@ -355,7 +376,9 @@ class ForoController extends Controller
         }
 
         $foro->miembros()->syncWithoutDetaching([$usuario->usuario_id]);
-        app(GamificationService::class)->award($usuario, 'registro_foro', $foro);
+
+        try {
+            app(GamificationService::class)->award($usuario, 'registro_foro', $foro);
 
         // 🔔 Notificación para el usuario registrado
         Notificacion::create([
@@ -364,7 +387,7 @@ class ForoController extends Controller
             'notificacion_contenido' => 'Te registraste en el foro "' . $foro->foro_titulo . '"',
             'notificacion_leida' => false,
             'notificacion_fecha' => now(),
-            'notificacion_url' => '/foro/' . $foro->foro_id,
+            'notificacion_url' => '/foros/' . $foro->foro_id,
             'notificacion_referencia_id' => $foro->foro_id
         ]);
 
@@ -382,9 +405,12 @@ class ForoController extends Controller
                 'notificacion_contenido' => $usuario->usuario_apodo . ' se unió a tu foro "' . $foro->foro_titulo . '"',
                 'notificacion_leida' => false,
                 'notificacion_fecha' => now(),
-                'notificacion_url' => '/foro/' . $foro->foro_id,
+                'notificacion_url' => '/foros/' . $foro->foro_id,
                 'notificacion_referencia_id' => $foro->foro_id
             ]);
+        }
+        } catch (\Throwable $e) {
+            report($e);
         }
 
         return response()->json([
@@ -412,6 +438,31 @@ class ForoController extends Controller
         );
 
         return response()->json(['registrado' => $registrado], 200);
+    }
+
+    public function eliminarRegistro($id)
+    {
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $foro = Foro::find($id);
+
+        if (!$foro) {
+            return response()->json(['error' => 'Foro no encontrado'], 404);
+        }
+
+        if ($foro->foro_creador_id == $usuario->usuario_id || $usuario->usuario_rol === 'admin') {
+            return response()->json(['error' => 'No puedes eliminar el seguimiento de un foro que administras'], 403);
+        }
+
+        $foro->miembros()->detach($usuario->usuario_id);
+
+        return response()->json([
+            'mensaje' => 'Foro eliminado de tu lista de seguimiento'
+        ], 200);
     }
 
     public function revelarPassword(Request $request, $id)
@@ -502,5 +553,26 @@ class ForoController extends Controller
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    private function resolverImagenForo(Request $request, ?string $imagenActual = null): ?string
+    {
+        if ($request->hasFile('foro_imagen')) {
+            $request->validate([
+                'foro_imagen' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            ]);
+
+            $path = $request->file('foro_imagen')->store('foros', 'public');
+
+            return Storage::disk('public')->url($path);
+        }
+
+        $imagen = $request->input('foro_imagen');
+
+        if (is_string($imagen) && trim($imagen) !== '') {
+            return trim($imagen);
+        }
+
+        return $imagenActual;
     }
 }

@@ -76,11 +76,13 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/foros', [ForoController::class, 'store']);
     Route::put('/foros/{id}', [ForoController::class, 'update']);
+    Route::post('/foros/{id}', [ForoController::class, 'update']);
     Route::delete('/foros/{id}', [ForoController::class, 'destroy']);
     Route::get('/mis-foros', [ForoController::class, 'misForos']);
     Route::post('/foros/privado/buscar', [ForoController::class, 'buscarPrivadoPorPassword']);
     Route::post('/foros/{id}/registrarse', [ForoController::class, 'registrar']);
     Route::get('/foros/{id}/registro', [ForoController::class, 'verificarRegistro']);
+    Route::delete('/foros/{id}/registro', [ForoController::class, 'eliminarRegistro']);
     Route::post('/foros/{id}/password', [ForoController::class, 'revelarPassword']);
 });
 Route::get('/foros-publicos', [ForoController::class, 'forosPublicos']);

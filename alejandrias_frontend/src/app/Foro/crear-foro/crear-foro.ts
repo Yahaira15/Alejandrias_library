@@ -76,12 +76,7 @@ export class CrearForo implements OnInit {
     this.guardando = true;
     this.cdr.markForCheck();
 
-    const data = {
-      ...this.foroForm.value,
-      foro_categoria_id: Number(this.foroForm.value.foro_categoria_id),
-      foro_creador_id: this.id,
-      foro_password: this.foroForm.value.foro_privado ? this.foroForm.value.foro_password : null
-    };
+    const data = this.crearPayloadForo();
 
     this.foroService.crearForo(data).subscribe({
       next: () => {
@@ -160,5 +155,26 @@ export class CrearForo implements OnInit {
 
   regresar() {
     this.router.navigate(['/foros']);
+  }
+
+  private crearPayloadForo(): FormData {
+    const formData = new FormData();
+    const privado = !!this.foroForm.value.foro_privado;
+
+    formData.append('foro_titulo', this.foroForm.value.foro_titulo);
+    formData.append('foro_descripcion', this.foroForm.value.foro_descripcion);
+    formData.append('foro_categoria_id', String(Number(this.foroForm.value.foro_categoria_id)));
+    formData.append('foro_creador_id', String(this.id));
+    formData.append('foro_privado', privado ? '1' : '0');
+
+    if (privado && this.foroForm.value.foro_password) {
+      formData.append('foro_password', this.foroForm.value.foro_password);
+    }
+
+    if (this.selectedImage) {
+      formData.append('foro_imagen', this.selectedImage);
+    }
+
+    return formData;
   }
 }
