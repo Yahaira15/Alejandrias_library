@@ -93,6 +93,16 @@ export class ForoService {
     });
   }
 
+  getRespuestasComentario(comentarioId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/comentarios/${comentarioId}/respuestas`);
+  }
+
+  responderComentario(comentarioId: number, contenido: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/comentarios/${comentarioId}/respuestas`, {
+      comentario_contenido: contenido
+    });
+  }
+
   getComentarios(foroId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/foros/${foroId}/comentarios`);
   }

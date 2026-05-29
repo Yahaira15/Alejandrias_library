@@ -118,6 +118,15 @@ class ForoController extends Controller
             ];
             $moderation = $moderationService->analyze($moderationPayload);
 
+            if (($moderation['estado'] ?? 'revision') === 'bloqueado') {
+                $moderationService->record('foro', null, $usuario->usuario_id, $moderation, $moderationPayload);
+
+                return response()->json([
+                    'error' => $moderation['mensaje_usuario'] ?? 'El foro fue bloqueado por moderacion IA y no fue creado.',
+                    '_moderacion' => $moderation,
+                ], 422);
+            }
+
             $foro = new Foro();
             $foro->foro_titulo = $validated['foro_titulo'];
             $foro->foro_descripcion = $validated['foro_descripcion'];
@@ -233,10 +242,40 @@ class ForoController extends Controller
                 ], 422);
             }
 
+            $moderationService = app(ContentModerationService::class);
+            $tituloModerado = $validated['foro_titulo'] ?? $foro->foro_titulo;
+            $descripcionModerada = $validated['foro_descripcion'] ?? $foro->foro_descripcion;
+            $categoriaModerada = $validated['foro_categoria_id'] ?? $foro->foro_categoria_id;
+            $moderationPayload = [
+                'tipo_contenido' => 'foro',
+                'contenido' => [
+                    'nombre' => $tituloModerado,
+                    'titulo' => $tituloModerado,
+                    'texto' => $descripcionModerada,
+                ],
+                'contexto' => [
+                    'categoria_id' => $categoriaModerada,
+                    'usuario_rol' => $usuario->usuario_rol,
+                    'operacion' => 'actualizacion',
+                ],
+            ];
+            $moderation = $moderationService->analyze($moderationPayload);
+
+            if (($moderation['estado'] ?? 'revision') === 'bloqueado') {
+                $moderationService->applyToModel($foro, $moderation, 'foro');
+                $foro->save();
+                $moderationService->record('foro', $foro->foro_id, $usuario->usuario_id, $moderation, $moderationPayload);
+
+                return response()->json([
+                    'error' => $moderation['mensaje_usuario'] ?? 'La edicion fue bloqueada por moderacion IA. El foro fue ocultado.',
+                    '_moderacion' => $moderation,
+                ], 422);
+            }
+
             $foro->fill([
-                'foro_titulo' => $validated['foro_titulo'] ?? $foro->foro_titulo,
-                'foro_descripcion' => $validated['foro_descripcion'] ?? $foro->foro_descripcion,
-                'foro_categoria_id' => $validated['foro_categoria_id'] ?? $foro->foro_categoria_id,
+                'foro_titulo' => $tituloModerado,
+                'foro_descripcion' => $descripcionModerada,
+                'foro_categoria_id' => $categoriaModerada,
             ]);
 
             if (array_key_exists('foro_privado', $validated)) {
@@ -249,21 +288,6 @@ class ForoController extends Controller
                 $foro->foro_password = Crypt::encryptString($validated['foro_password']);
             }
 
-            $moderationService = app(ContentModerationService::class);
-            $moderationPayload = [
-                'tipo_contenido' => 'foro',
-                'contenido' => [
-                    'nombre' => $foro->foro_titulo,
-                    'titulo' => $foro->foro_titulo,
-                    'texto' => $foro->foro_descripcion,
-                ],
-                'contexto' => [
-                    'categoria_id' => $foro->foro_categoria_id,
-                    'usuario_rol' => $usuario->usuario_rol,
-                    'operacion' => 'actualizacion',
-                ],
-            ];
-            $moderation = $moderationService->analyze($moderationPayload);
             $moderationService->applyToModel($foro, $moderation, 'foro');
 
             $foro->save();

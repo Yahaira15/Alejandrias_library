@@ -103,6 +103,7 @@ class IaModerationClient
             'valor_educativo' => (bool) ($data['valor_educativo'] ?? false),
             'requiere_revision_humana' => (bool) ($data['requiere_revision_humana'] ?? $estado === 'revision'),
             'alerta_seguridad' => $this->normalizeSafetyAlert($data['alerta_seguridad'] ?? []),
+            'safety_ratings' => is_array($data['safety_ratings'] ?? null) ? $data['safety_ratings'] : [],
             'origen' => $origen,
             'modelo_ia' => $origen === 'modelo' ? 'gemini' : $origen,
         ];

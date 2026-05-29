@@ -27,4 +27,23 @@ export class AdminService {
   sancionarReporte(reporteId: number, data: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/reportes/${reporteId}/sancionar`, data);
   }
+
+  listarModeracion(params: Record<string, string | number | boolean> = {}): Observable<any[]> {
+    const query = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      query.set(key, String(value));
+    });
+
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    return this.http.get<any[]>(`${this.apiUrl}/moderacion${suffix}`);
+  }
+
+  aprobarModeracion(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/moderacion/${id}/aprobar`, {});
+  }
+
+  rechazarModeracion(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/moderacion/${id}/rechazar`, {});
+  }
 }

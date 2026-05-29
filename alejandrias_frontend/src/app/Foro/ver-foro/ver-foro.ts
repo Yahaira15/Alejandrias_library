@@ -127,7 +127,7 @@ export class VerForoComponent implements OnInit {
       error: (err) => {
         console.error('Error creando publicacion:', err);
         this.creandoPublicacion = false;
-        this.mostrarFeedback('error', 'No se pudo crear la publicacion.');
+        this.mostrarFeedback('error', this.mensajeModeracionDesdeError(err, 'No se pudo crear la publicacion.'));
         this.cdr.detectChanges();
       }
     });
@@ -190,7 +190,7 @@ export class VerForoComponent implements OnInit {
       error: (err) => {
         console.error('Error actualizando publicacion:', err);
         this.guardandoPublicacion = false;
-        this.mostrarFeedback('error', 'No se pudo actualizar la publicacion.');
+        this.mostrarFeedback('error', this.mensajeModeracionDesdeError(err, 'No se pudo actualizar la publicacion.'));
         this.cdr.detectChanges();
       }
     });
@@ -233,7 +233,7 @@ export class VerForoComponent implements OnInit {
       this.feedbackMensaje = '';
       this.feedbackTipo = '';
       this.cdr.detectChanges();
-    }, 3200);
+    }, 6500);
   }
 
   cerrarFeedback(): void {
@@ -464,14 +464,20 @@ export class VerForoComponent implements OnInit {
     const estadoModeracion = item?.estado_moderacion;
 
     if (estadoIa === 'revision' || estadoModeracion === 'revision') {
-      return 'La publicacion fue enviada a revision por moderacion IA.';
+      return item?._moderacion?.mensaje_usuario || 'La publicacion fue enviada a revision por moderacion IA.';
     }
 
     if (estadoIa === 'bloqueado' || estadoModeracion === 'bloqueado') {
-      return 'La publicacion fue bloqueada por moderacion IA.';
+      return item?._moderacion?.mensaje_usuario || 'La publicacion fue bloqueada por moderacion IA.';
     }
 
     return mensajeVisible;
+  }
+
+  private mensajeModeracionDesdeError(err: any, fallback: string): string {
+    return err?.error?._moderacion?.mensaje_usuario
+      || err?.error?.error
+      || fallback;
   }
 }
 

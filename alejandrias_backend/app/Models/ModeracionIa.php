@@ -15,6 +15,7 @@ class ModeracionIa extends Model
     protected $fillable = [
         'publicacion_id',
         'foro_id',
+        'comentario_id',
         'usuario_id',
         'contenido_analizado',
         'categoria_detectada',
@@ -23,17 +24,47 @@ class ModeracionIa extends Model
         'riesgo',
         'razon',
         'modelo_ia',
+        'safety_ratings',
+        'metadata',
         'procesado',
         'revisado',
         'revisado_por',
+        'moderado_por',
         'decision_admin',
     ];
 
     protected $casts = [
         'riesgo' => 'float',
+        'safety_ratings' => 'array',
+        'metadata' => 'array',
         'procesado' => 'boolean',
         'revisado' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function publicacion()
+    {
+        return $this->belongsTo(Publicacion::class, 'publicacion_id', 'publicacion_id');
+    }
+
+    public function foro()
+    {
+        return $this->belongsTo(Foro::class, 'foro_id', 'foro_id');
+    }
+
+    public function comentario()
+    {
+        return $this->belongsTo(Comentario::class, 'comentario_id', 'comentario_id');
+    }
+
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'usuario_id', 'usuario_id');
+    }
+
+    public function revisor()
+    {
+        return $this->belongsTo(Usuario::class, 'revisado_por', 'usuario_id');
+    }
 }

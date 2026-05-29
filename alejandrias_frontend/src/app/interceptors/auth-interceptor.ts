@@ -41,6 +41,7 @@ function isPublicApiRequest(method: string, path: string): boolean {
     || /^\/publicaciones\/\d+$/.test(path)
     || /^\/publicaciones\/\d+\/comentarios$/.test(path)
     || /^\/comentarios\/\d+$/.test(path)
+    || /^\/comentarios\/\d+\/respuestas$/.test(path)
   );
 }
 

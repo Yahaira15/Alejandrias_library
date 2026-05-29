@@ -22,6 +22,24 @@ CATEGORIAS_VALIDAS = {
 
 NIVELES_ALERTA_SEGURIDAD = {"ninguno", "riesgo_medio", "riesgo_alto", "riesgo_critico"}
 
+SAFETY_CATEGORY_MAP = {
+    "HARM_CATEGORY_HATE_SPEECH": "odio",
+    "HATE_SPEECH": "odio",
+    "HARM_CATEGORY_HARASSMENT": "acoso",
+    "HARASSMENT": "acoso",
+    "HARM_CATEGORY_SEXUALLY_EXPLICIT": "sexual",
+    "SEXUALLY_EXPLICIT": "sexual",
+    "HARM_CATEGORY_DANGEROUS_CONTENT": "ilegal",
+    "DANGEROUS_CONTENT": "ilegal",
+}
+
+SAFETY_SCORE = {
+    "NEGLIGIBLE": 0.0,
+    "LOW": 0.25,
+    "MEDIUM": 0.6,
+    "HIGH": 0.9,
+}
+
 MODERATION_RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
@@ -358,6 +376,101 @@ def _detectar_alerta_seguridad(texto):
     }
 
 
+def _normalizar_safety_valor(valor):
+    if valor is None:
+        return ""
+
+    texto = str(valor)
+    if "." in texto:
+        texto = texto.rsplit(".", 1)[-1]
+
+    return texto.strip().upper()
+
+
+def _iter_safety_ratings(metadata):
+    if not isinstance(metadata, dict):
+        return []
+
+    ratings = []
+    for candidato in metadata.get("candidates") or []:
+        if not isinstance(candidato, dict):
+            continue
+        valores = candidato.get("safety_ratings") or []
+        if isinstance(valores, dict):
+            valores = [valores]
+        for rating in valores:
+            if isinstance(rating, dict):
+                ratings.append(rating)
+
+    prompt_feedback = metadata.get("prompt_feedback")
+    if isinstance(prompt_feedback, dict):
+        valores = prompt_feedback.get("safety_ratings") or []
+        if isinstance(valores, dict):
+            valores = [valores]
+        for rating in valores:
+            if isinstance(rating, dict):
+                ratings.append(rating)
+
+    return ratings
+
+
+def _resumen_safety(metadata):
+    resumen = []
+    for rating in _iter_safety_ratings(metadata):
+        categoria_original = _normalizar_safety_valor(rating.get("category"))
+        probabilidad = _normalizar_safety_valor(rating.get("probability"))
+        severidad = _normalizar_safety_valor(rating.get("severity"))
+        score_probabilidad = float(rating.get("probability_score") or SAFETY_SCORE.get(probabilidad, 0.0) or 0.0)
+        score_severidad = float(rating.get("severity_score") or SAFETY_SCORE.get(severidad, 0.0) or 0.0)
+
+        resumen.append(
+            {
+                "categoria_original": categoria_original,
+                "categoria": SAFETY_CATEGORY_MAP.get(categoria_original, "otro"),
+                "probabilidad": probabilidad or "UNKNOWN",
+                "severidad": severidad or "UNKNOWN",
+                "score_probabilidad": round(max(0.0, min(1.0, score_probabilidad)), 2),
+                "score_severidad": round(max(0.0, min(1.0, score_severidad)), 2),
+                "bloqueado_por_filtro": bool(rating.get("blocked", False)),
+            }
+        )
+
+    return resumen
+
+
+def _aplicar_safety_oficial(estado, riesgo, categoria, alerta_seguridad, safety_summary):
+    if not safety_summary:
+        return estado, riesgo, categoria, alerta_seguridad
+
+    rating_maximo = max(
+        safety_summary,
+        key=lambda item: max(item["score_probabilidad"], item["score_severidad"], 1.0 if item["bloqueado_por_filtro"] else 0.0),
+    )
+    score = max(
+        rating_maximo["score_probabilidad"],
+        rating_maximo["score_severidad"],
+        1.0 if rating_maximo["bloqueado_por_filtro"] else 0.0,
+    )
+    categoria_safety = rating_maximo["categoria"]
+
+    if score >= 0.9 or rating_maximo["bloqueado_por_filtro"]:
+        estado = "bloqueado"
+        riesgo = max(riesgo, 0.92)
+        categoria = categoria_safety if categoria_safety in CATEGORIAS_VALIDAS else categoria
+        alerta_seguridad = {
+            "requiere_alerta": True,
+            "nivel": "riesgo_critico",
+            "tipo": categoria,
+            "razon": "Los filtros oficiales de seguridad de Gemini/Vertex marcaron riesgo alto.",
+        }
+    elif score >= 0.6 and estado == "permitido":
+        estado = "revision"
+        riesgo = max(riesgo, 0.62)
+        categoria = categoria_safety if categoria_safety in CATEGORIAS_VALIDAS else categoria
+
+    return estado, riesgo, categoria, alerta_seguridad
+
+
 def _patrones_venta_general():
     return [
         r"\b(vendo|vender|venta|compro|comprar|compra|subasto|subasta|oferto|oferta|intercambio|negocio)\b",
@@ -378,6 +491,12 @@ def _riesgo_real_detectado(texto):
             r"|\bvoy a disparar\b|\bvoy a apunalar\b|\bmatar a todos\b|\bmatare a todos\b|\bmataremos a todos\b|\bmatar personas\b|\bmatarlos a todos\b",
             "violencia",
             "Amenaza directa de dano fisico contra otra persona.",
+        ),
+        (
+            r"\bcomo matar\b|\bcomo asesinar\b|\bcomo puedo matar\b|\bcomo puedo asesinar\b"
+            r"|\bmatar a mis profesor(es)?\b|\basesinar a mis profesor(es)?\b",
+            "violencia",
+            "Solicitud o intencion relacionada con asesinato o violencia grave.",
         ),
         (
             r"\bmejor muere\b|\bmatate\b|\bquiero que mueras\b",
@@ -426,7 +545,7 @@ def _riesgo_real_detectado(texto):
         ),
         (
             r"\btrata de personas\b|\btrafico de personas\b|\btraficar personas\b|\bventa de personas\b"
-            r"|\b(vendo|vender|compro|comprar|trafico|traficar)\b.*\b(nino(s)?|nina(s)?|menor(es)?|persona(s)?|humano(s)?|bebe(s)?)\b",
+            r"|\b(vendo|vender|compro|comprar|trafico|traficar)\b.*\b(nino(s)?|nina(s)?|menor(es)?|persona(s)?|humano(s)?|bebe(s)?|mujer(es)?|hombre(s)?)\b",
             "ilegal",
             "Contenido relacionado con trata, venta o trafico de personas.",
         ),
@@ -457,6 +576,37 @@ def _riesgo_real_detectado(texto):
     for patron, categoria, razon in reglas_revision:
         if re.search(patron, texto):
             return "revision", 0.58, categoria, razon, "enviar_revision", True
+
+    return None
+
+
+def _riesgo_foro_estricto(texto):
+    if not texto:
+        return None
+
+    reglas = [
+        (
+            r"\bforo\b.*\b(matar|asesinar|terrorismo|drogas|armas|odio racial|trata)\b"
+            r"|\bcomo matar\b|\bcomo asesinar\b|\bmatar a mis profesor(es)?\b|\basesinar a mis profesor(es)?\b",
+            "violencia",
+            "Un foro no puede organizar, promover o facilitar violencia real.",
+        ),
+        (
+            r"\b(vendo|vender|compro|comprar|trafico|traficar)\b.*\b(mujer(es)?|nino(s)?|nina(s)?|menor(es)?|persona(s)?|humano(s)?|bebe(s)?)\b"
+            r"|\btrata de personas\b|\btrafico de personas\b|\bventa de personas\b",
+            "ilegal",
+            "Un foro no puede facilitar trata, venta o explotacion humana.",
+        ),
+        (
+            r"\bodio racial\b|\bexterminar\b.*\b(raza|religion|grupo|personas)\b|\bterrorismo\b|\bgrupo terrorista\b",
+            "odio",
+            "Un foro no puede fomentar odio extremo o terrorismo.",
+        ),
+    ]
+
+    for patron, categoria, razon in reglas:
+        if re.search(patron, texto):
+            return "bloqueado", 0.96, categoria, razon, "bloquear", True
 
     return None
 
@@ -512,6 +662,8 @@ def moderacion_respaldo(payload):
         )
 
     riesgo_real = _riesgo_real_detectado(texto)
+    if (payload.get("tipo_contenido") == "foro") and texto:
+        riesgo_real = _riesgo_foro_estricto(texto) or riesgo_real
     if riesgo_real:
         estado, riesgo, categoria, razon, accion, revision = riesgo_real
         return _respuesta(estado, riesgo, categoria, razon, accion, False, revision, alerta_seguridad)
@@ -534,7 +686,7 @@ def moderacion_respaldo(payload):
     )
 
 
-def normalizar_resultado_moderacion(data, payload=None):
+def normalizar_resultado_moderacion(data, payload=None, safety_metadata=None):
     if not isinstance(data, dict):
         return moderacion_respaldo({"contenido": {"texto": ""}})
 
@@ -557,9 +709,12 @@ def normalizar_resultado_moderacion(data, payload=None):
 
     texto = _texto_moderacion(payload or {})
     alerta_seguridad = _detectar_alerta_seguridad(texto)
+    safety_summary = _resumen_safety(safety_metadata)
     tiene_riesgo_real = bool(texto and _contiene(texto, _patrones_riesgo_real()))
     categoria_benigna, educativo_inferido = _categoria_benigna(texto) if texto else ("conversacional", False)
     riesgo_real = _riesgo_real_detectado(texto) if texto else None
+    if (payload or {}).get("tipo_contenido") == "foro" and texto:
+        riesgo_real = _riesgo_foro_estricto(texto) or riesgo_real
 
     if riesgo_real:
         estado_detectado, riesgo_detectado, categoria_detectada, razon_detectada, accion_detectada, revision_detectada = riesgo_real
@@ -605,6 +760,21 @@ def normalizar_resultado_moderacion(data, payload=None):
         if alerta_seguridad["tipo"] == "autolesion":
             categoria = "autolesion"
 
+    estado, riesgo, categoria, alerta_seguridad = _aplicar_safety_oficial(
+        estado,
+        riesgo,
+        categoria,
+        alerta_seguridad,
+        safety_summary,
+    )
+    requiere_revision = estado == "revision"
+    if estado == "permitido":
+        accion = "publicar"
+    elif estado == "bloqueado":
+        accion = "bloquear"
+    else:
+        accion = "enviar_revision"
+
     return {
         "estado": estado,
         "riesgo": round(riesgo, 2),
@@ -614,6 +784,7 @@ def normalizar_resultado_moderacion(data, payload=None):
         "valor_educativo": valor_educativo,
         "requiere_revision_humana": requiere_revision,
         "alerta_seguridad": alerta_seguridad,
+        "safety_ratings": safety_summary,
     }
 
 

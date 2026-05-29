@@ -95,10 +95,42 @@ class AdminController extends Controller
             ? Crypt::encryptString($data['foro_password'])
             : null;
 
-        $foro = Foro::create($data);
+        $moderationService = app(ContentModerationService::class);
+        $usuario = Usuario::find($data['foro_creador_id']);
+        $moderationPayload = [
+            'tipo_contenido' => 'foro',
+            'contenido' => [
+                'nombre' => $data['foro_titulo'],
+                'titulo' => $data['foro_titulo'],
+                'texto' => $data['foro_descripcion'],
+            ],
+            'contexto' => [
+                'categoria_id' => $data['foro_categoria_id'],
+                'usuario_rol' => $usuario?->usuario_rol ?? 'admin',
+                'origen' => 'admin',
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
+
+        if (($moderation['estado'] ?? 'revision') === 'bloqueado') {
+            $moderationService->record('foro', null, $data['foro_creador_id'], $moderation, $moderationPayload);
+
+            return response()->json([
+                'error' => $moderation['mensaje_usuario'] ?? 'El foro fue bloqueado por moderacion IA y no fue creado.',
+                '_moderacion' => $moderation,
+            ], 422);
+        }
+
+        $foro = new Foro($data);
+        $moderationService->applyToModel($foro, $moderation, 'foro');
+        $foro->save();
+        $moderationService->record('foro', $foro->foro_id, $data['foro_creador_id'], $moderation, $moderationPayload);
         $foro->miembros()->syncWithoutDetaching([$foro->foro_creador_id]);
 
-        return response()->json($foro->load(['usuario', 'categoria']), 201);
+        $response = $foro->load(['usuario', 'categoria'])->toArray();
+        $response['_moderacion'] = $moderation;
+
+        return response()->json($response, 201);
     }
 
     public function actualizarForo(Request $request, $id)
@@ -115,6 +147,35 @@ class AdminController extends Controller
 
         $data['foro_privado'] = (bool) ($data['foro_privado'] ?? false);
 
+        $moderationService = app(ContentModerationService::class);
+        $usuario = Usuario::find($data['foro_creador_id']);
+        $moderationPayload = [
+            'tipo_contenido' => 'foro',
+            'contenido' => [
+                'nombre' => $data['foro_titulo'],
+                'titulo' => $data['foro_titulo'],
+                'texto' => $data['foro_descripcion'],
+            ],
+            'contexto' => [
+                'categoria_id' => $data['foro_categoria_id'],
+                'usuario_rol' => $usuario?->usuario_rol ?? 'admin',
+                'origen' => 'admin',
+                'operacion' => 'actualizacion',
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
+
+        if (($moderation['estado'] ?? 'revision') === 'bloqueado') {
+            $moderationService->applyToModel($foro, $moderation, 'foro');
+            $foro->save();
+            $moderationService->record('foro', $foro->foro_id, $data['foro_creador_id'], $moderation, $moderationPayload);
+
+            return response()->json([
+                'error' => $moderation['mensaje_usuario'] ?? 'La edicion fue bloqueada por moderacion IA. El foro fue ocultado.',
+                '_moderacion' => $moderation,
+            ], 422);
+        }
+
         if (!$data['foro_privado']) {
             $data['foro_password'] = null;
         } elseif (!empty($data['foro_password'])) {
@@ -124,9 +185,15 @@ class AdminController extends Controller
         }
 
         $foro->update($data);
+        $moderationService->applyToModel($foro, $moderation, 'foro');
+        $foro->save();
+        $moderationService->record('foro', $foro->foro_id, $data['foro_creador_id'], $moderation, $moderationPayload);
         $foro->miembros()->syncWithoutDetaching([$foro->foro_creador_id]);
 
-        return response()->json($foro->load(['usuario', 'categoria']), 200);
+        $response = $foro->load(['usuario', 'categoria'])->toArray();
+        $response['_moderacion'] = $moderation;
+
+        return response()->json($response, 200);
     }
 
     public function categorias()

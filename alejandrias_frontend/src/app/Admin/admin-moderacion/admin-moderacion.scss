@@ -1,0 +1,20 @@
+.moderacion-card {
+  overflow: hidden;
+}
+
+.content-cell {
+  max-width: 280px;
+  white-space: normal;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.row-actions .danger {
+  background: #c95b5b;
+  border-color: #c95b5b;
+  color: #fff;
+}

@@ -32,7 +32,11 @@ class AdminNotificationService
             return;
         }
 
-        $admins = Usuario::where('usuario_rol', 'admin')->get();
+        $admins = Usuario::whereIn('usuario_rol', ['admin', 'lider'])
+            ->when($alert['usuario_id'] ?? null, function ($query, $usuarioId) {
+                $query->where('usuario_id', '!=', $usuarioId);
+            })
+            ->get();
         $usuarioNombre = $alert['usuario_nombre'] ?? 'Usuario desconocido';
         $usuarioId = $alert['usuario_id'] ?? 'sin_id';
         $nivel = $alert['nivel'] ?? 'riesgo_alto';
@@ -44,20 +48,44 @@ class AdminNotificationService
             Notificacion::create([
                 'notificacion_usuario_id' => $admin->usuario_id,
                 'notificacion_tipo' => 'alerta_ia_' . $nivel,
-                'notificacion_contenido' => sprintf(
-                    'Alerta IA %s (%s). Usuario: %s [ID: %s]. Fecha: %s. Contenido: %s',
-                    $nivel,
-                    $tipo,
-                    $usuarioNombre,
-                    $usuarioId,
-                    $fecha,
-                    $contenido
-                ),
+                'notificacion_contenido' => $this->mensajeRiesgoIa($nivel, $tipo, $usuarioNombre, $usuarioId, $fecha, $contenido),
                 'notificacion_leida' => false,
                 'notificacion_fecha' => now(),
-                'notificacion_url' => $alert['url'] ?? '/admin/reportes',
+                'notificacion_url' => $alert['url'] ?? '/admin/moderacion',
                 'notificacion_referencia_id' => $alert['referencia_id'] ?? null,
             ]);
         }
+    }
+
+    private function mensajeRiesgoIa(string $nivel, string $tipo, string $usuarioNombre, int|string $usuarioId, string $fecha, string $contenido): string
+    {
+        if ($tipo === 'violencia') {
+            return sprintf(
+                'Se detecto una publicacion con posible riesgo de violencia. Usuario: %s [ID: %s]. Fecha: %s. Contenido: %s',
+                $usuarioNombre,
+                $usuarioId,
+                $fecha,
+                $contenido
+            );
+        }
+
+        if (in_array($nivel, ['riesgo_alto', 'riesgo_critico'], true)) {
+            return sprintf(
+                'Gemini detecto contenido potencialmente peligroso y fue enviado a revision. Usuario: %s [ID: %s]. Riesgo: %s (%s). Contenido: %s',
+                $usuarioNombre,
+                $usuarioId,
+                $nivel,
+                $tipo,
+                $contenido
+            );
+        }
+
+        return sprintf(
+            'Gemini envio contenido dudoso a revision humana. Usuario: %s [ID: %s]. Tipo: %s. Contenido: %s',
+            $usuarioNombre,
+            $usuarioId,
+            $tipo,
+            $contenido
+        );
     }
 }

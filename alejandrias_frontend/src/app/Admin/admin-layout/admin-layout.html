@@ -2,13 +2,14 @@
   <aside class="admin-sidebar">
     <h1>Alejandria's<br>Library</h1>
     <nav>
-      <a routerLink="/admin/usuarios" routerLinkActive="active">Usuarios</a>
-      <a routerLink="/admin/foros" routerLinkActive="active">Foros</a>
-      <a routerLink="/admin/categorias" routerLinkActive="active">Categorias</a>
-      <a routerLink="/admin/publicaciones" routerLinkActive="active">Publicaciones</a>
-      <a routerLink="/admin/comentarios" routerLinkActive="active">Comentarios</a>
-      <a routerLink="/admin/reportes" routerLinkActive="active">Reportes</a>
-      <a routerLink="/admin/sanciones" routerLinkActive="active">Sanciones</a>
+      <a *ngIf="esAdmin" routerLink="/admin/usuarios" routerLinkActive="active">Usuarios</a>
+      <a *ngIf="esAdmin" routerLink="/admin/foros" routerLinkActive="active">Foros</a>
+      <a *ngIf="esAdmin" routerLink="/admin/categorias" routerLinkActive="active">Categorias</a>
+      <a *ngIf="esAdmin" routerLink="/admin/publicaciones" routerLinkActive="active">Publicaciones</a>
+      <a *ngIf="esAdmin" routerLink="/admin/comentarios" routerLinkActive="active">Comentarios</a>
+      <a routerLink="/admin/moderacion" routerLinkActive="active">Moderacion IA</a>
+      <a *ngIf="esAdmin" routerLink="/admin/reportes" routerLinkActive="active">Reportes</a>
+      <a *ngIf="esAdmin" routerLink="/admin/sanciones" routerLinkActive="active">Sanciones</a>
       <a routerLink="/foros">Ir a foros</a>
     </nav>
     <button type="button" (click)="logout()">Cerrar Sesion</button>

@@ -17,7 +17,10 @@ class ContentModerationService
 
     public function analyze(array $payload): array
     {
-        return $this->withLocalSafetyAlert($this->client->analyze($payload), $payload);
+        return $this->withUserModerationMessage(
+            $this->withLocalSafetyAlert($this->client->analyze($payload), $payload),
+            $payload
+        );
     }
 
     public function applyToModel(Model $model, array $analysis, string $prefix): void
@@ -57,16 +60,10 @@ class ContentModerationService
         array $analysis,
         array $payload
     ): bool {
-        $notificacionEnviada = $this->notifyAdminsIfSecurityRisk(
-            $tipoContenido,
-            $referenciaId,
-            $usuarioId,
-            $analysis,
-            $payload
-        );
+        $notificacionEnviada = false;
 
         if ($tipoContenido === 'chat_ia') {
-            return $notificacionEnviada;
+            return $this->notifyAdminsIfSecurityRisk($tipoContenido, $referenciaId, $usuarioId, $analysis, $payload);
         }
 
         if (!Schema::hasTable('moderacion_ia')) {
@@ -78,7 +75,7 @@ class ContentModerationService
         }
 
         try {
-            $registro = ModeracionIa::create([
+            $attributes = [
                 'publicacion_id' => $this->publicacionIdFor($tipoContenido, $referenciaId, $payload),
                 'foro_id' => $this->foroIdFor($tipoContenido, $referenciaId, $payload),
                 'usuario_id' => $usuarioId,
@@ -93,7 +90,37 @@ class ContentModerationService
                 'revisado' => false,
                 'revisado_por' => null,
                 'decision_admin' => null,
-            ]);
+            ];
+
+            if (Schema::hasColumn('moderacion_ia', 'comentario_id')) {
+                $attributes['comentario_id'] = $this->comentarioIdFor($tipoContenido, $referenciaId);
+            }
+
+            if (Schema::hasColumn('moderacion_ia', 'safety_ratings')) {
+                $attributes['safety_ratings'] = $analysis['safety_ratings'] ?? [];
+            }
+
+            if (Schema::hasColumn('moderacion_ia', 'metadata')) {
+                $attributes['metadata'] = [
+                    'accion_recomendada' => $analysis['accion_recomendada'] ?? null,
+                    'valor_educativo' => $analysis['valor_educativo'] ?? null,
+                    'requiere_revision_humana' => $analysis['requiere_revision_humana'] ?? null,
+                    'alerta_seguridad' => $analysis['alerta_seguridad'] ?? null,
+                    'mensaje_usuario' => $analysis['mensaje_usuario'] ?? null,
+                    'origen' => $analysis['origen'] ?? null,
+                ];
+            }
+
+            $registro = ModeracionIa::create($attributes);
+
+            $notificacionEnviada = $this->notifyAdminsIfSecurityRisk(
+                $tipoContenido,
+                $referenciaId,
+                $usuarioId,
+                $analysis,
+                $payload,
+                $registro->moderacion_id
+            );
 
             Log::info('Analisis de moderacion IA registrado', [
                 'tipo_contenido' => $tipoContenido,
@@ -141,6 +168,47 @@ class ContentModerationService
         };
     }
 
+    private function withUserModerationMessage(array $analysis, array $payload): array
+    {
+        $tipo = (string) ($payload['tipo_contenido'] ?? 'contenido');
+        $estado = (string) ($analysis['estado'] ?? 'revision');
+        $razon = trim((string) ($analysis['razon'] ?? ''));
+        $nombreContenido = $this->nombreTipoContenido($tipo);
+
+        if ($estado === 'permitido') {
+            $analysis['mensaje_usuario'] = '';
+            return $analysis;
+        }
+
+        if ($estado === 'bloqueado') {
+            $analysis['mensaje_usuario'] = sprintf(
+                'No fue posible publicar este %s porque violo las normas de seguridad y sana convivencia de Alejandria\'s Library.%s',
+                $nombreContenido,
+                $razon ? ' Motivo detectado: ' . $razon : ''
+            );
+            return $analysis;
+        }
+
+        $analysis['mensaje_usuario'] = sprintf(
+            'Este %s fue enviado a revision porque podria incumplir las normas de seguridad y sana convivencia de Alejandria\'s Library.%s',
+            $nombreContenido,
+            $razon ? ' Motivo detectado: ' . $razon : ''
+        );
+
+        return $analysis;
+    }
+
+    private function nombreTipoContenido(string $tipo): string
+    {
+        return match ($tipo) {
+            'foro' => 'foro',
+            'publicacion' => 'publicacion',
+            'comentario' => 'comentario',
+            'comentario_respuesta' => 'subcomentario',
+            default => 'contenido',
+        };
+    }
+
     private function publicacionIdFor(string $tipoContenido, int|string|null $referenciaId, array $payload): int|string|null
     {
         if ($tipoContenido === 'publicacion') {
@@ -157,6 +225,11 @@ class ContentModerationService
         }
 
         return $payload['contexto']['foro_id'] ?? null;
+    }
+
+    private function comentarioIdFor(string $tipoContenido, int|string|null $referenciaId): int|string|null
+    {
+        return $tipoContenido === 'comentario' ? $referenciaId : null;
     }
 
     private function contenidoAnalizado(array $payload): string
@@ -195,8 +268,16 @@ class ContentModerationService
         int|string|null $moderacionId = null
     ): bool {
         $alerta = $analysis['alerta_seguridad'] ?? [];
+        $estado = (string) ($analysis['estado'] ?? 'revision');
+        $riesgo = (float) ($analysis['riesgo'] ?? 0);
+        $categoria = (string) ($analysis['categoria'] ?? 'otro');
 
-        if (!($alerta['requiere_alerta'] ?? false)) {
+        $requiereNotificacion = ($alerta['requiere_alerta'] ?? false)
+            || in_array($estado, ['revision', 'bloqueado'], true)
+            || in_array($categoria, ['violencia', 'odio', 'autolesion'], true)
+            || $riesgo >= 0.7;
+
+        if (!$requiereNotificacion) {
             return false;
         }
 
@@ -208,11 +289,11 @@ class ContentModerationService
                 'usuario_id' => $usuarioId,
                 'usuario_nombre' => $this->nombreUsuario($usuario),
                 'contenido' => $this->contenidoAnalizado($payload),
-                'nivel' => $alerta['nivel'] ?? $this->nivelRiesgo($analysis),
-                'tipo' => $alerta['tipo'] ?? $this->tipoRiesgo($analysis),
+                'nivel' => ($alerta['requiere_alerta'] ?? false) ? ($alerta['nivel'] ?? $this->nivelRiesgo($analysis)) : $this->nivelRiesgo($analysis),
+                'tipo' => ($alerta['requiere_alerta'] ?? false) ? ($alerta['tipo'] ?? $this->tipoRiesgo($analysis)) : $this->tipoRiesgo($analysis),
                 'fecha' => now()->toDateTimeString(),
-                'url' => $this->urlContenido($tipoContenido, $referenciaId, $payload),
-                'referencia_id' => $referenciaId ?? $moderacionId,
+                'url' => '/admin/moderacion',
+                'referencia_id' => $moderacionId ?? $referenciaId,
             ]);
 
             Log::warning('Notificacion interna por riesgo IA creada para admins', [
@@ -305,6 +386,15 @@ class ContentModerationService
             if ($alertaLocal['tipo'] === 'autolesion') {
                 $analysis['categoria'] = 'autolesion';
             }
+            if (
+                in_array($alertaLocal['nivel'], ['riesgo_alto', 'riesgo_critico'], true)
+                && in_array($alertaLocal['tipo'], ['violencia', 'ilegal', 'odio', 'sexual', 'autolesion', 'acoso'], true)
+            ) {
+                $analysis['estado'] = 'bloqueado';
+                $analysis['accion_recomendada'] = 'bloquear';
+                $analysis['requiere_revision_humana'] = true;
+                $analysis['categoria'] = $alertaLocal['tipo'] === 'acoso' ? ($analysis['categoria'] ?? 'acoso') : $alertaLocal['tipo'];
+            }
         }
 
         return $analysis;
@@ -320,12 +410,19 @@ class ContentModerationService
             '/\b(me voy a matar|voy a suicidarme|me suicidare|hoy me mato|quiero suicidarme hoy)\b/u' => ['autolesion', 'Intencion directa de suicidio o autolesion.'],
             '/\b(tengo un plan|ya tengo plan|tengo la cuerda|tengo pastillas|tengo un arma)\b.*\b(matarme|suicid|hacerme dano)\b/u' => ['autolesion', 'Planificacion de autolesion.'],
             '/\b(voy a matar a|voy a asesinar a|planeo matar|planeo asesinar|voy a disparar|voy a apunalar)\b/u' => ['violencia', 'Amenaza grave o planificacion de dano contra otras personas.'],
+            '/\b(como matar|como asesinar|como puedo matar|como puedo asesinar|matar a mis profesor|matar a mis profesores)\b/u' => ['violencia', 'Solicitud o intencion relacionada con violencia grave.'],
+            '/\b(trata de personas|trafico de personas|traficar personas|venta de personas|vendo.*(mujer|mujeres|nino|nina|menor|persona|humano|bebe))\b/u' => ['ilegal', 'Posible trata, trafico o venta de personas.'],
+            '/\b(niños|ninos|menores).*\b(sexual|porno|explotacion)\b/u' => ['sexual', 'Posible explotacion sexual infantil.'],
+            '/\b(como fabricar bombas|fabricar bombas|hacer explosivos|comprar drogas|vender drogas|comprar armas|vender armas)\b/u' => ['ilegal', 'Contenido ilegal o instrucciones daninas.'],
         ];
 
         $reglasAltas = [
             '/\b(me quiero matar|quiero matarme|quiero suicidarme|suicidarme|suicidio|me voy a cortar|quiero cortarme|autolesion|hacerme dano)\b/u' => ['autolesion', 'Senales explicitas de autolesion o suicidio.'],
             '/\b(te voy a matar|voy a matarte|quiero matarte|te matare|te voy a asesinar|voy a asesinarte|matar a todos|quiero matar a alguien)\b/u' => ['violencia', 'Amenaza o intencion explicita de violencia grave.'],
             '/\b(como puedo matar|como matar|como asesinar|matar a alguien|hacerle dano a alguien)\b/u' => ['violencia', 'Solicitud relacionada con violencia grave contra personas.'],
+            '/\b(odio a|exterminar|discriminar).*\b(raza|religion|mujeres|hombres|grupo|personas)\b/u' => ['odio', 'Odio extremo o discriminacion grave.'],
+            '/\b(publica su direccion|publica su telefono|doxx|filtra sus datos|extorsion|chantaje)\b/u' => ['acoso', 'Doxxing, extorsion o exposicion de datos personales.'],
+            '/\b(hackea tarjetas bancarias|robar tarjetas|robar banco|phishing.*clave)\b/u' => ['ilegal', 'Hacking malicioso o fraude financiero.'],
         ];
 
         $reglasMedias = [
@@ -345,7 +442,7 @@ class ContentModerationService
             }
         }
 
-        if (in_array($categoria, ['autolesion', 'violencia'], true) && $riesgo >= 0.9) {
+        if (in_array($categoria, ['autolesion', 'violencia', 'odio', 'ilegal', 'sexual'], true) && $riesgo >= 0.9) {
             return $this->alertaSeguridad(
                 true,
                 'riesgo_critico',

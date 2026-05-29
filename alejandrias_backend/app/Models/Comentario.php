@@ -16,6 +16,7 @@ class Comentario extends Model
     protected $fillable = [
         'comentario_usuario_id',
         'comentario_publicacion_id',
+        'comentario_padre_id',
         'comentario_contenido',
         'estado_moderacion',
         'ia_riesgo',
@@ -36,5 +37,15 @@ class Comentario extends Model
     public function publicacion()
     {
         return $this->belongsTo(Publicacion::class, 'comentario_publicacion_id');
+    }
+
+    public function padre()
+    {
+        return $this->belongsTo(Comentario::class, 'comentario_padre_id', 'comentario_id');
+    }
+
+    public function respuestas()
+    {
+        return $this->hasMany(Comentario::class, 'comentario_padre_id', 'comentario_id');
     }
 }

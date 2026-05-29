@@ -8,6 +8,7 @@ use App\Http\Controllers\ApiForo\PublicacionController;
 use App\Http\Controllers\ApiForo\ComentarioController;
 use App\Http\Controllers\ApiForo\NotificacionController;
 use App\Http\Controllers\ApiAdmin\AdminController;
+use App\Http\Controllers\ApiAdmin\ModeracionIaController;
 use App\Http\Controllers\ApiReporte\ReporteController;
 use App\Http\Controllers\ApiReporte\SancionController;
 use App\Http\Controllers\ApiIa\ChatRiskAlertController;
@@ -23,6 +24,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/perfil/intereses', [UsuarioController::class, 'updateIntereses']);
     Route::delete('/perfil', [UsuarioController::class, 'destroy']);
 
+});
+
+Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+    Route::get('/moderacion', [ModeracionIaController::class, 'index']);
+    Route::get('/moderacion/{id}', [ModeracionIaController::class, 'show']);
+    Route::post('/moderacion/{id}/aprobar', [ModeracionIaController::class, 'aprobar']);
+    Route::post('/moderacion/{id}/rechazar', [ModeracionIaController::class, 'rechazar']);
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
@@ -91,6 +99,8 @@ Route::delete('/publicaciones/{id}', [PublicacionController::class, 'destroy']);
 Route::get('/publicaciones/{publicacionId}/comentarios', [ComentarioController::class, 'index']);
 Route::post('/publicaciones/{publicacionId}/comentarios', [ComentarioController::class, 'store']);
 Route::get('/comentarios/{id}', [ComentarioController::class, 'show']);
+Route::get('/comentarios/{comentarioId}/respuestas', [ComentarioController::class, 'respuestas']);
+Route::post('/comentarios/{comentarioId}/respuestas', [ComentarioController::class, 'responder']);
 Route::put('/comentarios/{id}', [ComentarioController::class, 'update']);
 Route::delete('/comentarios/{id}', [ComentarioController::class, 'destroy']);
 

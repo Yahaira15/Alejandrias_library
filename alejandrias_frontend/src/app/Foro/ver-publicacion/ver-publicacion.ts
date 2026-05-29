@@ -115,7 +115,7 @@ export class VerPublicacionComponent implements OnInit {
       error: (err) => {
         console.error('Error creando comentario:', err);
         this.creandoComentario = false;
-        this.mostrarFeedback('error', 'No se pudo enviar el comentario.');
+        this.mostrarFeedback('error', this.mensajeModeracionDesdeError(err, 'No se pudo enviar el comentario.'));
         this.cdr.detectChanges();
       }
     });
@@ -170,7 +170,7 @@ export class VerPublicacionComponent implements OnInit {
       error: (err) => {
         console.error('Error actualizando comentario:', err);
         this.guardandoComentario = false;
-        this.mostrarFeedback('error', 'No se pudo actualizar el comentario.');
+        this.mostrarFeedback('error', this.mensajeModeracionDesdeError(err, 'No se pudo actualizar el comentario.'));
         this.cdr.detectChanges();
       }
     });
@@ -213,7 +213,7 @@ export class VerPublicacionComponent implements OnInit {
       this.feedbackMensaje = '';
       this.feedbackTipo = '';
       this.cdr.detectChanges();
-    }, 3200);
+    }, 6500);
   }
 
   cerrarFeedback(): void {
@@ -348,14 +348,20 @@ export class VerPublicacionComponent implements OnInit {
     const estadoModeracion = item?.estado_moderacion;
 
     if (estadoIa === 'revision' || estadoModeracion === 'revision') {
-      return 'El comentario fue enviado a revision por moderacion IA.';
+      return item?._moderacion?.mensaje_usuario || 'El comentario fue enviado a revision por moderacion IA.';
     }
 
     if (estadoIa === 'bloqueado' || estadoModeracion === 'bloqueado') {
-      return 'El comentario fue bloqueado por moderacion IA.';
+      return item?._moderacion?.mensaje_usuario || 'El comentario fue bloqueado por moderacion IA.';
     }
 
     return mensajeVisible;
+  }
+
+  private mensajeModeracionDesdeError(err: any, fallback: string): string {
+    return err?.error?._moderacion?.mensaje_usuario
+      || err?.error?.error
+      || fallback;
   }
 
   tiempoRelativo(fecha: string | null | undefined): string {

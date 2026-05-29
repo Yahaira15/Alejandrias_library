@@ -1,4 +1,12 @@
 <main class="foro-page">
+  <div *ngIf="feedbackMensaje" class="feedback-banner" [class.feedback-success]="feedbackTipo === 'success'" [class.feedback-error]="feedbackTipo === 'error'">
+    <div class="feedback-content">
+      <strong>Alejandria's Library dice</strong>
+      <span>{{ feedbackMensaje }}</span>
+    </div>
+    <button type="button" class="feedback-close" (click)="cerrarFeedback()">Cerrar</button>
+  </div>
+
   <aside class="foro-art" aria-hidden="true">
     <img src="FondoCrearForo.png" alt="" />
   </aside>

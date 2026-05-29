@@ -402,16 +402,24 @@ def moderation_view(request):
             inicio_intento = time.perf_counter()
             try:
                 logger.info("Invocando Gemini para moderacion, intento %s/%s", intento, MAX_INTENTOS_PARSE_MODELO)
-                texto = generar_texto(
+                respuesta_modelo = generar_texto(
                     prompt,
                     response_mime_type="application/json",
                     response_json_schema=MODERATION_RESPONSE_SCHEMA,
+                    return_metadata=True,
                 )
+                if isinstance(respuesta_modelo, dict):
+                    texto = respuesta_modelo.get("text", "")
+                    safety_metadata = respuesta_modelo.get("safety_metadata") or {}
+                else:
+                    texto = str(respuesta_modelo or "")
+                    safety_metadata = {}
                 logger.info("Respuesta RAW de Gemini para moderacion:\n%s", texto)
+                logger.info("Safety ratings RAW Gemini/Vertex para moderacion: %s", safety_metadata)
                 data, json_limpio = extraer_json_moderacion(texto)
                 logger.info("JSON extraido antes del parse/normalizacion:\n%s", json_limpio)
                 logger.info("Resultado JSON parseado de Gemini: %s", data)
-                resultado = normalizar_resultado_moderacion(data, payload)
+                resultado = normalizar_resultado_moderacion(data, payload, safety_metadata)
                 logger.info("Resultado normalizado de moderacion Gemini: %s", resultado)
                 origen = "modelo"
                 break

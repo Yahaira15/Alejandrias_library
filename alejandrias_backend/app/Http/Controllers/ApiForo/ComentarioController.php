@@ -39,6 +39,9 @@ class ComentarioController extends Controller
         }
 
         $comentarios = Comentario::where('comentario_publicacion_id', $publicacionId)
+            ->when(Schema::hasColumn('comentario', 'comentario_padre_id'), function ($query) {
+                $query->whereNull('comentario_padre_id');
+            })
             ->when(Schema::hasColumn('comentario', 'estado_moderacion'), function ($query) {
                 $usuario = Auth::guard('sanctum')->user();
                 if (!$usuario || $usuario->usuario_rol !== 'admin') {
@@ -165,6 +168,114 @@ class ComentarioController extends Controller
             }
 
         $response = $comentario->load('usuario')->toArray();
+        $response['_moderacion'] = $moderation;
+        $response['_moderacion_registrada'] = $moderationPersisted;
+
+        return response()->json($response, 201);
+    }
+
+    public function respuestas($comentarioId)
+    {
+        $comentarioPadre = Comentario::with('publicacion.foro')->find($comentarioId);
+
+        if (!$comentarioPadre) {
+            return response()->json(['message' => 'Comentario no encontrado'], 404);
+        }
+
+        if (!Schema::hasColumn('comentario', 'comentario_padre_id')) {
+            return response()->json([], 200);
+        }
+
+        $respuestas = Comentario::where('comentario_padre_id', $comentarioPadre->comentario_id)
+            ->when(Schema::hasColumn('comentario', 'estado_moderacion'), function ($query) {
+                $usuario = Auth::guard('sanctum')->user();
+                if (!$usuario || $usuario->usuario_rol !== 'admin') {
+                    $query->where('estado_moderacion', 'visible');
+                }
+            })
+            ->with('usuario')
+            ->orderBy('comentario_id', 'asc')
+            ->get();
+
+        return response()->json($respuestas, 200);
+    }
+
+    public function responder(Request $request, $comentarioId)
+    {
+        if (!Schema::hasColumn('comentario', 'comentario_padre_id')) {
+            return response()->json(['error' => 'La base de datos requiere migracion para respuestas de comentarios'], 500);
+        }
+
+        $comentarioPadre = Comentario::with(['publicacion.foro.categoria'])->find($comentarioId);
+
+        if (!$comentarioPadre || !$comentarioPadre->publicacion) {
+            return response()->json(['message' => 'Comentario no encontrado'], 404);
+        }
+
+        $publicacion = $comentarioPadre->publicacion;
+        $foro = $publicacion->foro;
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if (app(SanctionService::class)->hasActiveBlock($usuario, 'comentar')) {
+            return response()->json(['error' => 'Tu cuenta tiene una restriccion activa para comentar'], 403);
+        }
+
+        $registrado = $foro && (
+            $foro->foro_creador_id == $usuario->usuario_id
+            || $usuario->usuario_rol === 'admin'
+            || $foro->miembros()
+                ->where('usuario.usuario_id', $usuario->usuario_id)
+                ->exists()
+        );
+
+        if (!$registrado) {
+            return response()->json(['error' => 'Debes registrarte en el foro antes de responder'], 403);
+        }
+
+        $data = $request->validate([
+            'comentario_contenido' => 'required|string|max:2000',
+        ]);
+
+        $moderationService = app(ContentModerationService::class);
+        $moderationPayload = [
+            'tipo_contenido' => 'comentario_respuesta',
+            'contenido' => [
+                'texto' => $data['comentario_contenido'],
+            ],
+            'contexto' => [
+                'comentario_padre_id' => $comentarioPadre->comentario_id,
+                'publicacion_id' => $publicacion->publicacion_id,
+                'foro_id' => $foro?->foro_id,
+                'publicacion' => $publicacion->publicacion_titulo,
+                'foro' => $foro?->foro_titulo,
+                'categoria' => $foro?->categoria?->categoria_nombre,
+                'usuario_rol' => $usuario->usuario_rol,
+            ],
+        ];
+        $moderation = $moderationService->analyze($moderationPayload);
+
+        $respuesta = Comentario::create([
+            'comentario_publicacion_id' => $publicacion->publicacion_id,
+            'comentario_usuario_id' => $usuario->usuario_id,
+            'comentario_padre_id' => $comentarioPadre->comentario_id,
+            'comentario_contenido' => $data['comentario_contenido'],
+        ]);
+        $moderationService->applyToModel($respuesta, $moderation, 'comentario');
+        $respuesta->save();
+
+        $moderationPersisted = $moderationService->record(
+            'comentario',
+            $respuesta->comentario_id,
+            $usuario->usuario_id,
+            $moderation,
+            $moderationPayload
+        );
+
+        $response = $respuesta->load('usuario')->toArray();
         $response['_moderacion'] = $moderation;
         $response['_moderacion_registrada'] = $moderationPersisted;
 

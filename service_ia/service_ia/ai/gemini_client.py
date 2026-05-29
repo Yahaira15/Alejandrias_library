@@ -89,9 +89,21 @@ def _api_key_diagnostico(api_key):
 
 def obtener_cliente():
     api_key = _obtener_api_key()
-    logger.info("Validacion GEMINI_API_KEY: %s", _api_key_diagnostico(api_key))
+    vertex_project = os.getenv("VERTEX_AI_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT")
+    vertex_location = os.getenv("VERTEX_AI_LOCATION") or os.getenv("GOOGLE_CLOUD_LOCATION") or "us-central1"
+    usar_vertex = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in {"1", "true", "yes"}
 
-    if not api_key:
+    logger.info(
+        "Validacion credenciales Gemini/Vertex: %s",
+        {
+            "api_key": _api_key_diagnostico(api_key),
+            "usa_vertex_ai": usar_vertex,
+            "vertex_project_presente": bool(vertex_project),
+            "vertex_location": vertex_location if usar_vertex else None,
+        },
+    )
+
+    if not api_key and not usar_vertex:
         raise AIProviderError(
             kind="configuracion_api_key",
             message="No se encontro GEMINI_API_KEY en el entorno del servicio IA.",
@@ -105,7 +117,18 @@ def obtener_cliente():
             retryable=False,
         )
 
-    logger.info("Cliente Gemini inicializado con dependencia google-genai disponible")
+    if usar_vertex:
+        if not vertex_project:
+            raise AIProviderError(
+                kind="configuracion_vertex",
+                message="GOOGLE_GENAI_USE_VERTEXAI esta activo pero falta VERTEX_AI_PROJECT o GOOGLE_CLOUD_PROJECT.",
+                retryable=False,
+            )
+
+        logger.info("Cliente Gemini inicializado en modo Vertex AI")
+        return genai.Client(vertexai=True, project=vertex_project, location=vertex_location)
+
+    logger.info("Cliente Gemini inicializado con API key")
     return genai.Client(api_key=api_key)
 
 
@@ -149,6 +172,51 @@ def _extraer_texto_respuesta(respuesta):
             return candidato
 
     return ""
+
+
+def _serializar_valor(valor, profundidad=0):
+    if profundidad > 4:
+        return str(valor)
+    if valor is None or isinstance(valor, (str, int, float, bool)):
+        return valor
+    if isinstance(valor, (list, tuple)):
+        return [_serializar_valor(item, profundidad + 1) for item in valor]
+    if isinstance(valor, dict):
+        return {str(clave): _serializar_valor(item, profundidad + 1) for clave, item in valor.items()}
+
+    resultado = {}
+    for atributo in ("category", "probability", "probability_score", "severity", "severity_score", "blocked", "finish_reason"):
+        if hasattr(valor, atributo):
+            item = getattr(valor, atributo)
+            resultado[atributo] = getattr(item, "name", item)
+
+    if resultado:
+        return resultado
+
+    if hasattr(valor, "model_dump"):
+        try:
+            return _serializar_valor(valor.model_dump(), profundidad + 1)
+        except Exception:
+            pass
+
+    return str(valor)
+
+
+def _extraer_metadata_seguridad(respuesta):
+    metadata = {
+        "prompt_feedback": _serializar_valor(getattr(respuesta, "prompt_feedback", None)),
+        "candidates": [],
+    }
+
+    for candidato in getattr(respuesta, "candidates", []) or []:
+        metadata["candidates"].append(
+            {
+                "finish_reason": _serializar_valor(getattr(candidato, "finish_reason", None)),
+                "safety_ratings": _serializar_valor(getattr(candidato, "safety_ratings", None)),
+            }
+        )
+
+    return metadata
 
 
 def construir_prompt_chat(mensaje_usuario, historial=None, instrucciones_extra=None):
@@ -199,7 +267,15 @@ def _serializar_foros(foros):
     return "\n".join(lineas)
 
 
-def generar_texto(prompt, user_id=None, mensaje_usuario=None, foros=None, response_mime_type=None, response_json_schema=None):
+def generar_texto(
+    prompt,
+    user_id=None,
+    mensaje_usuario=None,
+    foros=None,
+    response_mime_type=None,
+    response_json_schema=None,
+    return_metadata=False,
+):
     prompt_limpio = str(prompt or "").strip()
     if not prompt_limpio:
         raise ValueError("El prompt no puede estar vacio")
@@ -315,7 +391,9 @@ def generar_texto(prompt, user_id=None, mensaje_usuario=None, foros=None, respon
         )
 
     texto = _extraer_texto_respuesta(respuesta)
+    metadata_seguridad = _extraer_metadata_seguridad(respuesta)
     logger.info("Texto RAW extraido de Gemini:\n%s", texto)
+    logger.info("Metadata de seguridad Gemini/Vertex extraida: %s", metadata_seguridad)
 
     if not texto:
         raise AIProviderError(
@@ -326,6 +404,12 @@ def generar_texto(prompt, user_id=None, mensaje_usuario=None, foros=None, respon
 
     if user_id and mensaje_usuario:
         guardar_historial(user_id, mensaje_usuario, texto)
+
+    if return_metadata:
+        return {
+            "text": texto,
+            "safety_metadata": metadata_seguridad,
+        }
 
     return texto
 

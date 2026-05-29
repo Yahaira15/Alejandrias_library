@@ -15,6 +15,7 @@ import { VerPublicacionComponent } from './Foro/ver-publicacion/ver-publicacion'
 import { VerForoComponent } from './Foro/ver-foro/ver-foro';
 import { ChatIaComponent } from './chat-ia/chat-ia';
 import { adminGuard } from './guards/admin-guard';
+import { moderationReviewerGuard } from './guards/moderation-reviewer-guard';
 import { AdminLayout } from './Admin/admin-layout/admin-layout';
 import { AdminUsuarios } from './Admin/admin-usuarios/admin-usuarios';
 import { AdminForos } from './Admin/admin-foros/admin-foros';
@@ -23,6 +24,7 @@ import { AdminPublicaciones } from './Admin/admin-publicaciones/admin-publicacio
 import { AdminComentarios } from './Admin/admin-comentarios/admin-comentarios';
 import { AdminReportes } from './Admin/admin-reportes/admin-reportes';
 import { AdminSanciones } from './Admin/admin-sanciones/admin-sanciones';
+import { AdminModeracion } from './Admin/admin-moderacion/admin-moderacion';
  
 export const routes: Routes = [
     {path: 'home',component:Home},
@@ -41,16 +43,17 @@ export const routes: Routes = [
     {
         path: 'admin',
         component: AdminLayout,
-        canActivate: [authGuard, adminGuard],
+        canActivate: [authGuard, moderationReviewerGuard],
         children: [
-            { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
-            { path: 'usuarios', component: AdminUsuarios },
-            { path: 'foros', component: AdminForos },
-            { path: 'categorias', component: AdminCategorias },
-            { path: 'publicaciones', component: AdminPublicaciones },
-            { path: 'comentarios', component: AdminComentarios },
-            { path: 'reportes', component: AdminReportes },
-            { path: 'sanciones', component: AdminSanciones }
+            { path: '', redirectTo: 'moderacion', pathMatch: 'full' },
+            { path: 'moderacion', component: AdminModeracion },
+            { path: 'usuarios', component: AdminUsuarios, canActivate: [adminGuard] },
+            { path: 'foros', component: AdminForos, canActivate: [adminGuard] },
+            { path: 'categorias', component: AdminCategorias, canActivate: [adminGuard] },
+            { path: 'publicaciones', component: AdminPublicaciones, canActivate: [adminGuard] },
+            { path: 'comentarios', component: AdminComentarios, canActivate: [adminGuard] },
+            { path: 'reportes', component: AdminReportes, canActivate: [adminGuard] },
+            { path: 'sanciones', component: AdminSanciones, canActivate: [adminGuard] }
         ]
     }
 ];

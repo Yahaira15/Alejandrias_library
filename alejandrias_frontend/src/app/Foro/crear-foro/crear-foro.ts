@@ -24,6 +24,9 @@ export class CrearForo implements OnInit {
   selectedImage: File | null = null;
   imagePreview: string | null = null;
   guardando = false;
+  feedbackMensaje = '';
+  feedbackTipo: 'success' | 'error' | '' = '';
+  private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -69,7 +72,7 @@ export class CrearForo implements OnInit {
 
     if (this.foroForm.invalid) {
       this.foroForm.markAllAsTouched();
-      alert('Por favor completa todos los campos');
+      this.mostrarFeedback('error', 'Por favor completa todos los campos.');
       return;
     }
 
@@ -85,16 +88,51 @@ export class CrearForo implements OnInit {
 
     this.foroService.crearForo(data).subscribe({
       next: () => {
-        alert('Foro creado correctamente');
-        this.router.navigate(['/foros']);
+        this.mostrarFeedback('success', 'Foro creado correctamente.');
+        setTimeout(() => this.router.navigate(['/foros']), 700);
       },
       error: (err) => {
         console.error('Error al crear foro:', err);
-        alert('Error al crear el foro');
+        this.mostrarFeedback('error', this.mensajeModeracionDesdeError(err, 'Error al crear el foro.'));
         this.guardando = false;
         this.cdr.markForCheck();
       }
     });
+  }
+
+  mostrarFeedback(tipo: 'success' | 'error', mensaje: string): void {
+    this.feedbackTipo = tipo;
+    this.feedbackMensaje = mensaje;
+
+    if (this.feedbackTimeout) {
+      clearTimeout(this.feedbackTimeout);
+    }
+
+    this.feedbackTimeout = setTimeout(() => {
+      this.feedbackMensaje = '';
+      this.feedbackTipo = '';
+      this.cdr.detectChanges();
+    }, 6500);
+
+    this.cdr.markForCheck();
+  }
+
+  cerrarFeedback(): void {
+    this.feedbackMensaje = '';
+    this.feedbackTipo = '';
+
+    if (this.feedbackTimeout) {
+      clearTimeout(this.feedbackTimeout);
+      this.feedbackTimeout = null;
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  private mensajeModeracionDesdeError(err: any, fallback: string): string {
+    return err?.error?._moderacion?.mensaje_usuario
+      || err?.error?.error
+      || fallback;
   }
 
   setPrivado(privado: boolean) {
@@ -134,7 +172,7 @@ export class CrearForo implements OnInit {
 
     const file = input.files[0];
     if (!['image/png', 'image/jpeg'].includes(file.type)) {
-      alert('Solo se permiten imágenes JPG y PNG.');
+      this.mostrarFeedback('error', 'Solo se permiten imagenes JPG y PNG.');
       input.value = '';
       return;
     }

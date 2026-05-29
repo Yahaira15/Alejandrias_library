@@ -29,6 +29,7 @@ export class AdminLayout implements OnInit, OnDestroy {
   cargandoNotificaciones = false;
   errorNotificaciones = '';
   private refrescoNotificaciones?: ReturnType<typeof setInterval>;
+  esAdmin = false;
 
   constructor(
     private router: Router,
@@ -36,6 +37,8 @@ export class AdminLayout implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+    this.esAdmin = usuario?.usuario_rol === 'admin';
     this.cargarNotificaciones();
     this.refrescoNotificaciones = setInterval(() => {
       this.cargarNotificaciones(false);
@@ -131,7 +134,7 @@ export class AdminLayout implements OnInit, OnDestroy {
 
   private rutaPorTipo(notificacion: NotificacionAdmin): string {
     if (notificacion.notificacion_tipo?.startsWith('alerta_ia_')) {
-      return '/admin/reportes';
+      return '/admin/moderacion';
     }
 
     if (notificacion.notificacion_tipo === 'nuevo_reporte') {
