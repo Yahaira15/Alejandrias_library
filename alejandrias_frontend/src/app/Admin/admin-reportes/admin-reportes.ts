@@ -17,6 +17,7 @@ export class AdminReportes implements OnInit, OnDestroy {
   cargando = false;
   error = '';
   mensaje = '';
+  busqueda = '';
   reporteSeleccionado: any = null;
   sancion = {
     sancion_usuario_id: null as number | null,
@@ -181,6 +182,20 @@ export class AdminReportes implements OnInit, OnDestroy {
       sancion_motivo: ''
     };
     this.cdr.detectChanges();
+  }
+
+  get reportesFiltrados(): any[] {
+    const termino = this.busqueda.toLowerCase().trim();
+    if (!termino) return this.reportes;
+
+    return this.reportes.filter((reporte) => [
+      reporte.reporte_id,
+      reporte.reporte_tipo,
+      reporte.reporte_motivo,
+      reporte.reporte_prioridad,
+      reporte.reporte_estado,
+      this.resumenReferencia(reporte)
+    ].some((valor) => String(valor ?? '').toLowerCase().includes(termino)));
   }
 
   obtenerUsuarioReportadoId(reporte: any): number | null {

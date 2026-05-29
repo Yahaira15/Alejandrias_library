@@ -12,6 +12,8 @@ use App\Services\IA\Moderation\ContentModerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -76,24 +78,38 @@ class AdminController extends Controller
 
     public function foros()
     {
-        return response()->json(Foro::with(['usuario', 'categoria'])->orderBy('foro_id', 'desc')->get(), 200);
+        return response()->json(Foro::with(['usuario', 'categoria', 'subcategoria'])->orderBy('foro_id', 'desc')->get(), 200);
     }
 
     public function crearForo(Request $request)
     {
+        $subcategoriaTable = $this->tablaSubcategorias();
         $data = $request->validate([
             'foro_titulo' => 'required|string|max:255',
             'foro_descripcion' => 'required|string',
             'foro_categoria_id' => 'required|exists:categoria,categoria_id',
+            'subcategoria_id' => $subcategoriaTable ? "nullable|exists:{$subcategoriaTable},subcategoria_id" : 'nullable|integer',
             'foro_creador_id' => 'required|exists:usuario,usuario_id',
             'foro_privado' => 'nullable|boolean',
             'foro_password' => 'nullable|required_if:foro_privado,true|regex:/^[A-Za-z0-9]{8}$/',
+            'foro_imagen' => 'nullable',
         ]);
 
         $data['foro_privado'] = (bool) ($data['foro_privado'] ?? false);
         $data['foro_password'] = $data['foro_privado'] && !empty($data['foro_password'])
             ? Crypt::encryptString($data['foro_password'])
             : null;
+        $data['subcategoria_id'] = $data['subcategoria_id'] ?? null;
+
+        if (Schema::hasColumn('foro', 'foro_imagen')) {
+            $data['foro_imagen'] = $this->resolverImagenForo($request);
+        } else {
+            unset($data['foro_imagen']);
+        }
+
+        if (!Schema::hasColumn('foro', 'subcategoria_id')) {
+            unset($data['subcategoria_id']);
+        }
 
         $moderationService = app(ContentModerationService::class);
         $usuario = Usuario::find($data['foro_creador_id']);
@@ -127,7 +143,7 @@ class AdminController extends Controller
         $moderationService->record('foro', $foro->foro_id, $data['foro_creador_id'], $moderation, $moderationPayload);
         $foro->miembros()->syncWithoutDetaching([$foro->foro_creador_id]);
 
-        $response = $foro->load(['usuario', 'categoria'])->toArray();
+        $response = $foro->load(['usuario', 'categoria', 'subcategoria'])->toArray();
         $response['_moderacion'] = $moderation;
 
         return response()->json($response, 201);
@@ -136,16 +152,20 @@ class AdminController extends Controller
     public function actualizarForo(Request $request, $id)
     {
         $foro = Foro::findOrFail($id);
+        $subcategoriaTable = $this->tablaSubcategorias();
         $data = $request->validate([
             'foro_titulo' => 'required|string|max:255',
             'foro_descripcion' => 'required|string',
             'foro_categoria_id' => 'required|exists:categoria,categoria_id',
+            'subcategoria_id' => $subcategoriaTable ? "nullable|exists:{$subcategoriaTable},subcategoria_id" : 'nullable|integer',
             'foro_creador_id' => 'required|exists:usuario,usuario_id',
             'foro_privado' => 'nullable|boolean',
             'foro_password' => 'nullable|regex:/^[A-Za-z0-9]{8}$/',
+            'foro_imagen' => 'nullable',
         ]);
 
         $data['foro_privado'] = (bool) ($data['foro_privado'] ?? false);
+        $data['subcategoria_id'] = $data['subcategoria_id'] ?? null;
 
         $moderationService = app(ContentModerationService::class);
         $usuario = Usuario::find($data['foro_creador_id']);
@@ -184,16 +204,58 @@ class AdminController extends Controller
             unset($data['foro_password']);
         }
 
+        if (Schema::hasColumn('foro', 'foro_imagen')) {
+            $data['foro_imagen'] = $this->resolverImagenForo($request, $foro->foro_imagen ?? null);
+        } else {
+            unset($data['foro_imagen']);
+        }
+
+        if (!Schema::hasColumn('foro', 'subcategoria_id')) {
+            unset($data['subcategoria_id']);
+        }
+
         $foro->update($data);
         $moderationService->applyToModel($foro, $moderation, 'foro');
         $foro->save();
         $moderationService->record('foro', $foro->foro_id, $data['foro_creador_id'], $moderation, $moderationPayload);
         $foro->miembros()->syncWithoutDetaching([$foro->foro_creador_id]);
 
-        $response = $foro->load(['usuario', 'categoria'])->toArray();
+        $response = $foro->load(['usuario', 'categoria', 'subcategoria'])->toArray();
         $response['_moderacion'] = $moderation;
 
         return response()->json($response, 200);
+    }
+
+    private function tablaSubcategorias(): ?string
+    {
+        foreach (['subcategoria', 'subcategorias'] as $tabla) {
+            if (Schema::hasTable($tabla)) {
+                return $tabla;
+            }
+        }
+
+        return null;
+    }
+
+    private function resolverImagenForo(Request $request, ?string $imagenActual = null): ?string
+    {
+        if ($request->hasFile('foro_imagen')) {
+            $request->validate([
+                'foro_imagen' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
+            ]);
+
+            $path = $request->file('foro_imagen')->store('foros', 'public');
+
+            return Storage::disk('public')->url($path);
+        }
+
+        $imagen = $request->input('foro_imagen');
+
+        if (is_string($imagen) && trim($imagen) !== '') {
+            return trim($imagen);
+        }
+
+        return $imagenActual;
     }
 
     public function categorias()

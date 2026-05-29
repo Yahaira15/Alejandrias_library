@@ -41,7 +41,7 @@
 
         <button *ngIf="field.type === 'image'" type="button" class="upload-box" (click)="imageInput.click()">
           <input #imageInput type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="seleccionarImagen($event, field)">
-          <img *ngIf="previewImagenes[field.key]; else uploadText" [src]="previewImagenes[field.key]" alt="Vista previa">
+          <img *ngIf="previewImagenes[field.key]; else uploadText" [src]="imagenUrl(previewImagenes[field.key])" alt="Vista previa">
           <ng-template #uploadText>
             <span>Carga tu imagen aqui en<br>formato jpg, png</span>
           </ng-template>
@@ -100,7 +100,7 @@
         <tr *ngFor="let registro of pagina">
           <td>{{ registro[config.idKey] }}</td>
           <td *ngFor="let columna of columnas">
-            <img *ngIf="columna.type === 'image' && registro[columna.key]" class="table-image" [src]="registro[columna.key]" alt="">
+            <img *ngIf="columna.type === 'image' && registro[columna.key]" class="table-image" [src]="imagenUrl(registro[columna.key])" alt="">
             <span *ngIf="columna.type !== 'image' || !registro[columna.key]">{{ valorCelda(registro, columna) }}</span>
           </td>
           <td class="row-actions">

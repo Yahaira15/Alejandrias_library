@@ -1,0 +1,178 @@
+.foro-admin {
+  .admin-header {
+    margin-bottom: 22px;
+  }
+}
+
+.forum-form {
+  width: min(100%, 980px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 8px 18px;
+  align-items: start;
+  margin: 4px 0 48px;
+}
+
+.form-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field,
+.state-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field > span,
+.state-field legend {
+  padding: 0;
+  color: #2a5f88;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.forum-form input,
+.forum-form select,
+.forum-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid #9bb2ce;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #306289;
+  font: 400 16px/1.2 'Lora', Georgia, serif;
+  outline: none;
+}
+
+.forum-form input,
+.forum-form select {
+  height: 32px;
+  padding: 4px 12px;
+}
+
+.forum-form select {
+  appearance: none;
+  color: #58779d;
+  background-image: linear-gradient(45deg, transparent 50%, #58779d 50%), linear-gradient(135deg, #58779d 50%, transparent 50%);
+  background-position: calc(100% - 24px) 13px, calc(100% - 15px) 13px;
+  background-size: 10px 10px;
+  background-repeat: no-repeat;
+}
+
+.forum-form textarea {
+  min-height: 130px;
+  padding: 10px 12px;
+  resize: none;
+}
+
+.image-uploader {
+  width: 100%;
+  min-height: 126px;
+  border: 2px dashed #9bb2ce;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #58779d;
+  cursor: pointer;
+  font: 400 17px/1.1 'Lora', Georgia, serif;
+  overflow: hidden;
+}
+
+.image-uploader img {
+  width: 100%;
+  height: 126px;
+  object-fit: cover;
+  display: block;
+}
+
+.state-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 10px 0 12px;
+}
+
+.state-button {
+  height: 43px;
+  border: 2px solid #0c4a78;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #0c4a78;
+  cursor: pointer;
+  font: 700 16px/1 'Lora', Georgia, serif;
+}
+
+.state-button.active {
+  background: #0b4b78;
+  color: #ffffff;
+}
+
+.password-area {
+  display: grid;
+  gap: 10px;
+}
+
+.password-field {
+  gap: 0;
+}
+
+.visualizar-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #306289;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.visualizar-checkbox input {
+  width: 20px;
+  height: 20px;
+  accent-color: #306289;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.form-actions button {
+  min-height: 30px;
+  border-radius: 7px;
+  padding: 0 15px;
+  cursor: pointer;
+  font: 700 14px/1 'Lora', Georgia, serif;
+}
+
+.primary-action {
+  border: 0;
+  background: #faecd8;
+  color: #5c7fa4;
+}
+
+.secondary-action {
+  border: 1.5px solid #0b4772;
+  background: #ffffff;
+  color: #0b4772;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+@media (max-width: 940px) {
+  .forum-form {
+    grid-template-columns: 1fr;
+  }
+}

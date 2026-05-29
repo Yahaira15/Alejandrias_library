@@ -38,8 +38,6 @@ export class AdminCategorias implements OnInit, OnDestroy {
 
   categoriaImagen: File | null = null;
   categoriaPreview: string | null = null;
-  subcategoriaImagen: File | null = null;
-  subcategoriaPreview: string | null = null;
   private avisoTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private adminService: AdminService, private cdr: ChangeDetectorRef) {}
@@ -154,10 +152,6 @@ export class AdminCategorias implements OnInit, OnDestroy {
     payload.append('categoria_id', String(Number(this.subcategoriaForm.categoria_id)));
     payload.append('subcategoria_descripcion', this.subcategoriaForm.subcategoria_descripcion.trim());
 
-    if (this.subcategoriaImagen) {
-      payload.append('subcategoria_imagen', this.subcategoriaImagen);
-    }
-
     const request = this.editandoSubcategoriaId
       ? this.adminService.actualizarSubcategoria(this.editandoSubcategoriaId, payload)
       : this.adminService.crearSubcategoria(payload);
@@ -186,7 +180,6 @@ export class AdminCategorias implements OnInit, OnDestroy {
       categoria_id: String(subcategoria.subcategoria_categoria_id ?? subcategoria.categoria_id ?? ''),
       subcategoria_descripcion: subcategoria.subcategoria_descripcion ?? ''
     };
-    this.subcategoriaPreview = subcategoria.subcategoria_imagen ?? null;
   }
 
   eliminarCategoria(categoria: any): void {
@@ -213,9 +206,7 @@ export class AdminCategorias implements OnInit, OnDestroy {
     this.categoriaForm = { categoria_nombre: '', categoria_descripcion: '' };
     this.subcategoriaForm = { subcategoria_nombre: '', categoria_id: '', subcategoria_descripcion: '' };
     this.categoriaImagen = null;
-    this.subcategoriaImagen = null;
     this.categoriaPreview = null;
-    this.subcategoriaPreview = null;
     this.error = '';
   }
 
@@ -231,13 +222,8 @@ export class AdminCategorias implements OnInit, OnDestroy {
     }
 
     const preview = URL.createObjectURL(file);
-    if (this.tab === 'categorias') {
-      this.categoriaImagen = file;
-      this.categoriaPreview = preview;
-    } else {
-      this.subcategoriaImagen = file;
-      this.subcategoriaPreview = preview;
-    }
+    this.categoriaImagen = file;
+    this.categoriaPreview = preview;
   }
 
   get categoriasFiltradas(): any[] {
@@ -262,6 +248,14 @@ export class AdminCategorias implements OnInit, OnDestroy {
 
   nombreCategoria(categoriaId: number | string): string {
     return this.categorias.find((categoria) => Number(categoria.categoria_id) === Number(categoriaId))?.categoria_nombre ?? '';
+  }
+
+  get tituloGestion(): string {
+    return this.tab === 'subcategorias' ? 'Gestion de subcategorias' : 'Gestion de categorias';
+  }
+
+  imagenUrl(url: string | null | undefined): string {
+    return this.adminService.resolverUrlImagen(url);
   }
 
   private finalizarGuardado(mensaje: string): void {

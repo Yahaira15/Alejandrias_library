@@ -17,41 +17,44 @@
       <div class="table-search">
         <label>
           <span>Busqueda</span>
-          <input type="search" disabled>
+          <input type="search" [(ngModel)]="busqueda">
         </label>
       </div>
       <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Tipo</th>
-            <th>Motivo</th>
-            <th>Prioridad</th>
-            <th>Estado</th>
-            <th>Referencia</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="cargando">
-            <td colspan="7">Cargando...</td>
-          </tr>
-          <tr *ngFor="let reporte of reportes" [class.selected]="reporteSeleccionado?.reporte_id === reporte.reporte_id">
-            <td>{{ reporte.reporte_id }}</td>
-            <td>{{ reporte.reporte_tipo }}</td>
-            <td>{{ reporte.reporte_motivo }}</td>
-            <td>{{ reporte.reporte_prioridad }}</td>
-            <td>{{ reporte.reporte_estado }}</td>
-            <td>{{ resumenReferencia(reporte) }}</td>
-            <td class="row-actions">
-              <button type="button" (click)="seleccionarReporte(reporte)">Evaluar</button>
-              <button type="button" (click)="actualizarEstado(reporte, 'revisando')">Revisando</button>
-              <button type="button" (click)="actualizarEstado(reporte, 'rechazado')">Rechazar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Motivo</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th>Referencia</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="cargando">
+              <td colspan="7">Cargando...</td>
+            </tr>
+            <tr *ngIf="!cargando && reportesFiltrados.length === 0">
+              <td colspan="7">No hay registros.</td>
+            </tr>
+            <tr *ngFor="let reporte of reportesFiltrados" [class.selected]="reporteSeleccionado?.reporte_id === reporte.reporte_id">
+              <td>{{ reporte.reporte_id }}</td>
+              <td>{{ reporte.reporte_tipo }}</td>
+              <td>{{ reporte.reporte_motivo }}</td>
+              <td>{{ reporte.reporte_prioridad }}</td>
+              <td>{{ reporte.reporte_estado }}</td>
+              <td>{{ resumenReferencia(reporte) }}</td>
+              <td class="row-actions">
+                <button type="button" (click)="seleccionarReporte(reporte)">Evaluar</button>
+                <button type="button" (click)="actualizarEstado(reporte, 'revisando')">Revisando</button>
+                <button type="button" class="danger" (click)="actualizarEstado(reporte, 'rechazado')">Rechazar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 

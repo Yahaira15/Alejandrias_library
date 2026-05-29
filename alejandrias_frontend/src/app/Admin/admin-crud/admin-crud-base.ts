@@ -200,6 +200,10 @@ export abstract class AdminCrudBase implements OnInit, OnDestroy {
     return valor ?? '';
   }
 
+  imagenUrl(url: string | null | undefined): string {
+    return this.adminService.resolverUrlImagen(url);
+  }
+
   seleccionarImagen(event: Event, field: AdminField): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];

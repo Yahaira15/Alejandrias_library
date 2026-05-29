@@ -4,7 +4,8 @@ import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  private apiUrl = 'http://127.0.0.1:8000/api/admin';
+  private baseUrl = 'http://127.0.0.1:8000';
+  private apiUrl = `${this.baseUrl}/api/admin`;
 
   constructor(private http: HttpClient) {}
 
@@ -71,5 +72,15 @@ export class AdminService {
 
   eliminarSubcategoria(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/subcategorias/${id}`);
+  }
+
+  resolverUrlImagen(url: string | null | undefined): string {
+    if (!url) return '';
+
+    if (/^(blob:|data:|https?:\/\/)/i.test(url)) {
+      return url;
+    }
+
+    return `${this.baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
   }
 }

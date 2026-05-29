@@ -2,7 +2,7 @@
   <header class="admin-header">
     <div>
       <p>Panel de administracion</p>
-      <h2>Gestion de categorias</h2>
+      <h2>{{ tituloGestion }}</h2>
     </div>
     <button type="button" class="admin-new-button" (click)="cancelar()">Agregar</button>
   </header>
@@ -23,7 +23,7 @@
         <span>Imagen</span>
         <button type="button" class="upload-box" (click)="imageInput.click()">
           <input #imageInput type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="seleccionarImagen($event)">
-          <img *ngIf="categoriaPreview; else uploadText" [src]="categoriaPreview" alt="Vista previa">
+          <img *ngIf="categoriaPreview; else uploadText" [src]="imagenUrl(categoriaPreview)" alt="Vista previa">
           <ng-template #uploadText><span>Carga tu imagen aqui en<br>formato jpg, png</span></ng-template>
         </button>
       </label>
@@ -36,25 +36,17 @@
           <input type="text" name="subcategoria_nombre" [(ngModel)]="subcategoriaForm.subcategoria_nombre">
         </label>
         <label>
-          <span>Descripcion</span>
-          <textarea name="subcategoria_descripcion" [(ngModel)]="subcategoriaForm.subcategoria_descripcion"></textarea>
-        </label>
-      </div>
-      <div class="right-fields">
-        <label>
           <span>Categoria</span>
           <select name="categoria_id" [(ngModel)]="subcategoriaForm.categoria_id">
             <option value="">Selecciona</option>
             <option *ngFor="let categoria of categorias" [value]="categoria.categoria_id">{{ categoria.categoria_nombre }}</option>
           </select>
         </label>
-        <label class="image-field">
-          <span>Imagen</span>
-          <button type="button" class="upload-box" (click)="subImageInput.click()">
-            <input #subImageInput type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="seleccionarImagen($event)">
-            <img *ngIf="subcategoriaPreview; else subUploadText" [src]="subcategoriaPreview" alt="Vista previa">
-            <ng-template #subUploadText><span>Carga tu imagen aqui en<br>formato jpg, png</span></ng-template>
-          </button>
+      </div>
+      <div class="right-fields">
+        <label>
+          <span>Descripcion</span>
+          <textarea name="subcategoria_descripcion" [(ngModel)]="subcategoriaForm.subcategoria_descripcion"></textarea>
         </label>
       </div>
     </ng-template>
@@ -98,7 +90,7 @@
             <td>{{ categoria.categoria_id }}</td>
             <td>{{ categoria.categoria_nombre }}</td>
             <td>{{ categoria.categoria_descripcion }}</td>
-            <td><img *ngIf="categoria.categoria_imagen" class="table-image" [src]="categoria.categoria_imagen" alt=""></td>
+            <td><img *ngIf="categoria.categoria_imagen" class="table-image" [src]="imagenUrl(categoria.categoria_imagen)" alt=""></td>
             <td class="row-actions">
               <button type="button" (click)="editarCategoria(categoria)">Editar</button>
               <button type="button" (click)="eliminarCategoria(categoria)">Eliminar</button>

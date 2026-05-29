@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Usuario;
 use App\Models\Categoria;
+use App\Models\Subcategoria;
 use App\Models\Publicacion;
 use App\Models\Comentario;
 
@@ -23,6 +24,7 @@ class Foro extends Model
         'foro_privado',
         'foro_password',
         'foro_imagen',
+        'subcategoria_id',
         'foro_estado_moderacion',
         'foro_visibilidad'
     ];
@@ -39,6 +41,11 @@ class Foro extends Model
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'foro_categoria_id', 'categoria_id');
+    }
+
+    public function subcategoria()
+    {
+        return $this->belongsTo(Subcategoria::class, 'subcategoria_id', 'subcategoria_id');
     }
 
     public function miembros()

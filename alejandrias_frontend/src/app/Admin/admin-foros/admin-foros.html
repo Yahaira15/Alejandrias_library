@@ -1,0 +1,146 @@
+<section class="admin-card foro-admin">
+  <header class="admin-header">
+    <div>
+      <p>Panel de administracion</p>
+      <h2>{{ config.titulo }}</h2>
+    </div>
+    <button type="button" class="admin-new-button" (click)="nuevo()">Agregar</button>
+  </header>
+
+  <form *ngIf="mostrandoFormulario" class="forum-form" (ngSubmit)="guardar()" novalidate>
+    <div class="form-column">
+      <label class="field">
+        <span>Nombre</span>
+        <input type="text" name="foro_titulo" [(ngModel)]="formulario.foro_titulo">
+      </label>
+
+      <label class="field description-field">
+        <span>Descripcion</span>
+        <textarea name="foro_descripcion" [(ngModel)]="formulario.foro_descripcion"></textarea>
+      </label>
+    </div>
+
+    <div class="form-column">
+      <label class="field">
+        <span>Categoria</span>
+        <select name="foro_categoria_id" [(ngModel)]="formulario.foro_categoria_id" (ngModelChange)="cambiarCategoria()">
+          <option value="">Selecciona</option>
+          <option *ngFor="let categoria of categorias" [value]="categoria.categoria_id">{{ categoria.categoria_nombre }}</option>
+        </select>
+      </label>
+
+      <div class="field image-field">
+        <span>Imagen</span>
+        <button class="image-uploader" type="button" (click)="imageInput.click()">
+          <input #imageInput type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="seleccionarImagen($event, imagenField)">
+          <img *ngIf="previewImagenes['foro_imagen']; else uploadText" [src]="imagenUrl(previewImagenes['foro_imagen'])" alt="Vista previa">
+          <ng-template #uploadText>
+            <span>Cargar imagen en formato<br>jpg, png</span>
+          </ng-template>
+        </button>
+      </div>
+    </div>
+
+    <div class="form-column">
+      <label class="field">
+        <span>Subcategoria</span>
+        <select name="subcategoria_id" [(ngModel)]="formulario.subcategoria_id">
+          <option value="">Selecciona</option>
+          <option *ngFor="let subcategoria of subcategorias" [value]="subcategoria.subcategoria_id">{{ subcategoria.subcategoria_nombre }}</option>
+        </select>
+      </label>
+
+      <fieldset class="state-field">
+        <legend>Estado</legend>
+        <div class="state-actions">
+          <button type="button" class="state-button" [class.active]="!formulario.foro_privado" (click)="setPrivado(false)">
+            Publico
+          </button>
+          <button type="button" class="state-button" [class.active]="formulario.foro_privado" (click)="setPrivado(true)">
+            Privado
+          </button>
+        </div>
+      </fieldset>
+
+      <div *ngIf="formulario.foro_privado" class="password-area">
+        <label class="field password-field">
+          <span class="sr-only">Contrasena</span>
+          <input
+            [type]="passwordVisible ? 'text' : 'password'"
+            maxlength="8"
+            name="foro_password"
+            placeholder="Contrasena"
+            autocomplete="new-password"
+            [(ngModel)]="formulario.foro_password"
+          >
+        </label>
+        <label class="visualizar-checkbox">
+          <input type="checkbox" [checked]="passwordVisible" (change)="togglePasswordVisibility()">
+          <span>Visualizar</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="primary-action" [disabled]="guardando">
+        {{ guardando ? 'Guardando...' : (editandoId ? 'Actualizar' : 'Agregar') }}
+      </button>
+      <button type="button" class="secondary-action" (click)="cancelar()">Cancelar</button>
+    </div>
+  </form>
+
+  <p class="admin-message" *ngIf="mensaje">{{ mensaje }}</p>
+  <p class="admin-error" *ngIf="error">{{ error }}</p>
+
+  <div class="table-panel">
+    <div class="panel-tabs">
+      <button type="button" class="tab active">Foros</button>
+    </div>
+    <div class="table-search">
+      <label>
+        <span>Busqueda</span>
+        <input type="search" [(ngModel)]="busqueda" (ngModelChange)="cambiarBusqueda()">
+      </label>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th *ngFor="let columna of columnas">{{ columna.label }}</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="cargando">
+            <td [attr.colspan]="columnas.length + 2">Cargando...</td>
+          </tr>
+          <tr *ngIf="!cargando && pagina.length === 0">
+            <td [attr.colspan]="columnas.length + 2">No hay registros.</td>
+          </tr>
+          <tr *ngFor="let registro of pagina">
+            <td>{{ registro[config.idKey] }}</td>
+            <td *ngFor="let columna of columnas">
+              <img *ngIf="columna.type === 'image' && registro[columna.key]" class="table-image" [src]="imagenUrl(registro[columna.key])" alt="">
+              <span *ngIf="columna.type !== 'image' || !registro[columna.key]">{{ valorCelda(registro, columna) }}</span>
+            </td>
+            <td class="row-actions">
+              <button type="button" (click)="editar(registro)">Editar</button>
+              <button type="button" class="danger" (click)="eliminar(registro)">Eliminar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="pagination">
+    <span>{{ filtrados.length }} registros</span>
+    <div>
+      <button type="button" (click)="cambiarPagina(-1)" [disabled]="paginaActual === 1">Anterior</button>
+      <strong>{{ paginaActual }} / {{ totalPaginas }}</strong>
+      <button type="button" (click)="cambiarPagina(1)" [disabled]="paginaActual === totalPaginas">Siguiente</button>
+    </div>
+  </footer>
+</section>
