@@ -122,6 +122,94 @@
           </div>
         </div>
 
+        <div class="gamification-grid" *ngIf="logros">
+          <section class="streak-card" [class.claimable]="racha && !racha.recompensa_reclamada">
+            <div class="streak-flame" aria-hidden="true">🔥</div>
+            <div class="streak-copy">
+              <span>Racha diaria</span>
+              <h3>{{ racha?.mensaje || 'Empieza tu racha de aprendizaje' }}</h3>
+              <p>Mejor racha: {{ racha?.mejor_racha || 0 }} dias · recompensa: {{ racha?.siguiente_recompensa?.xp || 10 }} XP</p>
+            </div>
+
+            <div class="streak-calendar" aria-label="Calendario de racha">
+              <span *ngFor="let dia of racha?.calendario || []" [class.active]="dia.activo">
+                {{ dia.activo ? '🔥' : '•' }}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              class="claim-btn"
+              (click)="reclamarRacha()"
+              [disabled]="!racha || racha.recompensa_reclamada || reclamandoRacha"
+            >
+              {{ racha?.recompensa_reclamada ? 'Reclamada' : (reclamandoRacha ? 'Reclamando...' : 'Reclamar') }}
+            </button>
+          </section>
+
+          <section class="missions-panel">
+            <div class="compact-title">
+              <span>📜 Misiones diarias</span>
+              <strong>{{ misionesCompletadas }}/{{ misiones.length }}</strong>
+            </div>
+
+            <article class="mission-item" *ngFor="let mision of misiones" [class.done]="mision.completada">
+              <div class="mission-icon">{{ mision.completada ? '✅' : '🎯' }}</div>
+              <div class="mission-body">
+                <div>
+                  <strong>{{ mision.titulo }}</strong>
+                  <small>{{ mision.progreso }}/{{ mision.objetivo }} · +{{ mision.xp_recompensa }} XP</small>
+                </div>
+                <p>{{ mision.descripcion }}</p>
+                <div class="mission-bar">
+                  <span [style.width.%]="progresoMision(mision)"></span>
+                </div>
+              </div>
+              <button type="button" (click)="reclamarMision(mision)" [disabled]="!mision.completada || mision.reclamada">
+                {{ mision.reclamada ? 'OK' : 'Cofre' }}
+              </button>
+            </article>
+          </section>
+        </div>
+
+        <section class="ranking-panel" *ngIf="logros">
+          <div class="ranking-head">
+            <div>
+              <span class="logros-kicker">Competencia sana</span>
+              <h3>Ranking de aprendizaje</h3>
+            </div>
+            <div class="ranking-tabs">
+              <button type="button" [class.active]="rankingTab === 'global'" (click)="rankingTab = 'global'">Global</button>
+              <button type="button" [class.active]="rankingTab === 'semanal'" (click)="rankingTab = 'semanal'">Semanal</button>
+            </div>
+          </div>
+
+          <div class="podium" *ngIf="rankingActivo.length">
+            <article *ngFor="let usuario of rankingActivo.slice(0, 3)" [class]="'podium-user ' + (usuario.medalla || '')">
+              <span>{{ medallaIcono(usuario.medalla) }}</span>
+              <strong>{{ usuario.apodo || usuario.nombre }}</strong>
+              <small>Nivel {{ usuario.nivel }} · {{ usuario.total }} XP</small>
+            </article>
+          </div>
+
+          <div class="leaderboard">
+            <article *ngFor="let usuario of rankingActivo" class="leader-row">
+              <span class="rank">#{{ usuario.posicion }}</span>
+              <img [src]="usuario.avatar || 'iconos/foto_perfil.png'" alt="">
+              <div>
+                <strong>{{ usuario.apodo || usuario.nombre }}</strong>
+                <small>Nivel {{ usuario.nivel }} · {{ usuario.puntos }} puntos</small>
+                <div class="mini-xp"><span [style.width.%]="usuario.xp % 100"></span></div>
+              </div>
+              <em>{{ usuario.total }}</em>
+            </article>
+
+            <p class="ranking-empty" *ngIf="!rankingActivo.length">
+              Aun no hay datos de ranking. Suma XP con publicaciones, comentarios, IA o racha diaria.
+            </p>
+          </div>
+        </section>
+
         <div class="route-tabs" *ngIf="logros">
           <button
             type="button"
@@ -312,5 +400,14 @@
       </button>
       <button type="button" (click)="cerrarSolicitudLider()" [disabled]="enviandoSolicitudLider">Cerrar</button>
     </div>
+  </section>
+</div>
+
+<div class="reward-popup" *ngIf="recompensaRachaVisible" (click)="cerrarRecompensa()">
+  <section (click)="$event.stopPropagation()">
+    <button type="button" (click)="cerrarRecompensa()">x</button>
+    <div class="reward-burst">✨</div>
+    <h2>{{ recompensaMensaje || 'Recompensa diaria disponible' }}</h2>
+    <p>Nuevo impulso para tu viaje en Alejandria's Library.</p>
   </section>
 </div>

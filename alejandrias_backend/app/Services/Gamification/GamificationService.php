@@ -5,13 +5,19 @@ namespace App\Services\Gamification;
 use App\Models\Comentario;
 use App\Models\Foro;
 use App\Models\Insignia;
+use App\Models\MisionDiaria;
+use App\Models\Notificacion;
 use App\Models\Publicacion;
+use App\Models\RachaUsuario;
 use App\Models\Sancion;
 use App\Models\Usuario;
 use App\Models\UsuarioInsignia;
+use App\Models\UsuarioMision;
 use App\Models\UsuarioProgreso;
 use App\Models\XpEvento;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -19,9 +25,11 @@ class GamificationService
 {
     private const POINTS = [
         'perfil_completo' => ['xp' => 80, 'cap' => null, 'window' => null],
-        'crear_publicacion' => ['xp' => 35, 'cap' => 175, 'window' => 'week'],
+        'login_diario' => ['xp' => 5, 'cap' => 5, 'window' => 'day'],
+        'entrar_hoy' => ['xp' => 5, 'cap' => 5, 'window' => 'day'],
+        'crear_publicacion' => ['xp' => 25, 'cap' => 150, 'window' => 'week'],
         'crear_foro' => ['xp' => 80, 'cap' => 160, 'window' => 'week'],
-        'comentario_creado' => ['xp' => 12, 'cap' => 96, 'window' => 'day'],
+        'comentario_creado' => ['xp' => 10, 'cap' => 80, 'window' => 'day'],
         'comentario_util' => ['xp' => 30, 'cap' => 150, 'window' => 'week'],
         'like_recibido' => ['xp' => 4, 'cap' => 100, 'window' => 'week'],
         'like_dado' => ['xp' => 2, 'cap' => 30, 'window' => 'day'],
@@ -31,7 +39,12 @@ class GamificationService
         'tiempo_activo_10m' => ['xp' => 20, 'cap' => 60, 'window' => 'day'],
         'seguir_usuario' => ['xp' => 10, 'cap' => 100, 'window' => 'week'],
         'nuevo_seguidor' => ['xp' => 15, 'cap' => 150, 'window' => 'week'],
-        'publicacion_destacada' => ['xp' => 120, 'cap' => null, 'window' => null],
+        'publicacion_destacada' => ['xp' => 50, 'cap' => null, 'window' => null],
+        'publicacion_larga' => ['xp' => 15, 'cap' => 75, 'window' => 'week'],
+        'usar_ia_educativa' => ['xp' => 8, 'cap' => 48, 'window' => 'day'],
+        'ayudar_usuario' => ['xp' => 20, 'cap' => 120, 'window' => 'week'],
+        'racha_diaria' => ['xp' => 0, 'cap' => null, 'window' => null],
+        'mision_diaria' => ['xp' => 0, 'cap' => null, 'window' => null],
         'publicacion_popular' => ['xp' => 40, 'cap' => 120, 'window' => 'week'],
         'foro_activo' => ['xp' => 40, 'cap' => 120, 'window' => 'week'],
         'actividad_semanal' => ['xp' => 70, 'cap' => 70, 'window' => 'week'],
@@ -244,7 +257,12 @@ class GamificationService
         }
 
         $rule = self::POINTS[$accion];
-        $xp = (int) $rule['xp'];
+        $xp = array_key_exists('xp_override', $metadata)
+            ? (int) $metadata['xp_override']
+            : (int) $rule['xp'];
+        $puntos = array_key_exists('puntos_override', $metadata)
+            ? (int) $metadata['puntos_override']
+            : max(0, $xp);
         $origenTipo = $origen ? class_basename($origen) : null;
         $origenId = $origen ? (int) $origen->getKey() : null;
 
@@ -268,8 +286,13 @@ class GamificationService
         }
 
         if ($xp === 0) {
+            if (!($metadata['skip_mission_progress'] ?? false)) {
+                $this->advanceMissionsForAction($usuario, $accion);
+            }
             return null;
         }
+
+        $nivelAnterior = $this->levelFromXp((int) XpEvento::where('usuario_id', $usuario->usuario_id)->sum('xp'));
 
         $evento = XpEvento::create([
             'usuario_id' => $usuario->usuario_id,
@@ -281,7 +304,23 @@ class GamificationService
             'creado_en' => now(),
         ]);
 
-        $this->syncProgress($usuario);
+        if (Schema::hasColumn('usuario', 'usuario_experiencia')) {
+            $usuario->increment('usuario_experiencia', $xp);
+        }
+
+        if ($puntos > 0 && Schema::hasColumn('usuario', 'usuario_puntos')) {
+            $usuario->increment('usuario_puntos', $puntos);
+        }
+
+        if (!($metadata['skip_mission_progress'] ?? false)) {
+            $this->advanceMissionsForAction($usuario, $accion);
+        }
+        $perfil = $this->syncProgress($usuario->fresh() ?? $usuario);
+        $nivelNuevo = $this->levelFromXp((int) ($perfil['xp_total'] ?? 0));
+
+        if ($nivelNuevo > $nivelAnterior) {
+            $this->notify($usuario->usuario_id, 'level_up', 'Subiste al nivel ' . $nivelNuevo . ' en Alejandria.', '/perfil', $nivelNuevo);
+        }
 
         return $evento;
     }
@@ -384,6 +423,369 @@ class GamificationService
         ];
     }
 
+    public function panel(Usuario $usuario): array
+    {
+        return array_merge($this->profile($usuario), [
+            'nivel_actual' => $this->levelFromXp((int) XpEvento::where('usuario_id', $usuario->usuario_id)->sum('xp')),
+            'racha' => $this->streakPayload($usuario),
+            'misiones' => $this->dailyMissions($usuario),
+            'ranking' => [
+                'global_xp' => $this->ranking('xp', 'global', 5),
+                'semanal_xp' => $this->ranking('xp', 'semanal', 5),
+            ],
+            'estadisticas' => $this->metrics($usuario),
+        ]);
+    }
+
+    public function recordDailyAccess(Usuario $usuario): array
+    {
+        if (!Schema::hasTable('racha_usuario')) {
+            $this->award($usuario, 'login_diario');
+            return ['racha' => null, 'misiones' => []];
+        }
+
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+        $racha = RachaUsuario::firstOrCreate(
+            ['usuario_id' => $usuario->usuario_id],
+            [
+                'dias_consecutivos' => 0,
+                'ultima_fecha' => null,
+                'mejor_racha' => 0,
+                'recompensa_reclamada' => false,
+                'xp_obtenida_hoy' => 0,
+            ]
+        );
+
+        if (!$racha->ultima_fecha || $racha->ultima_fecha->toDateString() !== $today) {
+            $dias = $racha->ultima_fecha && $racha->ultima_fecha->toDateString() === $yesterday
+                ? ((int) $racha->dias_consecutivos + 1)
+                : 1;
+
+            $racha->dias_consecutivos = $dias;
+            $racha->ultima_fecha = $today;
+            $racha->mejor_racha = max((int) $racha->mejor_racha, $dias);
+            $racha->recompensa_reclamada = false;
+            $racha->xp_obtenida_hoy = 0;
+            $racha->actualizado_en = now();
+            $racha->save();
+
+            $this->award($usuario, 'login_diario', null, ['source' => 'daily_access']);
+            $this->advanceMissionsForAction($usuario, 'entrar_hoy');
+
+            if ($dias > 1 && $dias === (int) $racha->mejor_racha) {
+                $this->notify($usuario->usuario_id, 'racha_record', 'Nuevo record de racha: ' . $dias . ' dias aprendiendo.', '/perfil', $dias);
+            }
+        }
+
+        return [
+            'racha' => $this->streakPayload($usuario),
+            'misiones' => $this->dailyMissions($usuario),
+        ];
+    }
+
+    public function claimStreakReward(Usuario $usuario): array
+    {
+        $this->recordDailyAccess($usuario);
+        $racha = RachaUsuario::where('usuario_id', $usuario->usuario_id)->firstOrFail();
+
+        if ($racha->recompensa_reclamada) {
+            return $this->streakPayload($usuario);
+        }
+
+        $dias = (int) $racha->dias_consecutivos;
+        $xp = match (true) {
+            $dias >= 30 => 220,
+            $dias >= 15 => 150,
+            $dias >= 7 => 70,
+            $dias >= 3 => 25,
+            default => 10,
+        };
+
+        $this->award($usuario, 'racha_diaria', null, [
+            'xp_override' => $xp,
+            'puntos_override' => $xp,
+            'dias_consecutivos' => $dias,
+            'fecha' => now()->toDateString(),
+        ]);
+
+        $racha->recompensa_reclamada = true;
+        $racha->xp_obtenida_hoy = $xp;
+        $racha->actualizado_en = now();
+        $racha->save();
+
+        if ($dias >= 30) {
+            $this->unlockBadgeBySlug($usuario, 'explorador_alejandria');
+            $this->notify($usuario->usuario_id, 'logro_obtenido', 'Racha legendaria: 30 dias aprendiendo.', '/perfil', $dias);
+        }
+
+        return $this->streakPayload($usuario);
+    }
+
+    public function dailyMissions(Usuario $usuario): array
+    {
+        if (!Schema::hasTable('misiones_diarias') || !Schema::hasTable('usuario_mision')) {
+            return [];
+        }
+
+        $misiones = $this->ensureTodayMissions();
+
+        foreach ($misiones as $mision) {
+            UsuarioMision::firstOrCreate([
+                'usuario_id' => $usuario->usuario_id,
+                'mision_diaria_id' => $mision->mision_diaria_id,
+            ]);
+        }
+
+        $this->syncTodayMissionProgress($usuario);
+
+        return UsuarioMision::with('mision')
+            ->where('usuario_id', $usuario->usuario_id)
+            ->whereHas('mision', fn ($query) => $query->whereDate('fecha', now()->toDateString())->where('activa', true))
+            ->get()
+            ->map(fn (UsuarioMision $item) => [
+                'usuario_mision_id' => $item->usuario_mision_id,
+                'slug' => $item->mision?->mision_slug,
+                'titulo' => $item->mision?->mision_titulo,
+                'descripcion' => $item->mision?->mision_descripcion,
+                'tipo' => $item->mision?->mision_tipo,
+                'objetivo' => (int) ($item->mision?->objetivo ?? 1),
+                'progreso' => min((int) $item->progreso, (int) ($item->mision?->objetivo ?? 1)),
+                'xp_recompensa' => (int) ($item->mision?->xp_recompensa ?? 0),
+                'puntos_recompensa' => (int) ($item->mision?->puntos_recompensa ?? 0),
+                'insignia_temporal' => $item->mision?->insignia_temporal,
+                'completada' => (bool) $item->completada,
+                'reclamada' => (bool) $item->reclamada,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function syncTodayMissionProgress(Usuario $usuario): void
+    {
+        $today = now()->toDateString();
+        $start = now()->startOfDay();
+        $userId = $usuario->usuario_id;
+
+        $progressByType = [
+            'entrar_hoy' => RachaUsuario::where('usuario_id', $userId)
+                ->whereDate('ultima_fecha', $today)
+                ->exists() ? 1 : 0,
+            'crear_publicacion' => Publicacion::where('publicacion_usuario_id', $userId)
+                ->where('publicacion_fecha_creacion', '>=', $start)
+                ->count(),
+            'comentar' => Comentario::where('comentario_usuario_id', $userId)
+                ->where('comentario_fecha_creacion', '>=', $start)
+                ->count(),
+            'usar_ia' => XpEvento::where('usuario_id', $userId)
+                ->where('accion', 'usar_ia_educativa')
+                ->where('creado_en', '>=', $start)
+                ->count(),
+            'leer_publicacion' => XpEvento::where('usuario_id', $userId)
+                ->where('accion', 'lectura_publicacion')
+                ->where('creado_en', '>=', $start)
+                ->count(),
+            'reaccionar_contenido' => XpEvento::where('usuario_id', $userId)
+                ->where('accion', 'like_dado')
+                ->where('creado_en', '>=', $start)
+                ->count(),
+        ];
+
+        UsuarioMision::with('mision')
+            ->where('usuario_id', $userId)
+            ->where('reclamada', false)
+            ->whereHas('mision', fn ($query) => $query->whereDate('fecha', $today)->where('activa', true))
+            ->get()
+            ->each(function (UsuarioMision $usuarioMision) use ($progressByType, $usuario) {
+                $tipo = $usuarioMision->mision?->mision_tipo;
+                if (!$tipo || !array_key_exists($tipo, $progressByType)) {
+                    return;
+                }
+
+                $objetivo = (int) ($usuarioMision->mision?->objetivo ?? 1);
+                $nuevoProgreso = min($objetivo, max((int) $usuarioMision->progreso, (int) $progressByType[$tipo]));
+
+                if ($nuevoProgreso === (int) $usuarioMision->progreso) {
+                    return;
+                }
+
+                $usuarioMision->progreso = $nuevoProgreso;
+                if ($nuevoProgreso >= $objetivo && !$usuarioMision->completada) {
+                    $usuarioMision->completada = true;
+                    $usuarioMision->completada_en = now();
+                    $this->notify($usuario->usuario_id, 'mision_completada', 'Mision completada: ' . $usuarioMision->mision->mision_titulo, '/perfil', $usuarioMision->usuario_mision_id);
+                }
+                $usuarioMision->save();
+            });
+    }
+
+    public function claimMission(Usuario $usuario, int $usuarioMisionId): array
+    {
+        $usuarioMision = UsuarioMision::with('mision')
+            ->where('usuario_id', $usuario->usuario_id)
+            ->findOrFail($usuarioMisionId);
+
+        if (!$usuarioMision->completada || $usuarioMision->reclamada || !$usuarioMision->mision) {
+            return $this->missionPayload($usuarioMision);
+        }
+
+        $this->award($usuario, 'mision_diaria', $usuarioMision, [
+            'xp_override' => (int) $usuarioMision->mision->xp_recompensa,
+            'puntos_override' => (int) $usuarioMision->mision->puntos_recompensa,
+            'mision' => $usuarioMision->mision->mision_slug,
+        ]);
+
+        $usuarioMision->reclamada = true;
+        $usuarioMision->reclamada_en = now();
+        $usuarioMision->save();
+
+        return $this->missionPayload($usuarioMision->fresh('mision'));
+    }
+
+    public function advanceMissionsForAction(Usuario $usuario, string $accion, int $amount = 1): void
+    {
+        if (!Schema::hasTable('usuario_mision')) {
+            return;
+        }
+
+        $types = match ($accion) {
+            'comentario_creado' => ['comentar'],
+            'crear_publicacion' => ['crear_publicacion'],
+            'entrar_hoy', 'login_diario' => ['entrar_hoy'],
+            'usar_ia_educativa' => ['usar_ia'],
+            'ayudar_usuario', 'comentario_util' => ['ayudar_usuario'],
+            'lectura_publicacion' => ['leer_publicacion'],
+            'like_dado' => ['reaccionar_contenido'],
+            default => [],
+        };
+
+        if (!$types) {
+            return;
+        }
+
+        $this->dailyMissions($usuario);
+
+        UsuarioMision::with('mision')
+            ->where('usuario_id', $usuario->usuario_id)
+            ->where('completada', false)
+            ->whereHas('mision', fn ($query) => $query->whereDate('fecha', now()->toDateString())->whereIn('mision_tipo', $types))
+            ->get()
+            ->each(function (UsuarioMision $usuarioMision) use ($amount, $usuario) {
+                $objetivo = (int) ($usuarioMision->mision?->objetivo ?? 1);
+                $usuarioMision->progreso = min($objetivo, (int) $usuarioMision->progreso + $amount);
+                if ($usuarioMision->progreso >= $objetivo) {
+                    $usuarioMision->completada = true;
+                    $usuarioMision->completada_en = now();
+                    $this->notify($usuario->usuario_id, 'mision_completada', 'Mision completada: ' . $usuarioMision->mision->mision_titulo, '/perfil', $usuarioMision->usuario_mision_id);
+                }
+                $usuarioMision->save();
+            });
+    }
+
+    public function trackAction(Usuario $usuario, string $accion, int $amount = 1): void
+    {
+        $this->advanceMissionsForAction($usuario, $accion, $amount);
+    }
+
+    public function ranking(string $tipo = 'xp', string $periodo = 'global', int $limit = 10, ?int $foroId = null): array
+    {
+        $cacheKey = 'ranking:' . $tipo . ':' . $periodo . ':' . ($foroId ?? 'global') . ':' . $limit;
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($tipo, $periodo, $limit, $foroId) {
+            $since = $periodo === 'semanal' ? now()->startOfWeek() : null;
+
+            if ($tipo === 'puntos') {
+                return Usuario::query()
+                    ->select('usuario_id', 'usuario_nombre', 'usuario_apodo', 'usuario_foto_perfil', 'usuario_puntos', 'usuario_experiencia')
+                    ->orderByDesc('usuario_puntos')
+                    ->limit($limit)
+                    ->get()
+                    ->map(fn (Usuario $usuario, int $index) => $this->rankingUser($usuario, $index, (int) ($usuario->usuario_puntos ?? 0)))
+                    ->all();
+            }
+
+            if ($tipo === 'publicaciones') {
+                $query = Publicacion::query()
+                    ->select('publicacion_usuario_id as usuario_id', DB::raw('count(*) as total'))
+                    ->when($since, fn ($q) => $q->where('publicacion_fecha_creacion', '>=', $since))
+                    ->when($foroId, fn ($q) => $q->where('publicacion_foro_id', $foroId))
+                    ->groupBy('publicacion_usuario_id');
+            } elseif ($tipo === 'comentarios') {
+                $query = Comentario::query()
+                    ->select('comentario_usuario_id as usuario_id', DB::raw('count(*) as total'))
+                    ->when($since, fn ($q) => $q->where('comentario_id', '>', 0))
+                    ->when($foroId, function ($q) use ($foroId) {
+                        $q->join('publicacion', 'comentario.comentario_publicacion_id', '=', 'publicacion.publicacion_id')
+                            ->where('publicacion.publicacion_foro_id', $foroId);
+                    })
+                    ->groupBy('comentario_usuario_id');
+            } elseif ($tipo === 'xp' && !$since) {
+                return Usuario::query()
+                    ->leftJoin('xp_evento', 'usuario.usuario_id', '=', 'xp_evento.usuario_id')
+                    ->select(
+                        'usuario.usuario_id',
+                        'usuario.usuario_nombre',
+                        'usuario.usuario_apodo',
+                        'usuario.usuario_foto_perfil',
+                        'usuario.usuario_experiencia',
+                        'usuario.usuario_puntos',
+                        DB::raw('GREATEST(COALESCE(usuario.usuario_experiencia, 0), COALESCE(SUM(xp_evento.xp), 0)) as total')
+                    )
+                    ->groupBy(
+                        'usuario.usuario_id',
+                        'usuario.usuario_nombre',
+                        'usuario.usuario_apodo',
+                        'usuario.usuario_foto_perfil',
+                        'usuario.usuario_experiencia',
+                        'usuario.usuario_puntos'
+                    )
+                    ->havingRaw('GREATEST(COALESCE(usuario.usuario_experiencia, 0), COALESCE(SUM(xp_evento.xp), 0)) > 0')
+                    ->orderByDesc('total')
+                    ->limit($limit)
+                    ->get()
+                    ->map(fn ($row, int $index) => [
+                        'posicion' => $index + 1,
+                        'usuario_id' => $row->usuario_id,
+                        'nombre' => $row->usuario_nombre ?: $row->usuario_apodo,
+                        'apodo' => $row->usuario_apodo,
+                        'avatar' => $row->usuario_foto_perfil,
+                        'nivel' => $this->levelFromXp((int) $row->total),
+                        'xp' => (int) $row->total,
+                        'puntos' => (int) ($row->usuario_puntos ?? 0),
+                        'total' => (int) $row->total,
+                        'medalla' => ['oro', 'plata', 'bronce'][$index] ?? null,
+                    ])
+                    ->all();
+            } else {
+                $query = XpEvento::query()
+                    ->select('usuario_id', DB::raw('sum(xp) as total'))
+                    ->when($since, fn ($q) => $q->where('creado_en', '>=', $since))
+                    ->groupBy('usuario_id');
+            }
+
+            $rows = DB::query()
+                ->fromSub($query, 'ranking')
+                ->join('usuario', 'usuario.usuario_id', '=', 'ranking.usuario_id')
+                ->select('usuario.usuario_id', 'usuario.usuario_nombre', 'usuario.usuario_apodo', 'usuario.usuario_foto_perfil', 'usuario.usuario_experiencia', 'usuario.usuario_puntos', 'ranking.total')
+                ->orderByDesc('ranking.total')
+                ->limit($limit)
+                ->get();
+
+            return $rows->map(fn ($row, int $index) => [
+                'posicion' => $index + 1,
+                'usuario_id' => $row->usuario_id,
+                'nombre' => $row->usuario_nombre ?: $row->usuario_apodo,
+                'apodo' => $row->usuario_apodo,
+                'avatar' => $row->usuario_foto_perfil,
+                'nivel' => $this->levelFromXp((int) ($row->usuario_experiencia ?? 0)),
+                'xp' => (int) ($row->usuario_experiencia ?? 0),
+                'puntos' => (int) ($row->usuario_puntos ?? 0),
+                'total' => (int) $row->total,
+                'medalla' => ['oro', 'plata', 'bronce'][$index] ?? null,
+            ])->all();
+        });
+    }
+
     public function grantDemoBadges(Usuario $usuario): array
     {
         $this->seedBadges();
@@ -468,6 +870,140 @@ class GamificationService
                 ]
             );
         }
+    }
+
+    private function ensureTodayMissions(): Collection
+    {
+        $today = now()->toDateString();
+        $templates = [
+            ['mision_slug' => 'entrar_hoy', 'mision_titulo' => 'Abrir la biblioteca', 'mision_descripcion' => 'Ingresa hoy y conserva el ritmo de aprendizaje.', 'mision_tipo' => 'entrar_hoy', 'objetivo' => 1, 'xp_recompensa' => 10, 'puntos_recompensa' => 10, 'insignia_temporal' => 'calendario_streak'],
+            ['mision_slug' => 'comentar_3', 'mision_titulo' => 'Conversador educativo', 'mision_descripcion' => 'Comenta 3 veces con aportes claros y respetuosos.', 'mision_tipo' => 'comentar', 'objetivo' => 3, 'xp_recompensa' => 35, 'puntos_recompensa' => 25, 'insignia_temporal' => 'scroll_mision'],
+            ['mision_slug' => 'crear_1_publicacion', 'mision_titulo' => 'Nueva idea al archivo', 'mision_descripcion' => 'Crea una publicacion educativa en un foro.', 'mision_tipo' => 'crear_publicacion', 'objetivo' => 1, 'xp_recompensa' => 45, 'puntos_recompensa' => 35, 'insignia_temporal' => 'libro_magico'],
+            ['mision_slug' => 'usar_ia', 'mision_titulo' => 'Consulta al cerebro IA', 'mision_descripcion' => 'Usa la IA educativa para profundizar un tema.', 'mision_tipo' => 'usar_ia', 'objetivo' => 1, 'xp_recompensa' => 18, 'puntos_recompensa' => 12, 'insignia_temporal' => 'cerebro_ia'],
+            ['mision_slug' => 'leer_2_publicaciones', 'mision_titulo' => 'Lector activo', 'mision_descripcion' => 'Lee 2 publicaciones de la comunidad.', 'mision_tipo' => 'leer_publicacion', 'objetivo' => 2, 'xp_recompensa' => 20, 'puntos_recompensa' => 15, 'insignia_temporal' => 'pergamino'],
+        ];
+
+        foreach ($templates as $template) {
+            MisionDiaria::firstOrCreate(
+                ['mision_slug' => $template['mision_slug'], 'fecha' => $today],
+                array_merge($template, ['fecha' => $today, 'activa' => true])
+            );
+        }
+
+        return MisionDiaria::whereDate('fecha', $today)
+            ->where('activa', true)
+            ->orderBy('mision_diaria_id')
+            ->get();
+    }
+
+    private function streakPayload(Usuario $usuario): ?array
+    {
+        if (!Schema::hasTable('racha_usuario')) {
+            return null;
+        }
+
+        $racha = RachaUsuario::where('usuario_id', $usuario->usuario_id)->first();
+        if (!$racha) {
+            return null;
+        }
+
+        $dias = (int) $racha->dias_consecutivos;
+
+        return [
+            'dias_consecutivos' => $dias,
+            'ultima_fecha' => optional($racha->ultima_fecha)->toDateString(),
+            'mejor_racha' => (int) $racha->mejor_racha,
+            'recompensa_reclamada' => (bool) $racha->recompensa_reclamada,
+            'xp_obtenida_hoy' => (int) $racha->xp_obtenida_hoy,
+            'mensaje' => 'Llevas ' . $dias . ' dias aprendiendo',
+            'calendario' => collect(range(6, 0))->map(fn ($offset) => [
+                'fecha' => now()->subDays($offset)->toDateString(),
+                'activo' => $racha->ultima_fecha && now()->subDays($offset)->greaterThanOrEqualTo(now()->subDays(max(0, $dias - 1))->startOfDay()) && now()->subDays($offset)->lessThanOrEqualTo(now()),
+            ])->values()->all(),
+            'siguiente_recompensa' => match (true) {
+                $dias < 3 => ['dia' => 3, 'xp' => 25],
+                $dias < 7 => ['dia' => 7, 'xp' => 70],
+                $dias < 15 => ['dia' => 15, 'xp' => 150],
+                $dias < 30 => ['dia' => 30, 'xp' => 220],
+                default => ['dia' => $dias + 1, 'xp' => 220],
+            },
+        ];
+    }
+
+    private function missionPayload(UsuarioMision $usuarioMision): array
+    {
+        return [
+            'usuario_mision_id' => $usuarioMision->usuario_mision_id,
+            'slug' => $usuarioMision->mision?->mision_slug,
+            'titulo' => $usuarioMision->mision?->mision_titulo,
+            'progreso' => (int) $usuarioMision->progreso,
+            'objetivo' => (int) ($usuarioMision->mision?->objetivo ?? 1),
+            'completada' => (bool) $usuarioMision->completada,
+            'reclamada' => (bool) $usuarioMision->reclamada,
+        ];
+    }
+
+    private function rankingUser(Usuario $usuario, int $index, int $total): array
+    {
+        return [
+            'posicion' => $index + 1,
+            'usuario_id' => $usuario->usuario_id,
+            'nombre' => $usuario->usuario_nombre ?: $usuario->usuario_apodo,
+            'apodo' => $usuario->usuario_apodo,
+            'avatar' => $usuario->usuario_foto_perfil,
+            'nivel' => $this->levelFromXp((int) ($usuario->usuario_experiencia ?? 0)),
+            'xp' => (int) ($usuario->usuario_experiencia ?? 0),
+            'puntos' => (int) ($usuario->usuario_puntos ?? 0),
+            'total' => $total,
+            'medalla' => ['oro', 'plata', 'bronce'][$index] ?? null,
+        ];
+    }
+
+    private function notify(int $usuarioId, string $tipo, string $contenido, string $url, ?int $referenciaId = null): void
+    {
+        if (!Schema::hasTable('notificacion')) {
+            return;
+        }
+
+        Notificacion::create([
+            'notificacion_usuario_id' => $usuarioId,
+            'notificacion_tipo' => $tipo,
+            'notificacion_contenido' => $contenido,
+            'notificacion_leida' => false,
+            'notificacion_fecha' => now(),
+            'notificacion_url' => $url,
+            'notificacion_referencia_id' => $referenciaId,
+        ]);
+    }
+
+    private function unlockBadgeBySlug(Usuario $usuario, string $slug): void
+    {
+        $this->seedBadges();
+        $insignia = Insignia::where('insignia_slug', $slug)->first();
+
+        if (!$insignia) {
+            return;
+        }
+
+        UsuarioInsignia::firstOrCreate(
+            ['usuario_id' => $usuario->usuario_id, 'insignia_id' => $insignia->insignia_id],
+            ['obtenida_en' => now(), 'snapshot_metricas' => $this->metrics($usuario)]
+        );
+    }
+
+    public function levelFromXp(int $xp): int
+    {
+        return match (true) {
+            $xp >= 2200 => 8,
+            $xp >= 1700 => 7,
+            $xp >= 1350 => 6,
+            $xp >= 1050 => 5,
+            $xp >= 760 => 4,
+            $xp >= 500 => 3,
+            $xp >= 280 => 2,
+            $xp >= 120 => 1,
+            default => 0,
+        };
     }
 
     private function metrics(Usuario $usuario): array

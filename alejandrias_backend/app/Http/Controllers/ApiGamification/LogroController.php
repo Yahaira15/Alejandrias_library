@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ApiGamification;
 
 use App\Http\Controllers\Controller;
+use App\Models\Publicacion;
 use App\Services\Gamification\GamificationService;
 use Illuminate\Http\Request;
 
@@ -28,6 +29,7 @@ class LogroController extends Controller
         $data = $request->validate([
             'accion' => 'required|string|max:60',
             'metadata' => 'nullable|array',
+            'publicacion_id' => 'nullable|integer|exists:publicacion,publicacion_id',
         ]);
 
         $accionesCliente = [
@@ -43,7 +45,17 @@ class LogroController extends Controller
             ], 403);
         }
 
-        $evento = $gamification->award($request->user(), $data['accion'], null, $data['metadata'] ?? []);
+        $origen = null;
+        if ($data['accion'] === 'lectura_publicacion' && !empty($data['publicacion_id'])) {
+            $origen = Publicacion::find((int) $data['publicacion_id']);
+        }
+
+        $metadata = $data['metadata'] ?? [];
+        if (!empty($data['publicacion_id'])) {
+            $metadata['publicacion_id'] = (int) $data['publicacion_id'];
+        }
+
+        $evento = $gamification->award($request->user(), $data['accion'], $origen, $metadata);
 
         return response()->json([
             'evento' => $evento,

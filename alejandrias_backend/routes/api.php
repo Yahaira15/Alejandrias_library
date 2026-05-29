@@ -12,6 +12,7 @@ use App\Http\Controllers\ApiReporte\ReporteController;
 use App\Http\Controllers\ApiReporte\SancionController;
 use App\Http\Controllers\ApiIa\ChatRiskAlertController;
 use App\Http\Controllers\ApiGamification\LogroController;
+use App\Http\Controllers\ApiGamification\GamificationController;
 
 
 Route::post('/register', [UsuarioController::class, 'register']);
@@ -27,6 +28,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logros/sincronizar', [LogroController::class, 'sincronizar']);
     Route::post('/logros/demo', [LogroController::class, 'demo']);
     Route::post('/logros/eventos', [LogroController::class, 'registrarEvento']);
+    Route::get('/gamificacion/panel', [GamificationController::class, 'panel']);
+    Route::get('/gamificacion/racha', [GamificationController::class, 'racha']);
+    Route::post('/gamificacion/racha/reclamar', [GamificationController::class, 'reclamarRacha']);
+    Route::get('/gamificacion/misiones', [GamificationController::class, 'misiones']);
+    Route::post('/gamificacion/misiones/{usuarioMisionId}/reclamar', [GamificationController::class, 'reclamarMision']);
+    Route::get('/gamificacion/ranking', [GamificationController::class, 'ranking']);
 
 });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ApiIa;
 
 use App\Http\Controllers\Controller;
+use App\Services\Gamification\XpService;
 use App\Services\IA\Moderation\ContentModerationService;
 use Illuminate\Http\Request;
 
@@ -40,6 +41,11 @@ class ChatRiskAlertController extends Controller
             $analysis,
             $payload
         );
+
+        if (($analysis['estado'] ?? 'permitido') === 'permitido') {
+            app(XpService::class)->track($usuario, 'usar_ia_educativa');
+            app(XpService::class)->award($usuario, 'usar_ia_educativa', null, ['origen' => 'chat_ia', 'skip_mission_progress' => true]);
+        }
 
         return response()->json(['ok' => true], 200);
     }
