@@ -1,0 +1,139 @@
+<section class="category-admin">
+  <header class="admin-header">
+    <div>
+      <p>Panel de administracion</p>
+      <h2>Gestion de categorias</h2>
+    </div>
+    <button type="button" class="admin-new-button" (click)="cancelar()">Agregar</button>
+  </header>
+
+  <form class="category-form" (ngSubmit)="guardar()" novalidate>
+    <ng-container *ngIf="tab === 'categorias'; else subForm">
+      <div class="left-fields">
+        <label>
+          <span>Nombre</span>
+          <input type="text" name="categoria_nombre" [(ngModel)]="categoriaForm.categoria_nombre">
+        </label>
+        <label>
+          <span>Descripcion</span>
+          <textarea name="categoria_descripcion" [(ngModel)]="categoriaForm.categoria_descripcion"></textarea>
+        </label>
+      </div>
+      <label class="image-field">
+        <span>Imagen</span>
+        <button type="button" class="upload-box" (click)="imageInput.click()">
+          <input #imageInput type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="seleccionarImagen($event)">
+          <img *ngIf="categoriaPreview; else uploadText" [src]="categoriaPreview" alt="Vista previa">
+          <ng-template #uploadText><span>Carga tu imagen aqui en<br>formato jpg, png</span></ng-template>
+        </button>
+      </label>
+    </ng-container>
+
+    <ng-template #subForm>
+      <div class="left-fields">
+        <label>
+          <span>Nombre</span>
+          <input type="text" name="subcategoria_nombre" [(ngModel)]="subcategoriaForm.subcategoria_nombre">
+        </label>
+        <label>
+          <span>Descripcion</span>
+          <textarea name="subcategoria_descripcion" [(ngModel)]="subcategoriaForm.subcategoria_descripcion"></textarea>
+        </label>
+      </div>
+      <div class="right-fields">
+        <label>
+          <span>Categoria</span>
+          <select name="categoria_id" [(ngModel)]="subcategoriaForm.categoria_id">
+            <option value="">Selecciona</option>
+            <option *ngFor="let categoria of categorias" [value]="categoria.categoria_id">{{ categoria.categoria_nombre }}</option>
+          </select>
+        </label>
+        <label class="image-field">
+          <span>Imagen</span>
+          <button type="button" class="upload-box" (click)="subImageInput.click()">
+            <input #subImageInput type="file" accept="image/png,image/jpeg,image/webp" hidden (change)="seleccionarImagen($event)">
+            <img *ngIf="subcategoriaPreview; else subUploadText" [src]="subcategoriaPreview" alt="Vista previa">
+            <ng-template #subUploadText><span>Carga tu imagen aqui en<br>formato jpg, png</span></ng-template>
+          </button>
+        </label>
+      </div>
+    </ng-template>
+
+    <div class="form-actions">
+      <button type="submit" class="primary-action" [disabled]="guardando">{{ guardando ? 'Guardando...' : 'Agregar' }}</button>
+      <button type="button" class="secondary-action" (click)="cancelar()">Cancelar</button>
+    </div>
+  </form>
+
+  <p class="admin-message" *ngIf="mensaje">{{ mensaje }}</p>
+  <p class="admin-error" *ngIf="error">{{ error }}</p>
+
+  <section class="table-panel">
+    <div class="panel-tabs">
+      <button type="button" class="tab" [class.active]="tab === 'categorias'" (click)="cambiarTab('categorias')">Categorias</button>
+      <button type="button" class="tab" [class.active]="tab === 'subcategorias'" (click)="cambiarTab('subcategorias')">Subcategorias</button>
+    </div>
+
+    <div class="table-search">
+      <label>
+        <span>Busqueda</span>
+        <input type="search" [(ngModel)]="busqueda" name="busqueda">
+      </label>
+    </div>
+
+    <div class="table-wrap" *ngIf="tab === 'categorias'; else subTable">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Descripcion</th>
+            <th>Imagen</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="cargando"><td colspan="5">Cargando...</td></tr>
+          <tr *ngFor="let categoria of categoriasFiltradas">
+            <td>{{ categoria.categoria_id }}</td>
+            <td>{{ categoria.categoria_nombre }}</td>
+            <td>{{ categoria.categoria_descripcion }}</td>
+            <td><img *ngIf="categoria.categoria_imagen" class="table-image" [src]="categoria.categoria_imagen" alt=""></td>
+            <td class="row-actions">
+              <button type="button" (click)="editarCategoria(categoria)">Editar</button>
+              <button type="button" (click)="eliminarCategoria(categoria)">Eliminar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #subTable>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Categoria</th>
+              <th>Descripcion</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let subcategoria of subcategoriasFiltradas">
+              <td>{{ subcategoria.subcategoria_id }}</td>
+              <td>{{ subcategoria.subcategoria_nombre }}</td>
+              <td>{{ nombreCategoria(subcategoria.subcategoria_categoria_id || subcategoria.categoria_id) }}</td>
+              <td>{{ subcategoria.subcategoria_descripcion }}</td>
+              <td class="row-actions">
+                <button type="button" (click)="editarSubcategoria(subcategoria)">Editar</button>
+                <button type="button" (click)="eliminarSubcategoria(subcategoria)">Eliminar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-template>
+  </section>
+</section>

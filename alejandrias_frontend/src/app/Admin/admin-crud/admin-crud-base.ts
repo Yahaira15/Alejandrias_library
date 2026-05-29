@@ -1,10 +1,10 @@
-import { ChangeDetectorRef, Directive, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Directive, OnDestroy, OnInit } from '@angular/core';
 import { AdminService } from '../../services/admin.service';
 
 export interface AdminField {
   key: string;
   label: string;
-  type?: 'text' | 'number' | 'textarea' | 'select' | 'checkbox' | 'password';
+  type?: 'text' | 'number' | 'textarea' | 'select' | 'checkbox' | 'password' | 'image';
   required?: boolean;
   options?: { label: string; value: any }[];
   hideInTable?: boolean;
@@ -22,7 +22,7 @@ export interface AdminCrudConfig {
 }
 
 @Directive()
-export abstract class AdminCrudBase implements OnInit {
+export abstract class AdminCrudBase implements OnInit, OnDestroy {
   abstract config: AdminCrudConfig;
   registros: any[] = [];
   formulario: any = {};
@@ -35,6 +35,8 @@ export abstract class AdminCrudBase implements OnInit {
   mostrandoFormulario = false;
   mensaje = '';
   error = '';
+  previewImagenes: Record<string, string | null> = {};
+  private avisoTimer: ReturnType<typeof setTimeout> | null = null;
 
   protected constructor(
     protected adminService: AdminService,
@@ -44,6 +46,10 @@ export abstract class AdminCrudBase implements OnInit {
   ngOnInit(): void {
     this.resetFormulario();
     this.cargar();
+  }
+
+  ngOnDestroy(): void {
+    this.limpiarAvisoTimer();
   }
 
   cargar(): void {
@@ -57,7 +63,7 @@ export abstract class AdminCrudBase implements OnInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        this.error = err?.error?.error || 'No se pudieron cargar los datos.';
+        this.mostrarError(err?.error?.error || 'No se pudieron cargar los datos.');
         this.cargando = false;
         this.cdr.detectChanges();
       }
@@ -75,13 +81,13 @@ export abstract class AdminCrudBase implements OnInit {
 
     request.subscribe({
       next: () => {
-        this.mensaje = this.editandoId ? 'Registro actualizado.' : 'Registro creado.';
+        this.mostrarMensaje(this.editandoId ? 'Registro actualizado.' : 'Registro creado.');
         this.guardando = false;
         this.cancelar();
         this.cargar();
       },
       error: (err) => {
-        this.error = err?.error?.message || err?.error?.error || 'No se pudo guardar el registro.';
+        this.mostrarError(err?.error?.message || err?.error?.error || 'No se pudo guardar el registro.');
         this.guardando = false;
         this.cdr.detectChanges();
       }
@@ -94,9 +100,15 @@ export abstract class AdminCrudBase implements OnInit {
     this.formulario = {};
 
     for (const field of this.config.fields) {
-      this.formulario[field.key] = field.clearOnEdit
+      this.formulario[field.key] = field.type === 'image'
+        ? null
+        : field.clearOnEdit
         ? ''
         : registro[field.key] ?? (field.type === 'checkbox' ? false : '');
+
+      if (field.type === 'image') {
+        this.previewImagenes[field.key] = registro[field.key] ?? null;
+      }
     }
 
     this.cdr.detectChanges();
@@ -115,11 +127,11 @@ export abstract class AdminCrudBase implements OnInit {
 
     this.adminService.eliminar(this.config.recurso, id).subscribe({
       next: () => {
-        this.mensaje = 'Registro eliminado.';
+        this.mostrarMensaje('Registro eliminado.');
         this.cargar();
       },
       error: (err) => {
-        this.error = err?.error?.message || err?.error?.error || 'No se pudo eliminar el registro.';
+        this.mostrarError(err?.error?.message || err?.error?.error || 'No se pudo eliminar el registro.');
         this.cdr.detectChanges();
       }
     });
@@ -134,9 +146,13 @@ export abstract class AdminCrudBase implements OnInit {
 
   resetFormulario(): void {
     this.formulario = {};
+    this.previewImagenes = {};
 
     for (const field of this.config.fields) {
       this.formulario[field.key] = field.type === 'checkbox' ? false : '';
+      if (field.type === 'image') {
+        this.previewImagenes[field.key] = null;
+      }
     }
   }
 
@@ -145,7 +161,7 @@ export abstract class AdminCrudBase implements OnInit {
   }
 
   get columnas(): AdminField[] {
-    return this.config.fields.filter((field) => !field.hideInTable && field.type !== 'password');
+    return this.config.fields.filter((field) => !field.hideInTable && field.type !== 'password' && field.type !== 'textarea');
   }
 
   get filtrados(): any[] {
@@ -174,7 +190,89 @@ export abstract class AdminCrudBase implements OnInit {
     return field.required || false;
   }
 
+  valorCelda(registro: any, columna: AdminField): string {
+    const valor = registro[columna.key];
+
+    if (columna.type === 'checkbox') {
+      return valor ? 'Si' : 'No';
+    }
+
+    return valor ?? '';
+  }
+
+  seleccionarImagen(event: Event, field: AdminField): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      this.mostrarError('Solo se permiten imagenes JPG, PNG o WEBP.');
+      input.value = '';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.formulario[field.key] = file;
+    const previewAnterior = this.previewImagenes[field.key];
+
+    if (previewAnterior?.startsWith('blob:')) {
+      URL.revokeObjectURL(previewAnterior);
+    }
+
+    this.previewImagenes[field.key] = URL.createObjectURL(file);
+    this.cdr.detectChanges();
+  }
+
   protected prepararPayload(payload: any): any {
+    const tieneArchivo = this.config.fields.some((field) => field.type === 'image' && payload[field.key] instanceof File);
+
+    if (tieneArchivo) {
+      const formData = new FormData();
+
+      for (const field of this.config.fields) {
+        const value = payload[field.key];
+        if (field.type === 'image' && value instanceof File) {
+          formData.append(field.key, value);
+        } else if (field.type !== 'image' && value !== undefined && value !== null) {
+          formData.append(field.key, field.type === 'checkbox' ? (value ? '1' : '0') : String(value));
+        }
+      }
+
+      return formData;
+    }
+
     return payload;
+  }
+
+  protected mostrarMensaje(mensaje: string): void {
+    this.mensaje = mensaje;
+    this.error = '';
+    this.programarOcultarAviso();
+  }
+
+  protected mostrarError(error: string): void {
+    this.error = error;
+    this.mensaje = '';
+    this.programarOcultarAviso();
+  }
+
+  private programarOcultarAviso(): void {
+    this.limpiarAvisoTimer();
+    this.avisoTimer = setTimeout(() => {
+      this.mensaje = '';
+      this.error = '';
+      this.avisoTimer = null;
+      this.cdr.detectChanges();
+    }, 3500);
+  }
+
+  private limpiarAvisoTimer(): void {
+    if (this.avisoTimer) {
+      clearTimeout(this.avisoTimer);
+      this.avisoTimer = null;
+    }
   }
 }

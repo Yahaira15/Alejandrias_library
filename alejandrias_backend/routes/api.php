@@ -44,7 +44,13 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/categorias', [AdminController::class, 'categorias']);
     Route::post('/categorias', [CategoriaController::class, 'store']);
     Route::put('/categorias/{id}', [CategoriaController::class, 'update']);
+    Route::post('/categorias/{id}', [CategoriaController::class, 'update']);
     Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
+    Route::get('/categorias/{categoria_id}/subcategorias', [CategoriaController::class, 'subcategorias']);
+    Route::post('/subcategorias', [CategoriaController::class, 'storeSubcategoria']);
+    Route::put('/subcategorias/{id}', [CategoriaController::class, 'updateSubcategoria']);
+    Route::post('/subcategorias/{id}', [CategoriaController::class, 'updateSubcategoria']);
+    Route::delete('/subcategorias/{id}', [CategoriaController::class, 'destroySubcategoria']);
 
     Route::get('/publicaciones', [AdminController::class, 'publicaciones']);
     Route::post('/publicaciones', [AdminController::class, 'crearPublicacion']);
@@ -85,6 +91,7 @@ Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/categorias/{categoria_id}', [CategoriaController::class, 'show']);
 Route::post('/categorias', [CategoriaController::class, 'store']);
 Route::get('/categorias/{categoria_id}/foros', [CategoriaController::class, 'foros']);
+Route::get('/categorias/{categoria_id}/subcategorias', [CategoriaController::class, 'subcategorias']);
 
 Route::get('/foros/{foroId}/publicaciones', [PublicacionController::class, 'index']);
 Route::post('/foros/{foroId}/publicaciones', [PublicacionController::class, 'store']);
