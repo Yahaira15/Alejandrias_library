@@ -133,7 +133,7 @@
           <h2>Foros que lideras</h2>
         </div>
       } @else {
-        <div>
+        <div class="section-heading">
           <p class="section-kicker">Tus exploraciones</p>
           <h2>Foros que sigues</h2>
         </div>
@@ -142,25 +142,77 @@
       <div class="loading" *ngIf="cargando">Cargando foros...</div>
 
       <div class="foros-container">
-        <div class="foro-card" *ngFor="let foro of foros">
-          <h3>{{ foro.foro_titulo }}</h3>
-          <p>{{ foro.categoria?.categoria_nombre }}</p>
-          <p>{{ foro.foro_descripcion }}</p>
-          <p>Publicaciones: {{ foro.publicaciones_count || 0 }}</p>
-          <p>Comentarios: {{ foro.comentarios_count_total || 0 }}</p>
-
-          <button type="button" class="btn-ver-foro" (click)="abrirModalForo(foro)">
-            Ver foro
-          </button>
-
-          <div class="buttons" *ngIf="rol === 'lider' || rol === 'admin'">
-            <button (click)="editarForo(foro.foro_id)">Editar</button>
-            <button (click)="eliminarForo(foro.foro_id)">Eliminar</button>
+        <article
+          class="foro-card"
+          *ngFor="let foro of foros; trackBy: trackByForoId"
+          [class.sin-imagen]="!foroTieneImagen(foro)"
+          (click)="verForo(foro)"
+        >
+          <div class="foro-media" *ngIf="foroTieneImagen(foro)">
+            <img
+              [src]="obtenerImagenForo(foro)"
+              [alt]="foro.foro_titulo"
+              (error)="marcarImagenFallida(foro)"
+            >
           </div>
-        </div>
+
+          <div class="foro-categoria">{{ foro.categoria?.categoria_nombre || 'Categoria' }}</div>
+
+          <div class="foro-menu" (click)="$event.stopPropagation()">
+            <button type="button" class="foro-menu-btn" (click)="toggleMenuForo(foro)">
+              <img src="foros/tres-puntos.png" alt="Opciones">
+            </button>
+
+            <div class="foro-menu-panel" *ngIf="foro.menuAbierto">
+              <button type="button" *ngIf="rol === 'lider' || rol === 'admin'" (click)="editarForo(foro.foro_id)">Editar</button>
+              <button type="button" *ngIf="rol === 'lider' || rol === 'admin'" (click)="eliminarForo(foro.foro_id)">Eliminar</button>
+              <button type="button" *ngIf="rol === 'explorador'" (click)="abrirReporte('foro', foro.foro_id, foro.foro_titulo)">Reportar</button>
+              <button type="button" *ngIf="rol === 'explorador'" (click)="dejarDeSeguirForo(foro)">Eliminar</button>
+            </div>
+          </div>
+
+          <div class="foro-info">
+            <h3>{{ foro.foro_titulo }}</h3>
+            <p>{{ foro.foro_descripcion }}</p>
+          </div>
+
+          <div class="foro-footer">
+            <span class="foro-stat">
+              <img src="foros/usuarios-foros.png" alt="">
+              {{ foro.miembros_count || foro.usuarios_count || 0 }}
+            </span>
+            <span class="foro-stat">
+              <img src="foros/comentarios-foros.png" alt="">
+              {{ foro.comentarios_count_total || 0 }}
+            </span>
+          </div>
+        </article>
       </div>
     </section>
 
+  </div>
+</div>
+
+<div class="modal-backdrop" *ngIf="reporteModalAbierto && reporteObjetivo" (click)="cerrarReporte()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    <button type="button" class="modal-close" (click)="cerrarReporte()">x</button>
+    <p class="modal-kicker">Reporte</p>
+    <h2>{{ reporteObjetivo.titulo }}</h2>
+
+    <select class="modal-input" [(ngModel)]="reporteMotivo">
+      <option value="">Selecciona un motivo</option>
+      <option *ngFor="let motivo of motivosReporte()" [value]="motivo">{{ motivo }}</option>
+    </select>
+    <textarea
+      class="modal-input reporte-textarea"
+      [(ngModel)]="reporteDescripcion"
+      rows="4"
+      placeholder="Describe brevemente lo ocurrido"
+    ></textarea>
+    <p class="modal-error" *ngIf="errorReporte">{{ errorReporte }}</p>
+    <button type="button" class="modal-action" (click)="enviarReporte()" [disabled]="enviandoReporte">
+      {{ enviandoReporte ? 'Enviando...' : 'Enviar reporte' }}
+    </button>
   </div>
 </div>
 

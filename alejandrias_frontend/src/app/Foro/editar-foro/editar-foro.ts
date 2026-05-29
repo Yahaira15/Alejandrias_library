@@ -96,8 +96,9 @@ export class EditarForo implements OnInit {
       foro_password: null
     }, { emitEvent: false });
 
-    if (foro.foro_imagen_url) {
-      this.imagePreview = foro.foro_imagen_url;
+    const imagen = foro.foro_imagen_url || foro.foro_imagen;
+    if (imagen) {
+      this.imagePreview = this.normalizarImagenForo(imagen);
     }
 
     this.actualizarValidadoresPassword(privado);
@@ -118,11 +119,7 @@ export class EditarForo implements OnInit {
     this.guardando = true;
     this.cdr.markForCheck();
 
-    const data = {
-      ...this.foroForm.value,
-      foro_categoria_id: Number(this.foroForm.value.foro_categoria_id),
-      foro_password: this.foroForm.value.foro_privado ? this.foroForm.value.foro_password || null : null
-    };
+    const data = this.crearPayloadForo();
 
     this.foroService.actualizarForo(this.foroId, data).subscribe({
       next: () => {
@@ -245,5 +242,41 @@ export class EditarForo implements OnInit {
 
   regresar() {
     this.volver();
+  }
+
+  private crearPayloadForo(): FormData {
+    const formData = new FormData();
+    const privado = !!this.foroForm.value.foro_privado;
+
+    formData.append('_method', 'PUT');
+    formData.append('foro_titulo', this.foroForm.value.foro_titulo);
+    formData.append('foro_descripcion', this.foroForm.value.foro_descripcion);
+    formData.append('foro_categoria_id', String(Number(this.foroForm.value.foro_categoria_id)));
+    formData.append('foro_privado', privado ? '1' : '0');
+
+    if (privado && this.foroForm.value.foro_password) {
+      formData.append('foro_password', this.foroForm.value.foro_password);
+    }
+
+    if (this.selectedImage) {
+      formData.append('foro_imagen', this.selectedImage);
+    }
+
+    return formData;
+  }
+
+  private normalizarImagenForo(imagen: string): string {
+    if (!imagen) return '';
+
+    if (imagen.startsWith('http://localhost/storage')) {
+      return imagen.replace('http://localhost', 'http://127.0.0.1:8000');
+    }
+
+    if (/^(https?:|data:|blob:)/i.test(imagen)) {
+      return imagen;
+    }
+
+    const ruta = imagen.startsWith('/') ? imagen : `/${imagen}`;
+    return `http://127.0.0.1:8000${ruta.startsWith('/storage') ? ruta : `/storage${ruta}`}`;
   }
 }

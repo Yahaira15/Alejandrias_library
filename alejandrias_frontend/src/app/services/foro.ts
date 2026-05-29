@@ -29,6 +29,10 @@ export class ForoService {
     return this.http.get(`${this.apiUrl}/foros/${id}/registro`);
   }
 
+  dejarDeSeguirForo(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/foros/${id}/registro`);
+  }
+
   buscarForoPrivado(foroPassword: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/foros/privado/buscar`, {
       foro_password: foroPassword
@@ -126,7 +130,11 @@ export class ForoService {
   }
 
   actualizarForo(id: number, data: any): Observable<any> {
-    return this.http.put(`${this.apiUrl}/foros/${id}`, data).pipe(
+    const request = data instanceof FormData
+      ? this.http.post(`${this.apiUrl}/foros/${id}`, data)
+      : this.http.put(`${this.apiUrl}/foros/${id}`, data);
+
+    return request.pipe(
       tap(() => this.cacheForos = null)
     );
   }

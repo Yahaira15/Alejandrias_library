@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Usuario;
 use App\Models\Categoria;
 use App\Models\Publicacion;
+use App\Models\Comentario;
 
 class Foro extends Model
 {
@@ -21,6 +22,7 @@ class Foro extends Model
         'foro_creador_id',
         'foro_privado',
         'foro_password',
+        'foro_imagen',
         'foro_estado_moderacion',
         'foro_visibilidad'
     ];
@@ -47,5 +49,17 @@ class Foro extends Model
     public function publicaciones()
     {
         return $this->hasMany(Publicacion::class, 'publicacion_foro_id', 'foro_id');
+    }
+
+    public function comentarios()
+    {
+        return $this->hasManyThrough(
+            Comentario::class,
+            Publicacion::class,
+            'publicacion_foro_id',
+            'comentario_publicacion_id',
+            'foro_id',
+            'publicacion_id'
+        );
     }
 }

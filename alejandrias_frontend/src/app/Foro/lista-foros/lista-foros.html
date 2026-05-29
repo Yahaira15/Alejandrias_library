@@ -198,21 +198,48 @@
       <div class="loading" *ngIf="cargando">Cargando foros...</div>
 
       <div class="foros-container" *ngIf="!cargando && forosFiltrados.length > 0">
-        <div class="foro-card" *ngFor="let foro of forosFiltrados; trackBy: trackByForoId">
-          <h3>{{ foro.foro_titulo }}</h3>
-          <p>{{ foro.categoria?.categoria_nombre }}</p>
-          <p>{{ foro.foro_descripcion }}</p>
-          <p>Publicaciones: {{ foro.publicaciones_count || 0 }}</p>
-          <p>Comentarios: {{ foro.comentarios_count_total || 0 }}</p>
+        <article
+          class="foro-card"
+          *ngFor="let foro of forosFiltrados; trackBy: trackByForoId"
+          [class.sin-imagen]="!foroTieneImagen(foro)"
+          (click)="verForo(foro)"
+        >
+          <div class="foro-media" *ngIf="foroTieneImagen(foro)">
+            <img
+              [src]="obtenerImagenForo(foro)"
+              [alt]="foro.foro_titulo"
+              (error)="marcarImagenFallida(foro)"
+            >
+          </div>
 
-          <button type="button" class="btn-ver-foro" (click)="abrirModalForo(foro)">
-            Ver foro
-          </button>
-          <button type="button" class="btn-ver-foro" (click)="abrirReporte('foro', foro.foro_id, foro.foro_titulo)">
-            Reportar foro
-          </button>
+          <div class="foro-categoria">{{ foro.categoria?.categoria_nombre || 'Categoria' }}</div>
 
-        </div>
+          <div class="foro-info">
+            <h3>{{ foro.foro_titulo }}</h3>
+            <p>{{ foro.foro_descripcion }}</p>
+          </div>
+
+          <div class="foro-footer">
+            <span class="foro-stat">
+              <img src="foros/usuarios-foros.png" alt="">
+              {{ foro.miembros_count || foro.usuarios_count || 0 }}
+            </span>
+            <span class="foro-stat">
+              <img src="foros/comentarios-foros.png" alt="">
+              {{ foro.comentarios_count_total || 0 }}
+            </span>
+
+            <button
+              type="button"
+              class="btn-seguir"
+              (click)="seguirForo(foro, $event)"
+              [disabled]="registrandoForoId === foro.foro_id"
+            >
+              <span>{{ registrandoForoId === foro.foro_id ? 'Siguiendo...' : 'Seguir' }}</span>
+              <img src="foros/seguir.png" alt="">
+            </button>
+          </div>
+        </article>
       </div>
 
       <div class="empty-state" *ngIf="!cargando && forosFiltrados.length === 0">

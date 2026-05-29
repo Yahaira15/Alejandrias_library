@@ -5,7 +5,6 @@ import { ForoService } from '../../services/foro';
 import { NotificacionService } from '../../services/notificacion.service';
 import { ReportePayload, ReporteService } from '../../services/reporte.service';
 import { Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -49,6 +48,7 @@ export class ListaForos implements OnInit, OnDestroy {
   errorPrivado = '';
   errorRegistro = '';
   registrandoForo = false;
+  registrandoForoId: number | null = null;
   buscandoPrivado = false;
   reporteModalAbierto = false;
   reporteObjetivo: { tipo: ReportePayload['reporte_tipo']; id: number; titulo: string } | null = null;
@@ -228,33 +228,13 @@ export class ListaForos implements OnInit, OnDestroy {
       return;
     }
 
-    const solicitudes = foros.map(foro => this.foroService.getPublicaciones(foro.foro_id));
-
-    forkJoin(solicitudes).subscribe({
-      next: (resultados) => {
-        this.foros = foros.map((foro, index) => {
-          const publicaciones = Array.isArray(resultados[index]) ? resultados[index] : [];
-          const comentariosCount = publicaciones.reduce(
-            (total: number, publicacion: any) => total + (publicacion.comentarios_count || 0),
-            0
-          );
-
-          return {
-            ...foro,
-            publicaciones_count: publicaciones.length,
-            comentarios_count_total: comentariosCount
-          };
-        });
-        this.cargando = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error contando comentarios por foro:', err);
-        this.foros = foros;
-        this.cargando = false;
-        this.cdr.detectChanges();
-      }
-    });
+    this.foros = foros.map((foro) => ({
+      ...foro,
+      publicaciones_count: foro.publicaciones_count || 0,
+      comentarios_count_total: foro.comentarios_count_total || 0
+    }));
+    this.cargando = false;
+    this.cdr.detectChanges();
   }
 
   irACrearForo(): void {
@@ -276,6 +256,64 @@ export class ListaForos implements OnInit, OnDestroy {
   editarForo(id: number): void {
     const foro = this.foros.find(item => item.foro_id === id);
     this.router.navigate(['/foros/editar', id], { state: { foro } });
+  }
+
+  verForo(foro: any): void {
+    if (!foro?.foro_id) return;
+    this.router.navigate(['/foros', foro.foro_id]);
+  }
+
+  seguirForo(foro: any, event: Event): void {
+    event.stopPropagation();
+
+    if (!foro?.foro_id || this.registrandoForoId) return;
+
+    this.registrandoForoId = foro.foro_id;
+    this.errorRegistro = '';
+
+    this.foroService.registrarEnForo(foro.foro_id).subscribe({
+      next: () => {
+        this.registrandoForoId = null;
+        this.foros = this.foros.filter(item => item.foro_id !== foro.foro_id);
+        this.router.navigate(['/foros', foro.foro_id]);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error registrando foro', err);
+        this.registrandoForoId = null;
+        this.errorRegistro = err?.error?.error || 'No se pudo registrar al foro.';
+        alert(this.errorRegistro);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  obtenerImagenForo(foro: any): string {
+    const imagen = foro?.foro_imagen_url || foro?.foro_imagen || foro?.imagen || '';
+
+    if (!imagen || foro?.imagenFallida) {
+      return '';
+    }
+
+    if (imagen.startsWith('http://localhost/storage')) {
+      return imagen.replace('http://localhost', 'http://127.0.0.1:8000');
+    }
+
+    if (/^(https?:|data:|blob:)/i.test(imagen)) {
+      return imagen;
+    }
+
+    const ruta = imagen.startsWith('/') ? imagen : `/${imagen}`;
+    return `http://127.0.0.1:8000${ruta.startsWith('/storage') ? ruta : `/storage${ruta}`}`;
+  }
+
+  foroTieneImagen(foro: any): boolean {
+    return !!this.obtenerImagenForo(foro);
+  }
+
+  marcarImagenFallida(foro: any): void {
+    foro.imagenFallida = true;
+    this.cdr.detectChanges();
   }
 
   abrirModalForo(foro: any): void {

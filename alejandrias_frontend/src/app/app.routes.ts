@@ -7,7 +7,6 @@ import { ListaForos } from './Foro/lista-foros/lista-foros';
 import { MisForos } from './Foro/mis-foros/mis-foros';
 import { EditarForo } from './Foro/editar-foro/editar-foro';
 import { authGuard } from './guards/auth-guard';
-import { foroRegistroGuard } from './guards/foro-registro-guard';
 import { publicacionRegistroGuard } from './guards/publicacion-registro-guard';
 import { Home } from './Home/home/home';
 import { Perfil } from './perfil/perfil';
@@ -33,7 +32,7 @@ export const routes: Routes = [
     {path: 'intereses', component: Intereses, canActivate: [authGuard] },
     {path: 'chat-ia', component: ChatIaComponent, canActivate: [authGuard] },
     {path: 'foros/crear', component: CrearForo, canActivate: [authGuard] },
-    { path: 'foros/:foro_id', component: VerForoComponent, canActivate: [authGuard, foroRegistroGuard] },
+    { path: 'foros/:foro_id', component: VerForoComponent, canActivate: [authGuard] },
     { path: 'publicaciones/:publicacion_id', component: VerPublicacionComponent, canActivate: [authGuard, publicacionRegistroGuard] },
     { path: '', redirectTo: 'home', pathMatch: 'full'},
     { path: 'foros', component: ListaForos, canActivate: [authGuard] },
