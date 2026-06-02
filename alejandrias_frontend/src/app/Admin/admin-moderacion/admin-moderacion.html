@@ -10,45 +10,53 @@
   <p class="admin-message" *ngIf="mensaje">{{ mensaje }}</p>
   <p class="admin-error" *ngIf="error">{{ error }}</p>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Tipo</th>
-          <th>Usuario</th>
-          <th>Estado</th>
-          <th>Categoria</th>
-          <th>Riesgo</th>
-          <th>Contenido</th>
-          <th>Razon IA</th>
-          <th>Fecha</th>
-          <th>Decision</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngIf="cargando">
-          <td colspan="10">Cargando...</td>
-        </tr>
-        <tr *ngIf="!cargando && registros.length === 0">
-          <td colspan="10">No hay contenido pendiente.</td>
-        </tr>
-        <tr *ngFor="let registro of registros">
-          <td>{{ registro.moderacion_id }}</td>
-          <td>{{ tipoContenido(registro) }}</td>
-          <td>{{ usuario(registro) }}</td>
-          <td>{{ registro.estado }}</td>
-          <td>{{ registro.categoria_detectada }}</td>
-          <td>{{ registro.riesgo | number:'1.2-2' }}</td>
-          <td class="content-cell">{{ registro.contenido_analizado }}</td>
-          <td class="content-cell">{{ registro.razon }}</td>
-          <td>{{ fecha(registro) }}</td>
-          <td class="row-actions">
-            <button type="button" (click)="aprobar(registro)">Aprobar</button>
-            <button type="button" class="danger" (click)="rechazar(registro)">Ocultar</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="table-panel">
+    <div class="panel-tabs">
+      <button type="button" class="tab active">Moderacion</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Usuario</th>
+            <th>Estado</th>
+            <th>Categoria</th>
+            <th>Riesgo</th>
+            <th>Contenido</th>
+            <th>Razon IA</th>
+            <th>Fecha</th>
+            <th>Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="cargando">
+            <td colspan="10">Cargando...</td>
+          </tr>
+          <tr *ngIf="!cargando && registros.length === 0">
+            <td colspan="10">No hay contenido pendiente.</td>
+          </tr>
+          <tr *ngFor="let registro of registros">
+            <td>{{ registro.moderacion_id }}</td>
+            <td>{{ tipoContenido(registro) }}</td>
+            <td>{{ usuario(registro) }}</td>
+            <td>{{ registro.estado }}</td>
+            <td>{{ registro.categoria_detectada }}</td>
+            <td>{{ registro.riesgo | number:'1.2-2' }}</td>
+            <td class="content-cell">{{ registro.contenido_analizado }}</td>
+            <td class="content-cell">{{ registro.razon }}</td>
+            <td>{{ fecha(registro) }}</td>
+            <td class="decision-cell">
+              <div class="moderacion-actions">
+                <button type="button" (click)="aprobar(registro)">Aprobar</button>
+                <button type="button" class="danger" (click)="rechazar(registro)">Ocultar</button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>

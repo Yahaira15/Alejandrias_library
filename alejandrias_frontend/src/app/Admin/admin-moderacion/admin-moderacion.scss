@@ -2,19 +2,66 @@
   overflow: hidden;
 }
 
+.moderacion-card .admin-header {
+  margin-bottom: 0;
+}
+
+.moderacion-card .admin-header > button {
+  min-height: 30px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 15px;
+  background: #faecd8;
+  color: #5c7fa4;
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  font: 700 14px/1 'Lora', Georgia, serif;
+}
+
+.moderacion-card table {
+  min-width: 1180px;
+}
+
 .content-cell {
-  max-width: 280px;
+  max-width: 250px;
   white-space: normal;
+  line-height: 1.2;
 }
 
-.row-actions {
+.decision-cell {
+  min-width: 230px;
+  vertical-align: middle;
+}
+
+.moderacion-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  min-width: 230px;
+  padding: 10px 0;
 }
 
-.row-actions .danger {
+.moderacion-actions button {
+  min-width: 92px;
+  min-height: 32px;
+  border: 2px solid #0D416A;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0D416A;
+  cursor: pointer;
+  font: 700 15px/1 'Lora', Georgia, serif;
+}
+
+.moderacion-actions .danger {
   background: #c95b5b;
   border-color: #c95b5b;
   color: #fff;
+}
+
+@media (max-width: 960px) {
+  .moderacion-card .admin-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

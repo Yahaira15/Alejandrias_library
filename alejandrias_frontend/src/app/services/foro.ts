@@ -7,7 +7,7 @@ import { Observable, of, tap } from 'rxjs';
 })
 export class ForoService {
 
-  private apiUrl = 'http://127.0.0.1:8000/api';
+  private apiUrl = `${this.apiBaseUrl()}/api`;
 
   private cacheForos: any[] | null = null;
   private cacheCategorias: any[] | null = null;
@@ -159,5 +159,48 @@ export class ForoService {
 
   eliminarComentario(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/comentarios/${id}`);
+  }
+
+  resolverImagenForo(imagen: string | null | undefined): string {
+    if (!imagen) return '';
+
+    const baseUrl = this.apiUrl.replace(/\/api$/, '');
+
+    if (/^(data:|blob:)/i.test(imagen)) {
+      return imagen;
+    }
+
+    if (/^https?:\/\//i.test(imagen)) {
+      try {
+        const url = new URL(imagen);
+
+        if (['localhost', '127.0.0.1'].includes(url.hostname) && url.pathname.startsWith('/storage/')) {
+          return `${baseUrl}${url.pathname}`;
+        }
+
+        return imagen;
+      } catch {
+        return imagen;
+      }
+    }
+
+    const ruta = imagen.startsWith('/') ? imagen : `/${imagen}`;
+    return `${baseUrl}${ruta.startsWith('/storage/') ? ruta : `/storage${ruta}`}`;
+  }
+
+  private apiBaseUrl(): string {
+    const localBase = 'http://127.0.0.1:8000';
+
+    if (typeof window === 'undefined') {
+      return localBase;
+    }
+
+    const hostname = window.location.hostname;
+
+    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
+      return localBase;
+    }
+
+    return `${window.location.protocol}//${hostname}:8000`;
   }
 }

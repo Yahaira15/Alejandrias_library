@@ -15,7 +15,6 @@ use App\Services\Gamification\GamificationService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class ForoController extends Controller
 {
@@ -588,7 +587,7 @@ class ForoController extends Controller
 
             $path = $request->file('foro_imagen')->store('foros', 'public');
 
-            return Storage::disk('public')->url($path);
+            return '/storage/' . ltrim($path, '/');
         }
 
         $imagen = $request->input('foro_imagen');

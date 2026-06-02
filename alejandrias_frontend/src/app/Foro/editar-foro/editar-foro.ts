@@ -266,17 +266,6 @@ export class EditarForo implements OnInit {
   }
 
   private normalizarImagenForo(imagen: string): string {
-    if (!imagen) return '';
-
-    if (imagen.startsWith('http://localhost/storage')) {
-      return imagen.replace('http://localhost', 'http://127.0.0.1:8000');
-    }
-
-    if (/^(https?:|data:|blob:)/i.test(imagen)) {
-      return imagen;
-    }
-
-    const ruta = imagen.startsWith('/') ? imagen : `/${imagen}`;
-    return `http://127.0.0.1:8000${ruta.startsWith('/storage') ? ruta : `/storage${ruta}`}`;
+    return this.foroService.resolverImagenForo(imagen);
   }
 }

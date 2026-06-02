@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -246,7 +245,7 @@ class AdminController extends Controller
 
             $path = $request->file('foro_imagen')->store('foros', 'public');
 
-            return Storage::disk('public')->url($path);
+            return '/storage/' . ltrim($path, '/');
         }
 
         $imagen = $request->input('foro_imagen');
