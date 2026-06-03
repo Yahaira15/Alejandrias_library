@@ -20,6 +20,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class GamificationService
 {
@@ -414,6 +415,9 @@ class GamificationService
         return [
             'ruta_principal' => $progreso->ruta_principal,
             'xp_total' => $progreso->xp_total,
+            'nivel_actual' => $this->levelFromXp((int) $progreso->xp_total),
+            'xp_nivel_actual' => $this->xpForLevel($this->levelFromXp((int) $progreso->xp_total)),
+            'xp_siguiente_nivel' => $this->xpForLevel($this->levelFromXp((int) $progreso->xp_total) + 1),
             'nivel_lider' => $progreso->nivel_lider,
             'nivel_explorador' => $progreso->nivel_explorador,
             'metricas' => $progreso->metricas ?? [],
@@ -621,25 +625,35 @@ class GamificationService
 
     public function claimMission(Usuario $usuario, int $usuarioMisionId): array
     {
-        $usuarioMision = UsuarioMision::with('mision')
-            ->where('usuario_id', $usuario->usuario_id)
-            ->findOrFail($usuarioMisionId);
+        return DB::transaction(function () use ($usuario, $usuarioMisionId) {
+            $usuarioMision = UsuarioMision::with('mision')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->lockForUpdate()
+                ->findOrFail($usuarioMisionId);
 
-        if (!$usuarioMision->completada || $usuarioMision->reclamada || !$usuarioMision->mision) {
-            return $this->missionPayload($usuarioMision);
-        }
+            if (!$usuarioMision->completada || $usuarioMision->reclamada || !$usuarioMision->mision) {
+                return $this->missionPayload($usuarioMision);
+            }
 
-        $this->award($usuario, 'mision_diaria', $usuarioMision, [
-            'xp_override' => (int) $usuarioMision->mision->xp_recompensa,
-            'puntos_override' => (int) $usuarioMision->mision->puntos_recompensa,
-            'mision' => $usuarioMision->mision->mision_slug,
-        ]);
+            $usuarioMision->reclamada = true;
+            $usuarioMision->reclamada_en = now();
+            $usuarioMision->save();
 
-        $usuarioMision->reclamada = true;
-        $usuarioMision->reclamada_en = now();
-        $usuarioMision->save();
+            try {
+                $this->award($usuario, 'mision_diaria', $usuarioMision, [
+                    'xp_override' => (int) $usuarioMision->mision->xp_recompensa,
+                    'puntos_override' => (int) $usuarioMision->mision->puntos_recompensa,
+                    'mision' => $usuarioMision->mision->mision_slug,
+                ]);
+            } catch (Throwable $e) {
+                $usuarioMision->reclamada = false;
+                $usuarioMision->reclamada_en = null;
+                $usuarioMision->save();
+                throw $e;
+            }
 
-        return $this->missionPayload($usuarioMision->fresh('mision'));
+            return $this->missionPayload($usuarioMision->fresh('mision'));
+        });
     }
 
     public function advanceMissionsForAction(Usuario $usuario, string $accion, int $amount = 1): void
@@ -1004,6 +1018,13 @@ class GamificationService
             $xp >= 120 => 1,
             default => 0,
         };
+    }
+
+    private function xpForLevel(int $level): int
+    {
+        $scale = [0, 120, 280, 500, 760, 1050, 1350, 1700, 2200];
+
+        return $scale[min(max($level, 0), count($scale) - 1)];
     }
 
     private function metrics(Usuario $usuario): array

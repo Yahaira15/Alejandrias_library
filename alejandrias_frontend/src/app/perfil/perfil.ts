@@ -30,6 +30,7 @@ export class Perfil implements OnInit {
   recompensaMensaje = '';
   cargandoLogros = false;
   reclamandoRacha = false;
+  reclamandoMisiones = new Set<number>();
   rankingTab: 'global' | 'semanal' = 'global';
   rutaLogrosActiva: 'lider' | 'explorador' = 'explorador';
   enviandoSolicitudLider = false;
@@ -187,18 +188,20 @@ export class Perfil implements OnInit {
   }
 
   get nivelRutaActiva(): number {
-    return this.rutaLogrosActiva === 'lider'
-      ? Number(this.logros?.nivel_lider || 0)
-      : Number(this.logros?.nivel_explorador || 0);
+    return Number(this.logros?.nivel_actual ?? 0);
   }
 
   get siguienteMetaXp(): number {
-    const escala = [0, 120, 280, 500, 760, 1050, 1350, 1700, 2200];
-    return escala[Math.min(this.nivelRutaActiva + 1, escala.length - 1)] || 2200;
+    return Number(this.logros?.xp_siguiente_nivel ?? this.metaXpPorNivel(this.nivelRutaActiva + 1));
   }
 
   get progresoXp(): number {
-    return Math.min(100, Math.round((this.xpTotal / this.siguienteMetaXp) * 100));
+    const inicioNivel = Number(this.logros?.xp_nivel_actual ?? this.metaXpPorNivel(this.nivelRutaActiva));
+    const finNivel = this.siguienteMetaXp;
+
+    if (finNivel <= inicioNivel) return 100;
+
+    return Math.min(100, Math.max(0, Math.round(((this.xpTotal - inicioNivel) / (finNivel - inicioNivel)) * 100)));
   }
 
   get misionesCompletadas(): number {
@@ -212,6 +215,10 @@ export class Perfil implements OnInit {
   progresoMision(mision: MisionUsuario): number {
     if (!mision.objetivo) return 0;
     return Math.min(100, Math.round((mision.progreso / mision.objetivo) * 100));
+  }
+
+  misionReclamandose(mision: MisionUsuario): boolean {
+    return this.reclamandoMisiones.has(mision.usuario_mision_id);
   }
 
   medallaIcono(medalla: RankingUsuario['medalla']): string {
@@ -242,17 +249,28 @@ export class Perfil implements OnInit {
   }
 
   reclamarMision(mision: MisionUsuario) {
-    if (!mision.completada || mision.reclamada) return;
+    if (!mision.completada || mision.reclamada || this.misionReclamandose(mision)) return;
 
+    this.reclamandoMisiones.add(mision.usuario_mision_id);
     this.gamificacionService.reclamarMision(mision.usuario_mision_id).subscribe({
       next: (res: any) => {
         this.misiones = res?.misiones || this.misiones;
         this.logros = res?.progreso ? { ...this.logros, ...res.progreso } : this.logros;
         this.recompensaMensaje = `Mision reclamada: +${mision.xp_recompensa} XP`;
         this.recompensaRachaVisible = true;
+        this.reclamandoMisiones.delete(mision.usuario_mision_id);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.reclamandoMisiones.delete(mision.usuario_mision_id);
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private metaXpPorNivel(nivel: number): number {
+    const escala = [0, 120, 280, 500, 760, 1050, 1350, 1700, 2200];
+    return escala[Math.min(Math.max(nivel, 0), escala.length - 1)] || 2200;
   }
 
   cerrarRecompensa() {

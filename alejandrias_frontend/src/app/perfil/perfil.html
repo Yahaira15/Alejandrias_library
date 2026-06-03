@@ -165,8 +165,8 @@
                   <span [style.width.%]="progresoMision(mision)"></span>
                 </div>
               </div>
-              <button type="button" (click)="reclamarMision(mision)" [disabled]="!mision.completada || mision.reclamada">
-                {{ mision.reclamada ? 'OK' : 'Cofre' }}
+              <button type="button" (click)="reclamarMision(mision)" [disabled]="!mision.completada || mision.reclamada || misionReclamandose(mision)">
+                {{ mision.reclamada ? 'OK' : (misionReclamandose(mision) ? '...' : 'Cofre') }}
               </button>
             </article>
           </section>
