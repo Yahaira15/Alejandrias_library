@@ -33,6 +33,48 @@ class Foro extends Model
         'foro_password',
     ];
 
+    protected $appends = [
+        'foro_imagen_url',
+    ];
+
+    public function getForoImagenUrlAttribute(): ?string
+    {
+        return $this->normalizarImagenPublica($this->foro_imagen);
+    }
+
+    private function normalizarImagenPublica(?string $imagen): ?string
+    {
+        $imagen = trim((string) $imagen);
+
+        if ($imagen === '') {
+            return null;
+        }
+
+        if (preg_match('/^(data:|blob:)/i', $imagen)) {
+            return $imagen;
+        }
+
+        if (preg_match('/^https?:\/\//i', $imagen)) {
+            $path = parse_url($imagen, PHP_URL_PATH);
+
+            if (is_string($path) && str_starts_with($path, '/storage/')) {
+                return $path;
+            }
+
+            return $imagen;
+        }
+
+        if (str_starts_with($imagen, '/storage/')) {
+            return $imagen;
+        }
+
+        $imagen = ltrim($imagen, '/');
+
+        return str_starts_with($imagen, 'storage/')
+            ? '/' . $imagen
+            : '/storage/' . $imagen;
+    }
+
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'foro_creador_id', 'usuario_id');

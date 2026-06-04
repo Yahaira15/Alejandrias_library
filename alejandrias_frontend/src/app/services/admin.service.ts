@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  private baseUrl = 'http://127.0.0.1:8000';
+  private baseUrl = this.apiBaseUrl();
   private apiUrl = `${this.baseUrl}/api/admin`;
 
   constructor(private http: HttpClient) {}
@@ -77,10 +77,41 @@ export class AdminService {
   resolverUrlImagen(url: string | null | undefined): string {
     if (!url) return '';
 
-    if (/^(blob:|data:|https?:\/\/)/i.test(url)) {
+    if (/^(blob:|data:)/i.test(url)) {
       return url;
     }
 
-    return `${this.baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+    if (/^https?:\/\//i.test(url)) {
+      try {
+        const parsedUrl = new URL(url);
+
+        if (['localhost', '127.0.0.1'].includes(parsedUrl.hostname) && parsedUrl.pathname.startsWith('/storage/')) {
+          return `${this.baseUrl}${parsedUrl.pathname}`;
+        }
+
+        return url;
+      } catch {
+        return url;
+      }
+    }
+
+    const ruta = url.startsWith('/') ? url : `/${url}`;
+    return `${this.baseUrl}${ruta.startsWith('/storage/') ? ruta : `/storage${ruta}`}`;
+  }
+
+  private apiBaseUrl(): string {
+    const localBase = 'http://127.0.0.1:8000';
+
+    if (typeof window === 'undefined') {
+      return localBase;
+    }
+
+    const hostname = window.location.hostname;
+
+    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
+      return localBase;
+    }
+
+    return `${window.location.protocol}//${hostname}:8000`;
   }
 }

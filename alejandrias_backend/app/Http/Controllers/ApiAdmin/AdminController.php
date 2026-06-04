@@ -243,18 +243,56 @@ class AdminController extends Controller
                 'foro_imagen' => 'image|mimes:jpg,jpeg,png,webp|max:5120',
             ]);
 
-            $path = $request->file('foro_imagen')->store('foros', 'public');
+            $archivo = $request->file('foro_imagen');
+            $archivo->store('foros', 'public');
 
-            return '/storage/' . ltrim($path, '/');
+            return $this->dataUrlImagenSubida($archivo);
         }
 
         $imagen = $request->input('foro_imagen');
 
         if (is_string($imagen) && trim($imagen) !== '') {
-            return trim($imagen);
+            return $this->normalizarRutaImagenForo($imagen);
         }
 
         return $imagenActual;
+    }
+
+    private function normalizarRutaImagenForo(string $imagen): string
+    {
+        $imagen = trim($imagen);
+
+        if (preg_match('/^(data:|blob:)/i', $imagen)) {
+            return $imagen;
+        }
+
+        if (preg_match('/^https?:\/\//i', $imagen)) {
+            $path = parse_url($imagen, PHP_URL_PATH);
+
+            if (is_string($path) && str_starts_with($path, '/storage/')) {
+                return $path;
+            }
+
+            return $imagen;
+        }
+
+        if (str_starts_with($imagen, '/storage/')) {
+            return $imagen;
+        }
+
+        $imagen = ltrim($imagen, '/');
+
+        return str_starts_with($imagen, 'storage/')
+            ? '/' . $imagen
+            : '/storage/' . $imagen;
+    }
+
+    private function dataUrlImagenSubida($archivo): string
+    {
+        $mime = $archivo->getMimeType() ?: 'image/jpeg';
+        $bytes = file_get_contents($archivo->getRealPath());
+
+        return 'data:' . $mime . ';base64,' . base64_encode($bytes ?: '');
     }
 
     public function categorias()
