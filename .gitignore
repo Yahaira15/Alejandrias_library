@@ -5,3 +5,6 @@ dist/
 .env
 venv/
 *.zip
+.env
+.env.*
+service_ia/service_ia/.env

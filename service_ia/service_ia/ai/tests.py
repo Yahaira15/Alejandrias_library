@@ -339,6 +339,97 @@ class OrquestacionIATests(SimpleTestCase):
         self.assertEqual(resultado["categoria"], "tecnologia")
         self.assertTrue(resultado["valor_educativo"])
 
+    def test_normalizacion_publica_contenido_inocente_con_riesgo_bajo(self):
+        casos = [
+            ("Hola", "conversacional"),
+            ("Feliz", "conversacional"),
+            ("Estoy emocionado de aprender Python", "tecnologia"),
+            ("Explicacion de matematicas para principiantes", "educativo"),
+        ]
+
+        for texto, categoria_esperada in casos:
+            with self.subTest(texto=texto):
+                resultado = normalizar_resultado_moderacion(
+                    {
+                        "estado": "revision",
+                        "riesgo": 0.59,
+                        "categoria": "otro",
+                        "razon": "Incertidumbre baja.",
+                        "accion_recomendada": "enviar_revision",
+                        "valor_educativo": False,
+                        "requiere_revision_humana": True,
+                    },
+                    {
+                        "tipo_contenido": "publicacion",
+                        "contenido": {"texto": texto},
+                    },
+                )
+
+                self.assertEqual(resultado["estado"], "permitido")
+                self.assertEqual(resultado["categoria"], categoria_esperada)
+                self.assertFalse(resultado["requiere_revision_humana"])
+
+    def test_normalizacion_safety_medium_no_envia_benigno_a_revision(self):
+        resultado = normalizar_resultado_moderacion(
+            {
+                "estado": "permitido",
+                "riesgo": 0.2,
+                "categoria": "educativo",
+                "razon": "Contenido educativo.",
+                "accion_recomendada": "publicar",
+                "valor_educativo": True,
+                "requiere_revision_humana": False,
+            },
+            {
+                "tipo_contenido": "publicacion",
+                "contenido": {"texto": "Explicacion de Python con ejemplos"},
+            },
+            {
+                "candidates": [
+                    {
+                        "safety_ratings": [
+                            {
+                                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                                "probability": "MEDIUM",
+                                "severity": "LOW",
+                            }
+                        ]
+                    }
+                ]
+            },
+        )
+
+        self.assertEqual(resultado["estado"], "permitido")
+        self.assertFalse(resultado["requiere_revision_humana"])
+
+    def test_normalizacion_no_suaviza_revision_por_venta_o_insulto(self):
+        casos = [
+            ("Vendo cuentas premium", "otro"),
+            ("Eres estupido", "toxicidad"),
+        ]
+
+        for texto, categoria_esperada in casos:
+            with self.subTest(texto=texto):
+                resultado = normalizar_resultado_moderacion(
+                    {
+                        "estado": "revision",
+                        "riesgo": 0.59,
+                        "categoria": "otro",
+                        "razon": "Posible riesgo menor.",
+                        "accion_recomendada": "enviar_revision",
+                        "valor_educativo": False,
+                        "requiere_revision_humana": True,
+                    },
+                    {
+                        "tipo_contenido": "publicacion",
+                        "contenido": {"texto": texto},
+                    },
+                )
+
+                self.assertEqual(resultado["estado"], "revision")
+                self.assertEqual(resultado["categoria"], categoria_esperada)
+                self.assertTrue(resultado["requiere_revision_humana"])
+
     def test_moderacion_envia_toxicidad_leve_a_revision(self):
         resultado = moderacion_respaldo(
             {

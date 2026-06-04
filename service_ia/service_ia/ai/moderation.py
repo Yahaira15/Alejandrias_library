@@ -40,6 +40,10 @@ SAFETY_SCORE = {
     "HIGH": 0.9,
 }
 
+UMBRAL_PUBLICACION_AUTOMATICA = 0.60
+UMBRAL_REVISION_SAFETY_OFICIAL = 0.75
+CATEGORIAS_BENIGNAS = {"otro", "conversacional", "ocio", "educativo", "tecnologia"}
+
 MODERATION_RESPONSE_SCHEMA = {
     "type": "object",
     "properties": {
@@ -86,16 +90,22 @@ Tu tarea es analizar contenido generado por usuarios y devolver SOLO JSON valido
 
 Principios:
 - La IA no elimina contenido: analiza, clasifica, explica y recomienda.
-- Aplica un sesgo permisivo solo ante contenido normal: si hay amenaza, odio, abuso, venta ilegal o dano real claro, no lo permitas.
+- Aplica un sesgo permisivo por defecto: asume que el contenido es valido salvo evidencia clara de riesgo real.
 - El contexto educativo importa. Historia, guerras historicas, anatomia, filosofia, ciencia,
   tecnologia, programacion, lenguajes como PHP, Python o JavaScript, o debates sociales respetuosos no deben bloquearse por defecto.
 - Diferencia contenido educativo legitimo de contenido danino real.
 - No seas extremista ni excesivamente restrictivo. No moderes por palabras aisladas: analiza intencion, contexto y significado completo.
 - Palabras fuertes dentro de historia, noticias, literatura, ejemplos tecnicos, ciberseguridad defensiva o debates normales no son violencia real por si solas.
+- La categoria "otro" NO significa revision por si sola.
+- La incertidumbre baja NO significa revision.
+- Si el riesgo es menor a 0.60 y no hay amenaza, odio, autolesion, sexual explicito, doxxing, acoso grave,
+  instrucciones criminales, spam claro o venta sospechosa, el estado debe ser permitido.
+- Contenido largo, codigo, terminos academicos, explicaciones de Python, historia, matematicas, ciencia o tecnologia deben permitirse si son informativos.
 
 Estados:
 - permitido: contenido educativo, conversacional, ocio, historico, tecnico, programacion, debates normales, humor leve o expresiones inocentes con riesgo bajo.
-- revision: insultos directos, agresividad moderada, toxicidad leve, provocacion, ambiguedad o sospecha concreta.
+- permitido: saludos, emociones positivas, preguntas generales, opiniones respetuosas, mascotas, jardineria, arte, literatura, idiomas y conversaciones cotidianas.
+- revision: insultos directos, agresividad moderada, toxicidad leve, provocacion, ambiguedad real o sospecha concreta.
 - revision: tambien spam, publicidad sospechosa, "gana dinero rapido", compra de seguidores, links raros, ventas, compras,
   subastas, ofertas, precios o intercambios comerciales. Aunque puedan ser inocentes,
   en esta comunidad educativa deben inspeccionarse antes de publicarse.
@@ -104,6 +114,10 @@ Estados:
   armas, doxxing, extorsion, estafas graves, hacking malicioso o instrucciones claramente daninas.
 
 Ejemplos de permitido:
+- "Hola" -> conversacional, permitido.
+- "Feliz" -> conversacional, permitido.
+- "Estoy emocionado de aprender" -> educativo o conversacional, permitido.
+- "Explica Python con ejemplos" -> tecnologia, permitido.
 - "Antecedentes de la caida de Roma" -> educativo, permitido.
 - "Que es un framework?" -> tecnologia o educativo, permitido.
 - "Pandas rojos con tinte rojo" -> ocio o conversacional, permitido.
@@ -235,13 +249,18 @@ def _patrones_educativos():
         r"\bcaida de\b",
         r"\banatomia\b",
         r"\bciencia\b",
+        r"\bfisica\b|\bquimica\b|\bbiologia\b|\bastronomia\b",
         r"\bmatematica(s)?\b",
+        r"\balgebra\b|\bcalculo\b|\bgeometria\b|\bestadistica\b",
         r"\bfilosofia\b",
         r"\bfilosofic",
         r"\breligion\b|\breligiosa(s)?\b|\breligioso(s)?\b",
         r"\btaoismo\b|\btao\b|\bbudismo\b|\bcristianismo\b|\bislam\b|\bhinduismo\b",
         r"\bchina\b|\bantigua china\b|\bcultura(s)?\b",
+        r"\barte\b|\bdibujo\b|\bpintura\b|\bmusica\b",
         r"\bliteratura\b",
+        r"\bidioma(s)?\b|\bingles\b|\bespanol\b|\bfrances\b",
+        r"\bjardineria\b|\bmascota(s)?\b",
         r"\baprend",
         r"\bestudi",
         r"\bexplica(r|cion)?\b",
@@ -261,7 +280,7 @@ def _patrones_tecnologia():
 
 def _patrones_ocio():
     return [
-        r"\bfoto(s)?\b|\bimagen(es)?\b|\bpanda(s)?\b",
+        r"\bfoto(s)?\b|\bimagen(es)?\b|\bpanda(s)?\b|\bmascota(s)?\b",
         r"\bjuego(s)?\b|\bpelicula(s)?\b|\bmusica\b",
         r"\bmalisimo\b.*\bjajaja\b|\bjajaja\b",
         r"\bhumor\b|\bbroma(s)?\b|\bmeme(s)?\b",
@@ -272,7 +291,9 @@ def _patrones_conversacionales():
     return [
         r"\bhola\b|\bbuenas\b|\bhey\b",
         r"\bgracias\b|\bpor favor\b",
+        r"\bfeliz\b|\bcontent(o|a)\b|\bemocionad(o|a)\b|\balegr(e|ia)\b",
         r"\bprobando\b|\bprueba\b|\btest\b",
+        r"\bpregunta\b|\bduda\b|\bconsulta\b",
         r"\bopinion\b|\bdebate\b|\bconversacion\b",
     ]
 
@@ -463,9 +484,9 @@ def _aplicar_safety_oficial(estado, riesgo, categoria, alerta_seguridad, safety_
             "tipo": categoria,
             "razon": "Los filtros oficiales de seguridad de Gemini/Vertex marcaron riesgo alto.",
         }
-    elif score >= 0.6 and estado == "permitido":
+    elif score >= UMBRAL_REVISION_SAFETY_OFICIAL and estado == "permitido":
         estado = "revision"
-        riesgo = max(riesgo, 0.62)
+        riesgo = max(riesgo, UMBRAL_REVISION_SAFETY_OFICIAL)
         categoria = categoria_safety if categoria_safety in CATEGORIAS_VALIDAS else categoria
 
     return estado, riesgo, categoria, alerta_seguridad
@@ -728,8 +749,9 @@ def normalizar_resultado_moderacion(data, payload=None, safety_metadata=None):
     if (
         estado == "revision"
         and not tiene_riesgo_real
-        and riesgo <= 0.55
-        and (categoria in {"otro", "conversacional", "ocio", "educativo", "tecnologia"} or texto)
+        and not riesgo_real
+        and riesgo < UMBRAL_PUBLICACION_AUTOMATICA
+        and (categoria in CATEGORIAS_BENIGNAS or texto)
     ):
         estado = "permitido"
         riesgo = min(riesgo, 0.22)
