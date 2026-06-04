@@ -16,6 +16,7 @@ class Publicacion extends Model
         'publicacion_titulo',
         'publicacion_contenido',
         'publicacion_destacada',
+        'publicacion_likes',
         'publicacion_fecha_creacion',
         'publicacion_fecha_actualizacion',
         'estado_moderacion',
@@ -42,5 +43,10 @@ class Publicacion extends Model
     public function comentarios()
     {
         return $this->hasMany(Comentario::class, 'comentario_publicacion_id');
+    }
+
+    public function likes()
+    {
+        return $this->belongsToMany(Usuario::class, 'publicacion_like', 'publicacion_id', 'usuario_id');
     }
 }

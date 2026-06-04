@@ -45,6 +45,18 @@ export class ForoService {
     });
   }
 
+  puntuarForo(id: number, puntuacion: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/foros/${id}/puntuacion`, { puntuacion }).pipe(
+      tap(() => this.cacheForos = null)
+    );
+  }
+
+  eliminarPuntuacionForo(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/foros/${id}/puntuacion`).pipe(
+      tap(() => this.cacheForos = null)
+    );
+  }
+
   getCategorias(): Observable<any> {
     if (this.cacheCategorias) return of(this.cacheCategorias);
     return this.http.get(`${this.apiUrl}/categorias`).pipe(
@@ -95,6 +107,10 @@ export class ForoService {
 
   eliminarPublicacion(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/publicaciones/${id}`);
+  }
+
+  toggleLikePublicacion(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/publicaciones/${id}/like`, {});
   }
 
   getComentariosPublicacion(publicacionId: number): Observable<any> {
@@ -159,6 +175,10 @@ export class ForoService {
 
   eliminarComentario(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/comentarios/${id}`);
+  }
+
+  toggleLikeComentario(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/comentarios/${id}/like`, {});
   }
 
   resolverImagenForo(imagen: string | null | undefined): string {

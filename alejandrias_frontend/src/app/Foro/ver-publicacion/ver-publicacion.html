@@ -28,11 +28,23 @@
         <div class="publication-author-row">
           <span>{{ publicacion.usuario?.usuario_nombre }} {{ publicacion.usuario?.usuario_apellido }}</span>
           <span>{{ publicacion.comentarios_count || comentarios.length }} comentarios</span>
+          <span>{{ publicacion.publicacion_likes || 0 }} me gusta</span>
         </div>
 
         <p class="publication-body">{{ publicacion.publicacion_contenido }}</p>
 
         <div class="comment-actions">
+          <button
+            type="button"
+            class="heart-button"
+            [class.heart-active]="publicacion.liked_by_me"
+            [disabled]="!usuario || likePublicacionEnProceso"
+            (click)="toggleLikePublicacion()"
+            [attr.aria-label]="publicacion.liked_by_me ? 'Quitar me gusta' : 'Dar me gusta'"
+          >
+            <span>{{ publicacion.liked_by_me ? '♥' : '♡' }}</span>
+            {{ publicacion.publicacion_likes || 0 }}
+          </button>
           <button type="button" class="btn btn-secondary" (click)="abrirReporte('publicacion', publicacion.publicacion_id, publicacion.publicacion_titulo)">
             Reportar publicacion
           </button>
@@ -127,6 +139,17 @@
             <p class="comment-content">{{ comentario.comentario_contenido }}</p>
 
             <div class="comment-actions">
+              <button
+                type="button"
+                class="heart-button"
+                [class.heart-active]="comentario.liked_by_me"
+                [disabled]="!usuario || likeComentarioEnProcesoId === comentario.comentario_id"
+                (click)="toggleLikeComentario(comentario)"
+                [attr.aria-label]="comentario.liked_by_me ? 'Quitar me gusta' : 'Dar me gusta'"
+              >
+                <span>{{ comentario.liked_by_me ? '♥' : '♡' }}</span>
+                {{ comentario.comentario_likes || 0 }}
+              </button>
               <ng-container *ngIf="esComentarioPropio(comentario)">
                 <button (click)="iniciarEdicionComentario(comentario)" class="btn btn-secondary">Editar comentario</button>
                 <button (click)="eliminarComentario(comentario.comentario_id)" class="btn btn-danger" [disabled]="eliminandoComentarioId === comentario.comentario_id">

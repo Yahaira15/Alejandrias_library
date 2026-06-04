@@ -31,11 +31,14 @@ export class VerPublicacionComponent implements OnInit {
   feedbackMensaje = '';
   feedbackTipo: 'success' | 'error' | '' = '';
   private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  private likesRefreshInterval: ReturnType<typeof setInterval> | null = null;
   reporteModalAbierto = false;
   reporteObjetivo: { tipo: ReportePayload['reporte_tipo']; id: number; titulo: string } | null = null;
   reporteMotivo = '';
   reporteDescripcion = '';
   enviandoReporte = false;
+  likePublicacionEnProceso = false;
+  likeComentarioEnProcesoId: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -49,7 +52,20 @@ export class VerPublicacionComponent implements OnInit {
     this.publicacionId = Number(this.route.snapshot.paramMap.get('publicacion_id'));
     this.cargarPublicacion();
     this.cargarComentarios();
+    this.iniciarActualizacionLikes();
     this.cdr.detectChanges();
+  }
+
+  ngOnDestroy(): void {
+    if (this.feedbackTimeout) {
+      clearTimeout(this.feedbackTimeout);
+      this.feedbackTimeout = null;
+    }
+
+    if (this.likesRefreshInterval) {
+      clearInterval(this.likesRefreshInterval);
+      this.likesRefreshInterval = null;
+    }
   }
 
   cargarPublicacion(): void {
@@ -101,6 +117,62 @@ export class VerPublicacionComponent implements OnInit {
     });
   }
 
+  private iniciarActualizacionLikes(): void {
+    if (this.likesRefreshInterval) {
+      clearInterval(this.likesRefreshInterval);
+    }
+
+    this.likesRefreshInterval = setInterval(() => {
+      this.refrescarLikes();
+    }, 5000);
+  }
+
+  private refrescarLikes(): void {
+    if (!this.publicacionId || this.loading || this.loadingComentarios) {
+      return;
+    }
+
+    this.foroService.getPublicacion(this.publicacionId).subscribe({
+      next: (data) => {
+        if (this.publicacion) {
+          this.publicacion = {
+            ...this.publicacion,
+            publicacion_likes: data?.publicacion_likes ?? this.publicacion.publicacion_likes ?? 0,
+            liked_by_me: data?.liked_by_me ?? this.publicacion.liked_by_me ?? false,
+            comentarios_count: data?.comentarios_count ?? this.publicacion.comentarios_count ?? 0
+          };
+        }
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.warn('No se pudieron refrescar los likes de la publicacion:', err)
+    });
+
+    this.foroService.getComentariosPublicacion(this.publicacionId).subscribe({
+      next: (data) => {
+        const actualizados = Array.isArray(data) ? data : [];
+        const porId = new Map(actualizados.map((comentario: any) => [comentario.comentario_id, comentario]));
+
+        this.comentarios = this.comentarios.map((comentario) => {
+          const actualizado: any = porId.get(comentario.comentario_id);
+
+          if (!actualizado) {
+            return comentario;
+          }
+
+          return {
+            ...comentario,
+            comentario_likes: actualizado.comentario_likes ?? comentario.comentario_likes ?? 0,
+            liked_by_me: actualizado.liked_by_me ?? comentario.liked_by_me ?? false
+          };
+        });
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.warn('No se pudieron refrescar los likes de comentarios:', err)
+    });
+  }
+
   crearComentario(): void {
     if (!this.puedeCrearComentario) {
       return;
@@ -128,6 +200,51 @@ export class VerPublicacionComponent implements OnInit {
         console.error('Error creando comentario:', err);
         this.creandoComentario = false;
         this.mostrarFeedback('error', this.mensajeModeracionDesdeError(err, 'No se pudo enviar el comentario.'));
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleLikePublicacion(): void {
+    if (!this.usuario || !this.publicacion || this.likePublicacionEnProceso) {
+      return;
+    }
+
+    this.likePublicacionEnProceso = true;
+    this.foroService.toggleLikePublicacion(this.publicacion.publicacion_id).subscribe({
+      next: (res) => {
+        this.publicacion = {
+          ...this.publicacion,
+          liked_by_me: !!res?.liked,
+          publicacion_likes: res?.publicacion_likes ?? this.publicacion.publicacion_likes ?? 0
+        };
+        this.likePublicacionEnProceso = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.likePublicacionEnProceso = false;
+        this.mostrarFeedback('error', err?.error?.error || 'No se pudo actualizar el me gusta.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleLikeComentario(comentario: any): void {
+    if (!this.usuario || this.likeComentarioEnProcesoId === comentario.comentario_id) {
+      return;
+    }
+
+    this.likeComentarioEnProcesoId = comentario.comentario_id;
+    this.foroService.toggleLikeComentario(comentario.comentario_id).subscribe({
+      next: (res) => {
+        comentario.liked_by_me = !!res?.liked;
+        comentario.comentario_likes = res?.comentario_likes ?? comentario.comentario_likes ?? 0;
+        this.likeComentarioEnProcesoId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.likeComentarioEnProcesoId = null;
+        this.mostrarFeedback('error', err?.error?.error || 'No se pudo actualizar el me gusta.');
         this.cdr.detectChanges();
       }
     });

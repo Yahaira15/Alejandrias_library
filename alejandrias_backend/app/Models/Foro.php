@@ -8,6 +8,7 @@ use App\Models\Categoria;
 use App\Models\Subcategoria;
 use App\Models\Publicacion;
 use App\Models\Comentario;
+use App\Models\PuntuacionForo;
 
 class Foro extends Model
 {
@@ -110,5 +111,10 @@ class Foro extends Model
             'foro_id',
             'publicacion_id'
         );
+    }
+
+    public function puntuaciones()
+    {
+        return $this->hasMany(PuntuacionForo::class, 'foro_id', 'foro_id');
     }
 }

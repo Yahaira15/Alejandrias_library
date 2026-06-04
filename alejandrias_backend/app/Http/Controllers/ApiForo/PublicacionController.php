@@ -12,6 +12,7 @@ use App\Services\Gamification\GamificationService;
 use App\Services\Gamification\XpService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class PublicacionController extends Controller
@@ -51,6 +52,8 @@ class PublicacionController extends Controller
             ->orderBy('publicacion_destacada', 'desc')
             ->orderBy('publicacion_fecha_creacion', 'desc')
             ->get();
+
+        $publicaciones = $this->adjuntarLikes($publicaciones, auth('sanctum')->user());
 
         return response()->json($publicaciones, 200);
     }
@@ -223,7 +226,64 @@ class PublicacionController extends Controller
             }
         }
 
-        return response()->json($publicacion, 200);
+        return response()->json($this->adjuntarLike($publicacion, auth('sanctum')->user()), 200);
+    }
+
+    public function toggleLike($id)
+    {
+        $usuario = auth('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $publicacion = Publicacion::with('foro')->find($id);
+
+        if (!$publicacion) {
+            return response()->json(['error' => 'Publicacion no encontrada'], 404);
+        }
+
+        if ($publicacion->foro?->foro_privado && !$this->usuarioRegistradoEnForo($publicacion->foro, $usuario)) {
+            return response()->json(['error' => 'Debes registrarte en el foro antes de dar me gusta'], 403);
+        }
+
+        if (!Schema::hasTable('publicacion_like')) {
+            return response()->json(['error' => 'La base de datos requiere migracion para likes'], 500);
+        }
+
+        $like = DB::table('publicacion_like')
+            ->where('publicacion_id', $publicacion->publicacion_id)
+            ->where('usuario_id', $usuario->usuario_id)
+            ->first();
+
+        if ($like) {
+            DB::table('publicacion_like')
+                ->where('publicacion_id', $publicacion->publicacion_id)
+                ->where('usuario_id', $usuario->usuario_id)
+                ->delete();
+            $liked = false;
+        } else {
+            DB::table('publicacion_like')->insert([
+                'publicacion_id' => $publicacion->publicacion_id,
+                'usuario_id' => $usuario->usuario_id,
+                'fecha_creacion' => now(),
+            ]);
+            $liked = true;
+        }
+
+        $likes = DB::table('publicacion_like')
+            ->where('publicacion_id', $publicacion->publicacion_id)
+            ->count();
+
+        if (Schema::hasColumn('publicacion', 'publicacion_likes')) {
+            $publicacion->publicacion_likes = $likes;
+            $publicacion->save();
+        }
+
+        return response()->json([
+            'liked' => $liked,
+            'publicacion_likes' => $likes,
+        ], 200);
     }
 
     public function verificarRegistro($id)
@@ -353,5 +413,68 @@ class PublicacionController extends Controller
                 'detalle' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function adjuntarLikes($publicaciones, $usuario)
+    {
+        if (!Schema::hasTable('publicacion_like')) {
+            return $publicaciones->map(function ($publicacion) {
+                $publicacion->publicacion_likes = (int) ($publicacion->publicacion_likes ?? 0);
+                $publicacion->liked_by_me = false;
+                return $publicacion;
+            });
+        }
+
+        $ids = $publicaciones->pluck('publicacion_id')->all();
+        $likesPorPublicacion = DB::table('publicacion_like')
+            ->select('publicacion_id', DB::raw('COUNT(*) as total'))
+            ->whereIn('publicacion_id', $ids)
+            ->groupBy('publicacion_id')
+            ->pluck('total', 'publicacion_id');
+
+        $likesUsuario = collect();
+        if ($usuario) {
+            $likesUsuario = DB::table('publicacion_like')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->whereIn('publicacion_id', $ids)
+                ->pluck('publicacion_id')
+                ->flip();
+        }
+
+        return $publicaciones->map(function ($publicacion) use ($likesPorPublicacion, $likesUsuario) {
+            $publicacion->publicacion_likes = (int) ($likesPorPublicacion[$publicacion->publicacion_id] ?? $publicacion->publicacion_likes ?? 0);
+            $publicacion->liked_by_me = $likesUsuario->has($publicacion->publicacion_id);
+            return $publicacion;
+        });
+    }
+
+    private function adjuntarLike(Publicacion $publicacion, $usuario): Publicacion
+    {
+        if (!Schema::hasTable('publicacion_like')) {
+            $publicacion->publicacion_likes = (int) ($publicacion->publicacion_likes ?? 0);
+            $publicacion->liked_by_me = false;
+            return $publicacion;
+        }
+
+        $publicacion->publicacion_likes = DB::table('publicacion_like')
+            ->where('publicacion_id', $publicacion->publicacion_id)
+            ->count();
+        $publicacion->liked_by_me = $usuario
+            ? DB::table('publicacion_like')
+                ->where('publicacion_id', $publicacion->publicacion_id)
+                ->where('usuario_id', $usuario->usuario_id)
+                ->exists()
+            : false;
+
+        return $publicacion;
+    }
+
+    private function usuarioRegistradoEnForo(Foro $foro, $usuario): bool
+    {
+        return $foro->foro_creador_id == $usuario->usuario_id
+            || $usuario->usuario_rol === 'admin'
+            || $foro->miembros()
+                ->where('usuario.usuario_id', $usuario->usuario_id)
+                ->exists();
     }
 }

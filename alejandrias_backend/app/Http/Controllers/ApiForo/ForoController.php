@@ -10,10 +10,12 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\Foro;
 use App\Models\Notificacion;
+use App\Models\PuntuacionForo;
 use App\Services\IA\Moderation\ContentModerationService;
 use App\Services\Gamification\GamificationService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class ForoController extends Controller
@@ -29,6 +31,7 @@ class ForoController extends Controller
             ->with(['usuario', 'categoria'])
             ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
             ->get();
+        $foros = $this->adjuntarPuntuaciones($foros, Auth::guard('sanctum')->user());
         return response()->json($foros, 200);
     }
 
@@ -58,6 +61,8 @@ class ForoController extends Controller
                 ->get();
         }
 
+        $foros = $this->adjuntarPuntuaciones($foros, $usuario);
+
         return response()->json($foros, 200);
     }
 
@@ -81,6 +86,8 @@ class ForoController extends Controller
             ->with(['usuario', 'categoria'])
             ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
             ->get();
+
+        $foros = $this->adjuntarPuntuaciones($foros, $usuario);
 
         return response()->json($foros, 200);
     }
@@ -212,7 +219,90 @@ class ForoController extends Controller
             }
         }
 
-        return response()->json($foro, 200);
+        return response()->json($this->adjuntarPuntuacion($foro, Auth::guard('sanctum')->user()), 200);
+    }
+
+    public function puntuar(Request $request, $id)
+    {
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if ($usuario->usuario_rol !== 'explorador') {
+            return response()->json(['error' => 'Solo los exploradores pueden puntuar foros'], 403);
+        }
+
+        $foro = Foro::find($id);
+
+        if (!$foro) {
+            return response()->json(['error' => 'Foro no encontrado'], 404);
+        }
+
+        if (!$this->usuarioRegistradoEnForo($foro, $usuario)) {
+            return response()->json(['error' => 'Debes registrarte en el foro antes de puntuarlo'], 403);
+        }
+
+        $data = $request->validate([
+            'puntuacion' => 'required|numeric|between:0,5',
+        ]);
+
+        $puntuacion = (float) $data['puntuacion'];
+        if (abs(($puntuacion * 2) - round($puntuacion * 2)) > 0.0001) {
+            return response()->json(['error' => 'La puntuacion debe ir de 0 a 5 en pasos de 0.5'], 422);
+        }
+
+        $registro = PuntuacionForo::updateOrCreate(
+            [
+                'usuario_id' => $usuario->usuario_id,
+                'foro_id' => $foro->foro_id,
+            ],
+            [
+                'puntuacion' => $puntuacion,
+                'fecha_creacion' => now(),
+                'fecha_actualizacion' => now(),
+            ]
+        );
+
+        $foro = $this->adjuntarPuntuacion($foro->fresh(), $usuario);
+
+        return response()->json([
+            'puntuacion' => $registro,
+            'foro_puntuacion_promedio' => $foro->foro_puntuacion_promedio,
+            'foro_puntuacion_promedio_redondeada' => $foro->foro_puntuacion_promedio_redondeada,
+            'foro_puntuaciones_count' => $foro->foro_puntuaciones_count,
+            'mi_puntuacion' => $foro->mi_puntuacion,
+        ], 200);
+    }
+
+    public function eliminarPuntuacion($id)
+    {
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $foro = Foro::find($id);
+
+        if (!$foro) {
+            return response()->json(['error' => 'Foro no encontrado'], 404);
+        }
+
+        PuntuacionForo::where('usuario_id', $usuario->usuario_id)
+            ->where('foro_id', $foro->foro_id)
+            ->delete();
+
+        $foro = $this->adjuntarPuntuacion($foro->fresh(), $usuario);
+
+        return response()->json([
+            'mensaje' => 'Puntuacion eliminada',
+            'foro_puntuacion_promedio' => $foro->foro_puntuacion_promedio,
+            'foro_puntuacion_promedio_redondeada' => $foro->foro_puntuacion_promedio_redondeada,
+            'foro_puntuaciones_count' => $foro->foro_puntuaciones_count,
+            'mi_puntuacion' => $foro->mi_puntuacion,
+        ], 200);
     }
 
     public function update(Request $request, $id)
@@ -546,6 +636,93 @@ class ForoController extends Controller
         }
 
         return response()->json($foroEncontrado, 200);
+    }
+
+    private function adjuntarPuntuaciones($foros, $usuario)
+    {
+        if (!Schema::hasTable('puntuacion_foro')) {
+            return $foros->map(fn ($foro) => $this->puntuacionVacia($foro));
+        }
+
+        $ids = $foros->pluck('foro_id')->all();
+        $estadisticas = DB::table('puntuacion_foro')
+            ->select('foro_id', DB::raw('AVG(puntuacion) as promedio'), DB::raw('COUNT(*) as total'))
+            ->whereIn('foro_id', $ids)
+            ->groupBy('foro_id')
+            ->get()
+            ->keyBy('foro_id');
+
+        $misPuntuaciones = collect();
+        if ($usuario) {
+            $misPuntuaciones = DB::table('puntuacion_foro')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->whereIn('foro_id', $ids)
+                ->pluck('puntuacion', 'foro_id');
+        }
+
+        return $foros->map(function ($foro) use ($estadisticas, $misPuntuaciones) {
+            $stat = $estadisticas->get($foro->foro_id);
+            $promedio = $stat ? (float) $stat->promedio : 0.0;
+            $foro->foro_puntuacion_promedio = $promedio;
+            $foro->foro_puntuacion_promedio_redondeada = $this->redondearMediaEstrella($promedio);
+            $foro->foro_puntuaciones_count = $stat ? (int) $stat->total : 0;
+            $foro->mi_puntuacion = $misPuntuaciones->has($foro->foro_id)
+                ? (float) $misPuntuaciones[$foro->foro_id]
+                : null;
+            return $foro;
+        });
+    }
+
+    private function adjuntarPuntuacion(Foro $foro, $usuario): Foro
+    {
+        if (!Schema::hasTable('puntuacion_foro')) {
+            return $this->puntuacionVacia($foro);
+        }
+
+        $promedio = (float) DB::table('puntuacion_foro')
+            ->where('foro_id', $foro->foro_id)
+            ->avg('puntuacion');
+        $foro->foro_puntuacion_promedio = $promedio;
+        $foro->foro_puntuacion_promedio_redondeada = $this->redondearMediaEstrella($promedio);
+        $foro->foro_puntuaciones_count = DB::table('puntuacion_foro')
+            ->where('foro_id', $foro->foro_id)
+            ->count();
+        $foro->mi_puntuacion = $usuario
+            ? DB::table('puntuacion_foro')
+                ->where('foro_id', $foro->foro_id)
+                ->where('usuario_id', $usuario->usuario_id)
+                ->value('puntuacion')
+            : null;
+
+        if ($foro->mi_puntuacion !== null) {
+            $foro->mi_puntuacion = (float) $foro->mi_puntuacion;
+        }
+
+        return $foro;
+    }
+
+    private function puntuacionVacia(Foro $foro): Foro
+    {
+        $foro->foro_puntuacion_promedio = 0;
+        $foro->foro_puntuacion_promedio_redondeada = 0;
+        $foro->foro_puntuaciones_count = 0;
+        $foro->mi_puntuacion = null;
+
+        return $foro;
+    }
+
+    private function redondearMediaEstrella(float $valor): float
+    {
+        return max(0, min(5, round($valor * 2) / 2));
+    }
+
+    private function usuarioRegistradoEnForo(Foro $foro, $usuario): bool
+    {
+        return $foro->foro_creador_id == $usuario->usuario_id
+            || $usuario->usuario_rol === 'admin'
+            || $foro->miembros()
+                ->where('usuario.usuario_id', $usuario->usuario_id)
+                ->exists();
     }
 
     private function passwordForoCoincide(Foro $foro, string $password): bool

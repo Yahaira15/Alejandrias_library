@@ -35,6 +35,54 @@
         <span>Publicaciones: {{ publicaciones.length }}</span>
       </div>
 
+      <div class="rating-panel">
+        <div class="stars-display" [attr.aria-label]="'Puntuacion promedio ' + (foro.foro_puntuacion_promedio_redondeada || 0)">
+          <span
+            *ngFor="let estrella of estrellas"
+            class="star"
+            [class.star-full]="claseEstrella(foro.foro_puntuacion_promedio_redondeada, estrella) === 'full'"
+            [class.star-half]="claseEstrella(foro.foro_puntuacion_promedio_redondeada, estrella) === 'half'"
+          >★</span>
+        </div>
+        <span class="rating-summary">
+          {{ foro.foro_puntuacion_promedio_redondeada || 0 }}/5 · {{ foro.foro_puntuaciones_count || 0 }} puntuacion{{ (foro.foro_puntuaciones_count || 0) === 1 ? '' : 'es' }}
+        </span>
+
+        <div class="rating-control" *ngIf="puedePuntuarForo">
+          <span>Tu puntuacion: {{ puntuacionUsuarioTexto }}</span>
+          <button
+            type="button"
+            class="rating-zero"
+            [class.rating-selected]="puntuacionSeleccionada(0)"
+            (click)="puntuarForo(0)"
+            [disabled]="puntuandoForo"
+            aria-label="Puntuar 0"
+          >
+            0
+          </button>
+          <div class="rating-stars-input">
+            <span *ngFor="let estrella of estrellas" class="rating-star-button">
+              <button type="button" (click)="puntuarForo(estrella - 0.5)" [disabled]="puntuandoForo" [attr.aria-label]="'Puntuar ' + (estrella - 0.5)"></button>
+              <button type="button" (click)="puntuarForo(estrella)" [disabled]="puntuandoForo" [attr.aria-label]="'Puntuar ' + estrella"></button>
+              <span
+                class="star"
+                [class.star-full]="claseEstrella(foro.mi_puntuacion, estrella) === 'full'"
+                [class.star-half]="claseEstrella(foro.mi_puntuacion, estrella) === 'half'"
+              >★</span>
+            </span>
+          </div>
+          <button
+            type="button"
+            class="rating-clear"
+            *ngIf="foro.mi_puntuacion != null"
+            (click)="eliminarPuntuacionForo()"
+            [disabled]="puntuandoForo"
+          >
+            Quitar puntuacion
+          </button>
+        </div>
+      </div>
+
       <div class="publication-actions">
         <button type="button" class="btn btn-secondary" (click)="abrirReporte('foro', foro.foro_id, foro.foro_titulo)">
           Reportar foro
@@ -156,10 +204,22 @@
 
               <div class="publication-stats">
                 <span class="stats-pill">{{ publicacion.comentarios_count || 0 }} Comentarios</span>
+                <span class="stats-pill">{{ publicacion.publicacion_likes || 0 }} Me gusta</span>
               </div>
             </a>
 
             <div class="publication-actions">
+              <button
+                type="button"
+                class="heart-button"
+                [class.heart-active]="publicacion.liked_by_me"
+                [disabled]="!usuario || likePublicacionEnProcesoId === publicacion.publicacion_id"
+                (click)="toggleLikePublicacion(publicacion)"
+                [attr.aria-label]="publicacion.liked_by_me ? 'Quitar me gusta' : 'Dar me gusta'"
+              >
+                <span>{{ publicacion.liked_by_me ? '♥' : '♡' }}</span>
+                {{ publicacion.publicacion_likes || 0 }}
+              </button>
               <a [routerLink]="['/publicaciones', publicacion.publicacion_id]" class="btn btn-primary">
                 Ver publicacion y comentar
               </a>
