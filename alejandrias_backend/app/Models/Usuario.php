@@ -53,6 +53,12 @@ class Usuario extends Authenticatable
         return $this->hasMany(Foro::class, 'foro_creador_id', 'usuario_id');
     }
 
+    public function forosFavoritos()
+    {
+        return $this->belongsToMany(Foro::class, 'foro_favorito', 'usuario_id', 'foro_id')
+            ->withPivot('fecha_creacion');
+    }
+
     public function sanciones()
     {
         return $this->hasMany(Sancion::class, 'sancion_usuario_id', 'usuario_id');

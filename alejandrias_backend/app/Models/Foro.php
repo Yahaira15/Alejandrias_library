@@ -96,6 +96,12 @@ class Foro extends Model
         return $this->belongsToMany(Usuario::class, 'foro_usuario', 'foro_id', 'usuario_id');
     }
 
+    public function usuariosFavoritos()
+    {
+        return $this->belongsToMany(Usuario::class, 'foro_favorito', 'foro_id', 'usuario_id')
+            ->withPivot('fecha_creacion');
+    }
+
     public function publicaciones()
     {
         return $this->hasMany(Publicacion::class, 'publicacion_foro_id', 'foro_id');

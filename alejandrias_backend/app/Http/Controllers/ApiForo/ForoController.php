@@ -305,6 +305,99 @@ class ForoController extends Controller
         ], 200);
     }
 
+    public function forosFavoritos()
+    {
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if (!Schema::hasTable('foro_favorito')) {
+            return response()->json([], 200);
+        }
+
+        $ids = DB::table('foro_favorito')
+            ->where('usuario_id', $usuario->usuario_id)
+            ->orderByDesc('fecha_creacion')
+            ->pluck('foro_id')
+            ->all();
+
+        if (empty($ids)) {
+            return response()->json([], 200);
+        }
+
+        $foros = Foro::whereIn('foro_id', $ids)
+            ->when(Schema::hasColumn('foro', 'foro_visibilidad'), function ($query) use ($usuario) {
+                if ($usuario->usuario_rol !== 'admin') {
+                    $query->where('foro_visibilidad', 'visible');
+                }
+            })
+            ->with(['usuario', 'categoria'])
+            ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
+            ->get()
+            ->filter(fn ($foro) => $this->usuarioPuedeVerForo($foro, $usuario))
+            ->sortBy(fn ($foro) => array_search($foro->foro_id, $ids, true))
+            ->values();
+
+        return response()->json($this->adjuntarPuntuaciones($foros, $usuario), 200);
+    }
+
+    public function toggleFavorito($id)
+    {
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        if (!Schema::hasTable('foro_favorito')) {
+            return response()->json(['error' => 'El modulo de favoritos no esta disponible'], 503);
+        }
+
+        $foro = Foro::find($id);
+
+        if (!$foro) {
+            return response()->json(['error' => 'Foro no encontrado'], 404);
+        }
+
+        if (!$this->usuarioPuedeVerForo($foro, $usuario)) {
+            return response()->json(['error' => 'No puedes marcar este foro como favorito'], 403);
+        }
+
+        $favorito = DB::table('foro_favorito')
+            ->where('usuario_id', $usuario->usuario_id)
+            ->where('foro_id', $foro->foro_id)
+            ->exists();
+
+        if ($favorito) {
+            DB::table('foro_favorito')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->where('foro_id', $foro->foro_id)
+                ->delete();
+            $favorito = false;
+        } else {
+            DB::table('foro_favorito')->insert([
+                'usuario_id' => $usuario->usuario_id,
+                'foro_id' => $foro->foro_id,
+                'fecha_creacion' => now(),
+            ]);
+            $favorito = true;
+        }
+
+        $foro = Foro::with(['usuario', 'categoria'])
+            ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
+            ->find($foro->foro_id);
+        $foro = $this->adjuntarPuntuacion($foro, $usuario);
+
+        return response()->json([
+            'mensaje' => $favorito ? 'Foro agregado a favoritos' : 'Foro quitado de favoritos',
+            'mi_favorito' => $favorito,
+            'foro_favoritos_count' => $foro->foro_favoritos_count,
+            'foro' => $foro,
+        ], 200);
+    }
+
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
@@ -572,6 +665,12 @@ class ForoController extends Controller
         }
 
         $foro->miembros()->detach($usuario->usuario_id);
+        if (Schema::hasTable('foro_favorito')) {
+            DB::table('foro_favorito')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->where('foro_id', $foro->foro_id)
+                ->delete();
+        }
 
         return response()->json([
             'mensaje' => 'Foro eliminado de tu lista de seguimiento'
@@ -641,7 +740,10 @@ class ForoController extends Controller
     private function adjuntarPuntuaciones($foros, $usuario)
     {
         if (!Schema::hasTable('puntuacion_foro')) {
-            return $foros->map(fn ($foro) => $this->puntuacionVacia($foro));
+            return $this->adjuntarFavoritos(
+                $foros->map(fn ($foro) => $this->puntuacionVacia($foro)),
+                $usuario
+            );
         }
 
         $ids = $foros->pluck('foro_id')->all();
@@ -660,7 +762,7 @@ class ForoController extends Controller
                 ->pluck('puntuacion', 'foro_id');
         }
 
-        return $foros->map(function ($foro) use ($estadisticas, $misPuntuaciones) {
+        $foros = $foros->map(function ($foro) use ($estadisticas, $misPuntuaciones) {
             $stat = $estadisticas->get($foro->foro_id);
             $promedio = $stat ? (float) $stat->promedio : 0.0;
             $foro->foro_puntuacion_promedio = $promedio;
@@ -671,12 +773,14 @@ class ForoController extends Controller
                 : null;
             return $foro;
         });
+
+        return $this->adjuntarFavoritos($foros, $usuario);
     }
 
     private function adjuntarPuntuacion(Foro $foro, $usuario): Foro
     {
         if (!Schema::hasTable('puntuacion_foro')) {
-            return $this->puntuacionVacia($foro);
+            return $this->adjuntarFavorito($this->puntuacionVacia($foro), $usuario);
         }
 
         $promedio = (float) DB::table('puntuacion_foro')
@@ -697,6 +801,66 @@ class ForoController extends Controller
         if ($foro->mi_puntuacion !== null) {
             $foro->mi_puntuacion = (float) $foro->mi_puntuacion;
         }
+
+        return $this->adjuntarFavorito($foro, $usuario);
+    }
+
+    private function adjuntarFavoritos($foros, $usuario)
+    {
+        if (!Schema::hasTable('foro_favorito')) {
+            return $foros->map(fn ($foro) => $this->favoritoVacio($foro));
+        }
+
+        $ids = $foros->pluck('foro_id')->all();
+        if (empty($ids)) {
+            return $foros->map(fn ($foro) => $this->favoritoVacio($foro));
+        }
+
+        $conteos = DB::table('foro_favorito')
+            ->select('foro_id', DB::raw('COUNT(*) as total'))
+            ->whereIn('foro_id', $ids)
+            ->groupBy('foro_id')
+            ->pluck('total', 'foro_id');
+
+        $misFavoritos = collect();
+        if ($usuario) {
+            $misFavoritos = DB::table('foro_favorito')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->whereIn('foro_id', $ids)
+                ->pluck('foro_id')
+                ->flip();
+        }
+
+        return $foros->map(function ($foro) use ($conteos, $misFavoritos) {
+            $foro->foro_favoritos_count = (int) ($conteos[$foro->foro_id] ?? 0);
+            $foro->mi_favorito = $misFavoritos->has($foro->foro_id);
+            return $foro;
+        });
+    }
+
+    private function adjuntarFavorito(Foro $foro, $usuario): Foro
+    {
+        if (!Schema::hasTable('foro_favorito')) {
+            return $this->favoritoVacio($foro);
+        }
+
+        $foro->foro_favoritos_count = DB::table('foro_favorito')
+            ->where('foro_id', $foro->foro_id)
+            ->count();
+        $foro->mi_favorito = $usuario
+            ? DB::table('foro_favorito')
+                ->where('foro_id', $foro->foro_id)
+                ->where('usuario_id', $usuario->usuario_id)
+                ->exists()
+            : false;
+
+        return $foro;
+    }
+
+    private function favoritoVacio(Foro $foro): Foro
+    {
+        $foro->foro_favoritos_count = 0;
+        $foro->mi_favorito = false;
 
         return $foro;
     }
@@ -723,6 +887,23 @@ class ForoController extends Controller
             || $foro->miembros()
                 ->where('usuario.usuario_id', $usuario->usuario_id)
                 ->exists();
+    }
+
+    private function usuarioPuedeVerForo(Foro $foro, $usuario): bool
+    {
+        if (
+            Schema::hasColumn('foro', 'foro_visibilidad')
+            && $foro->foro_visibilidad !== 'visible'
+            && (!$usuario || ($usuario->usuario_rol !== 'admin' && $foro->foro_creador_id !== $usuario->usuario_id))
+        ) {
+            return false;
+        }
+
+        if (!$foro->foro_privado) {
+            return true;
+        }
+
+        return $usuario && $this->usuarioRegistradoEnForo($foro, $usuario);
     }
 
     private function passwordForoCoincide(Foro $foro, string $password): bool

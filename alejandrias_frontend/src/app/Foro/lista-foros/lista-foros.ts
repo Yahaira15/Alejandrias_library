@@ -49,6 +49,7 @@ export class ListaForos implements OnInit, OnDestroy {
   errorRegistro = '';
   registrandoForo = false;
   registrandoForoId: number | null = null;
+  favoritoProcesandoId: number | null = null;
   buscandoPrivado = false;
   reporteModalAbierto = false;
   reporteObjetivo: { tipo: ReportePayload['reporte_tipo']; id: number; titulo: string } | null = null;
@@ -283,6 +284,29 @@ export class ListaForos implements OnInit, OnDestroy {
         this.registrandoForoId = null;
         this.errorRegistro = err?.error?.error || 'No se pudo registrar al foro.';
         alert(this.errorRegistro);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleFavorito(foro: any, event: Event): void {
+    event.stopPropagation();
+
+    if (!foro?.foro_id || this.favoritoProcesandoId) return;
+
+    this.favoritoProcesandoId = foro.foro_id;
+
+    this.foroService.toggleFavoritoForo(foro.foro_id).subscribe({
+      next: (res: any) => {
+        foro.mi_favorito = !!res?.mi_favorito;
+        foro.foro_favoritos_count = res?.foro_favoritos_count ?? foro.foro_favoritos_count ?? 0;
+        this.favoritoProcesandoId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error actualizando favorito', err);
+        this.favoritoProcesandoId = null;
+        alert(err?.error?.error || 'No se pudo actualizar el favorito.');
         this.cdr.detectChanges();
       }
     });

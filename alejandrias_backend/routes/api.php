@@ -94,10 +94,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/foros/{id}', [ForoController::class, 'update']);
     Route::delete('/foros/{id}', [ForoController::class, 'destroy']);
     Route::get('/mis-foros', [ForoController::class, 'misForos']);
+    Route::get('/foros-favoritos', [ForoController::class, 'forosFavoritos']);
     Route::post('/foros/privado/buscar', [ForoController::class, 'buscarPrivadoPorPassword']);
     Route::post('/foros/{id}/registrarse', [ForoController::class, 'registrar']);
     Route::get('/foros/{id}/registro', [ForoController::class, 'verificarRegistro']);
     Route::delete('/foros/{id}/registro', [ForoController::class, 'eliminarRegistro']);
+    Route::post('/foros/{id}/favorito', [ForoController::class, 'toggleFavorito']);
     Route::post('/foros/{id}/password', [ForoController::class, 'revelarPassword']);
     Route::post('/foros/{id}/puntuacion', [ForoController::class, 'puntuar']);
     Route::delete('/foros/{id}/puntuacion', [ForoController::class, 'eliminarPuntuacion']);

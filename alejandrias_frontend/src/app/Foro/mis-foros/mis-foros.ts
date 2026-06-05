@@ -37,6 +37,7 @@ export class MisForos implements OnInit, OnDestroy {
   errorReporte = '';
   enviandoReporte = false;
   eliminandoSeguimientoId: number | null = null;
+  favoritoProcesandoId: number | null = null;
 
   notificaciones: any[] = [];
   mostrarPanelNotificaciones = false;
@@ -278,6 +279,30 @@ export class MisForos implements OnInit, OnDestroy {
         console.error('Error eliminando seguimiento', err);
         this.eliminandoSeguimientoId = null;
         alert(err?.error?.error || 'No se pudo eliminar el foro de tu lista.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleFavorito(foro: any, event: Event): void {
+    event.stopPropagation();
+
+    if (!foro?.foro_id || this.favoritoProcesandoId) return;
+
+    this.favoritoProcesandoId = foro.foro_id;
+    foro.menuAbierto = false;
+
+    this.foroService.toggleFavoritoForo(foro.foro_id).subscribe({
+      next: (res: any) => {
+        foro.mi_favorito = !!res?.mi_favorito;
+        foro.foro_favoritos_count = res?.foro_favoritos_count ?? foro.foro_favoritos_count ?? 0;
+        this.favoritoProcesandoId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error actualizando favorito', err);
+        this.favoritoProcesandoId = null;
+        alert(err?.error?.error || 'No se pudo actualizar el favorito.');
         this.cdr.detectChanges();
       }
     });

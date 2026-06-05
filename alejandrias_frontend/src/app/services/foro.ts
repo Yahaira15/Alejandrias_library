@@ -141,6 +141,16 @@ export class ForoService {
     return this.http.get(`${this.apiUrl}/mis-foros`);
   }
 
+  getForosFavoritos(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/foros-favoritos`);
+  }
+
+  toggleFavoritoForo(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/foros/${id}/favorito`, {}).pipe(
+      tap(() => this.cacheForos = null)
+    );
+  }
+
   getForosPublicos(): Observable<any> {
     return this.http.get(`${this.apiUrl}/foros-publicos`);
   }
