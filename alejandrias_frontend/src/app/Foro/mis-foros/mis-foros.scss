@@ -108,6 +108,25 @@
         gap: 15px;
         align-items: center;
       }
+
+      .profile-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+        cursor: pointer;
+        background: #ffffff;
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        box-sizing: border-box;
+        box-shadow: 0 3px 8px rgba(48, 98, 137, 0.16);
+      }
+
+      .profile-avatar.default-avatar {
+        padding: 5px;
+        object-fit: contain;
+      }
     }
 
     .section-heading h2 {

@@ -119,7 +119,12 @@
 
         </div>
           <p>{{ apodoUsuario }}</p>
-         <img [routerLink]="['/perfil']" src="iconos/foto_perfil.png" alt="Foto de perfil" width="35px">
+         <img
+          class="profile-avatar"
+          [class.default-avatar]="!fotoPerfilUsuario"
+          [routerLink]="['/perfil']"
+          [src]="fotoPerfilUsuario || 'iconos/foto_perfil.png'"
+          alt="Foto de perfil">
       </div>
     </header>
 

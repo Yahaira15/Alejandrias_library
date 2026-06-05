@@ -3,7 +3,7 @@
     <h1>Alejandria's<br>Library</h1>
 
     <nav class="perfil-nav" aria-label="Menu de perfil">
-      <button type="button" class="nav-item" (click)="irALogros()">
+      <button type="button" class="nav-item" [class.active]="seccionActiva === 'logros'" (click)="irALogros()">
         <img src="iconos/logros.png" alt="">
         <span>Mis Logros</span>
       </button>
@@ -59,6 +59,11 @@
 
       <div class="foros-panel">
         <span>Foros Favoritos:</span>
+        <div class="foros-favoritos-grid" aria-hidden="true">
+          <div class="foro-favorito-slot" *ngFor="let slot of [1, 2, 3, 4, 5, 6]">
+            <img src="iconos/libro.png" alt="">
+          </div>
+        </div>
       </div>
 
       <section *ngIf="perfil.usuario_rol !== 'lider' && perfil.usuario_rol !== 'admin'" class="leader-request-panel">
