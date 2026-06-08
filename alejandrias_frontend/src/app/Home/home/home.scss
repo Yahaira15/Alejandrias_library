@@ -389,6 +389,41 @@ section h1 {
     font-weight: 700;
 }
 
+.home-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 22px 40px;
+    background: #fefeff;
+    border-top: 1px solid rgba(159, 181, 205, 0.45);
+}
+
+.home-footer p {
+    margin: 0;
+    color: #306289;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.home-footer nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 14px;
+}
+
+.home-footer a {
+    color: #2f628c;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.home-footer a:hover {
+    text-decoration: underline;
+}
+
 @keyframes fade-up {
     from {
         opacity: 0;
@@ -466,9 +501,14 @@ section h1 {
     }
 
     .sections,
-    .login {
+    .login,
+    .home-footer {
         justify-content: center;
         flex-wrap: wrap;
+    }
+
+    .home-footer {
+        text-align: center;
     }
 
     .hero {

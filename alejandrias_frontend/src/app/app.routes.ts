@@ -24,11 +24,13 @@ import { AdminComentarios } from './Admin/admin-comentarios/admin-comentarios';
 import { AdminReportes } from './Admin/admin-reportes/admin-reportes';
 import { AdminSanciones } from './Admin/admin-sanciones/admin-sanciones';
 import { AdminModeracion } from './Admin/admin-moderacion/admin-moderacion';
+import { Legal } from './legal/legal';
  
 export const routes: Routes = [
     {path: 'home',component:Home},
     {path: 'login', component: Login },
     {path: 'register', component: Register },
+    {path: 'legal', component: Legal },
     {path: 'intereses', component: Intereses, canActivate: [authGuard] },
     {path: 'chat-ia', component: ChatIaComponent, canActivate: [authGuard] },
     {path: 'foros/crear', component: CrearForo, canActivate: [authGuard] },

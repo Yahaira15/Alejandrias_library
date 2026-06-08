@@ -115,6 +115,12 @@
     padding: 46px 68px 48px;
 }
 
+.register-form.terms-form {
+    width: min(100%, 590px);
+    min-height: 430px;
+    padding: 42px 58px 46px;
+}
+
 .register-form h1 {
     margin: 0 0 30px;
     text-align: center;
@@ -449,6 +455,57 @@
     font-weight: 700;
 }
 
+.terms-summary {
+    display: grid;
+    gap: 14px;
+    color: #557aa1;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.terms-summary p {
+    margin: 0;
+}
+
+.terms-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 4px 0;
+}
+
+.terms-links a {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border: 1.5px solid #9fb5cd;
+    border-radius: 8px;
+    color: #2f628c;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.terms-links a:hover {
+    transform: translateY(-1px);
+    border-color: #5f8fbd;
+    background: #f4f8fc;
+}
+
+.terms-acceptance {
+    align-items: flex-start;
+    margin-top: 6px;
+    line-height: 1.35;
+}
+
+.terms-acceptance .checkmark {
+    flex: 0 0 auto;
+}
+
 .loading-label {
     display: inline-flex;
     align-items: center;
@@ -488,7 +545,8 @@
     }
 
     .register-form,
-    .register-form.interests-form {
+    .register-form.interests-form,
+    .register-form.terms-form {
         width: min(100%, 660px);
         padding: 32px 26px;
     }

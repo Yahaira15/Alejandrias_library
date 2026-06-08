@@ -51,6 +51,10 @@ export class Login {
   errorRecuperacion = '';
   exitoRecuperacion = '';
   cargandoRecuperacion = false;
+  modalTerminosAbierto = false;
+  aceptoTerminos = false;
+  cargandoTerminos = false;
+  errorTerminos = '';
 
   iniciarSesion(form: any): void {
     this.errorMensaje = '';
@@ -73,20 +77,20 @@ export class Login {
           this.cargandoLogin = false;
           this.cdr.detectChanges();
 
-          localStorage.setItem('usuario', JSON.stringify(res.usuario));
-          localStorage.setItem('token', res.token);
-
-          const intereses = this.normalizarIntereses(res.usuario?.usuario_intereses);
-          
-          if (res.usuario?.usuario_rol === 'admin'){
-            this.router.navigate(['/admin']);
-          }else{
-            this.router.navigate([intereses.length > 0 ? '/foros' : '/intereses']);
-          }
+          this.completarInicioSesion(res);
         },
         error: (err) => {
           this.cargandoLogin = false;
           console.error(err);
+
+          if (['terminos_pendientes', 'terminos_rechazados'].includes(err.error?.codigo)) {
+            this.errorMensaje = err.error.codigo === 'terminos_rechazados'
+              ? 'No puedes iniciar sesion sin aceptar los terminos y condiciones. Deseas aceptarlos ahora?'
+              : '';
+            this.abrirModalTerminos();
+            this.cdr.detectChanges();
+            return;
+          }
 
           if (err.error?.mensaje) {
             this.errorMensaje = err.error.mensaje;
@@ -109,6 +113,49 @@ export class Login {
           this.errorMensaje = err.status === 401
             ? 'Credenciales incorrectas'
             : 'Error en el servidor';
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  abrirModalTerminos(): void {
+    this.modalTerminosAbierto = true;
+    this.aceptoTerminos = false;
+    this.errorTerminos = '';
+  }
+
+  cerrarModalTerminos(): void {
+    if (this.cargandoTerminos) return;
+
+    this.modalTerminosAbierto = false;
+    this.aceptoTerminos = false;
+    this.errorTerminos = '';
+  }
+
+  aceptarTerminos(): void {
+    this.errorTerminos = '';
+
+    if (this.cargandoTerminos) return;
+
+    if (!this.aceptoTerminos) {
+      this.errorTerminos = 'Marca la aceptacion para continuar';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.cargandoTerminos = true;
+    this.cdr.detectChanges();
+
+    this.http.post<LoginResponse>('http://localhost:8000/api/aceptar-terminos', this.loginData)
+      .subscribe({
+        next: (res) => {
+          this.cargandoTerminos = false;
+          this.modalTerminosAbierto = false;
+          this.completarInicioSesion(res);
+        },
+        error: (err) => {
+          this.cargandoTerminos = false;
+          this.errorTerminos = err.error?.mensaje || err.error?.error || 'No se pudo aceptar los terminos';
           this.cdr.detectChanges();
         }
       });
@@ -186,5 +233,18 @@ export class Login {
     }
 
     return [];
+  }
+
+  private completarInicioSesion(res: LoginResponse): void {
+    localStorage.setItem('usuario', JSON.stringify(res.usuario));
+    localStorage.setItem('token', res.token);
+
+    const intereses = this.normalizarIntereses(res.usuario?.usuario_intereses);
+
+    if (res.usuario?.usuario_rol === 'admin') {
+      this.router.navigate(['/admin']);
+    } else {
+      this.router.navigate([intereses.length > 0 ? '/foros' : '/intereses']);
+    }
   }
 }

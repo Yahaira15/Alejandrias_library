@@ -18,6 +18,7 @@ use App\Http\Controllers\ApiGamification\GamificationController;
 
 Route::post('/register', [UsuarioController::class, 'register']);
 Route::post('/login', [UsuarioController::class, 'login']);
+Route::post('/aceptar-terminos', [UsuarioController::class, 'aceptarTerminos']);
 Route::post('/recuperar-password', [UsuarioController::class, 'recuperarPassword']);
 Route::get('/verificar-apodo/{apodo}', [UsuarioController::class, 'verificarApodo']);
 Route::middleware('auth:sanctum')->group(function () {

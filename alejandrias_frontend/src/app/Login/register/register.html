@@ -13,11 +13,16 @@
             <span *ngIf="pasoActual <= 2">02</span>
             <img *ngIf="pasoActual > 2" src="intereses/done.png" alt="">
         </div>
-        <div class="progress-line" [class.complete]="pasoActual === 3"></div>
-        <div class="progress-step" [class.active]="pasoActual === 3">03</div>
+        <div class="progress-line" [class.complete]="pasoActual > 2"></div>
+        <div class="progress-step" [class.done]="pasoActual > 3" [class.active]="pasoActual === 3">
+            <span *ngIf="pasoActual <= 3">03</span>
+            <img *ngIf="pasoActual > 3" src="intereses/done.png" alt="">
+        </div>
+        <div class="progress-line" [class.complete]="pasoActual === 4"></div>
+        <div class="progress-step" [class.active]="pasoActual === 4">04</div>
     </div>
 
-    <section class="register-form" [class.interests-form]="pasoActual === 2" [class.verify-form]="pasoActual === 3" aria-labelledby="register-title">
+    <section class="register-form" [class.interests-form]="pasoActual === 2" [class.verify-form]="pasoActual === 3" [class.terms-form]="pasoActual === 4" aria-labelledby="register-title">
         <ng-container *ngIf="pasoActual === 1; else interesesTemplate">
             <h1 id="register-title">REGISTRO</h1>
 
@@ -177,8 +182,8 @@
             </div>
             </ng-container>
         </ng-template>
-
         <ng-template #verificacionTemplate>
+            <ng-container *ngIf="pasoActual === 3; else terminosTemplate">
             <h1 id="register-title">VALIDAR CORREO</h1>
 
             <div class="verification-panel">
@@ -208,8 +213,50 @@
 
             <div class="step-actions">
                 <button class="secondary-action" type="button" [disabled]="cargandoRegistro" (click)="volverAPaso(2)">Atras</button>
-                <button class="primary-action finish-action" type="button" [disabled]="cargandoRegistro || codigoIngresado.length !== 6" (click)="registrar()">
-                    <span *ngIf="!cargandoRegistro">Finalizar</span>
+                <button class="primary-action finish-action" type="button" [disabled]="codigoIngresado.length !== 6" (click)="irAPasoLegal()">
+                    <span>Siguiente</span>
+                </button>
+            </div>
+            </ng-container>
+        </ng-template>
+
+        <ng-template #terminosTemplate>
+            <h1 id="register-title">TERMINOS</h1>
+
+            <div class="terms-summary">
+                <p>
+                    Al crear tu cuenta aceptas usar Alejandria's Library como una plataforma educativa y social,
+                    mantener una conducta respetuosa, proteger tu cuenta y respetar los derechos de autor.
+                </p>
+                <p>
+                    Tambien autorizas el tratamiento de tus datos personales para crear y administrar tu cuenta,
+                    permitir la autenticacion, personalizar tu experiencia educativa y mejorar los servicios de la plataforma.
+                </p>
+
+                <div class="terms-links" aria-label="Documentos legales">
+                    <a routerLink="/legal" fragment="terminos" target="_blank" rel="noopener">Terminos y condiciones</a>
+                    <a routerLink="/legal" fragment="privacidad" target="_blank" rel="noopener">Politica de privacidad</a>
+                    <a routerLink="/legal" fragment="datos" target="_blank" rel="noopener">Tratamiento de datos</a>
+                </div>
+
+                <label class="checkbox-container terms-acceptance" for="aceptoTerminos">
+                    <input
+                        type="checkbox"
+                        id="aceptoTerminos"
+                        [(ngModel)]="aceptoTerminos"
+                        name="aceptoTerminos"
+                        [disabled]="cargandoRegistro">
+                    <span class="checkmark"></span>
+                    <span>He leido y acepto los terminos y condiciones</span>
+                </label>
+            </div>
+
+            <p *ngIf="errorMensaje" class="form-error interests-error">{{ errorMensaje }}</p>
+
+            <div class="step-actions">
+                <button class="secondary-action" type="button" [disabled]="cargandoRegistro" (click)="volverAPaso(3)">Atras</button>
+                <button class="primary-action finish-action" type="button" [disabled]="cargandoRegistro || !aceptoTerminos" (click)="registrar()">
+                    <span *ngIf="!cargandoRegistro">Registrar</span>
                     <span *ngIf="cargandoRegistro" class="loading-label">
                         <span class="spinner" aria-hidden="true"></span>
                         Guardando
