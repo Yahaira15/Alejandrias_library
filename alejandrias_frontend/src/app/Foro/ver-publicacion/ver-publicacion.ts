@@ -178,10 +178,9 @@ export class VerPublicacionComponent implements OnInit {
       return;
     }
 
-    const tieneAdjuntos = this.archivosComentario.length > 0;
     this.creandoComentario = true;
 
-    this.foroService.crearComentarioPublicacion(this.publicacionId, this.nuevoComentario).subscribe({
+    this.foroService.crearComentarioPublicacion(this.publicacionId, this.nuevoComentario, this.archivosComentario).subscribe({
       next: (comentario) => {
         const visible = this.esContenidoVisible(comentario);
         if (visible) {
@@ -189,6 +188,7 @@ export class VerPublicacionComponent implements OnInit {
           this.comentariosVisiblesCount = Math.max(this.comentariosVisiblesCount, this.comentarios.length);
         }
         this.nuevoComentario = '';
+        this.archivosComentario = [];
         this.creandoComentario = false;
         this.mostrarFeedback(
           visible ? 'success' : 'error',
@@ -433,6 +433,14 @@ export class VerPublicacionComponent implements OnInit {
   quitarAdjuntoComentario(index: number): void {
     this.archivosComentario = this.archivosComentario.filter((_, i) => i !== index);
     this.cdr.detectChanges();
+  }
+
+  urlAdjunto(adjunto: any): string {
+    return this.foroService.resolverArchivoAdjunto(adjunto?.url || adjunto?.path);
+  }
+
+  adjuntoEsImagen(adjunto: any): boolean {
+    return !!adjunto?.es_imagen || /^image\//i.test(adjunto?.mime || '');
   }
 
   get comentariosVisibles(): any[] {

@@ -167,10 +167,6 @@
                   Adjuntar fotos o archivos
                 </button>
 
-                <p class="attachment-hint">
-                  Por ahora la interfaz los muestra, pero el backend aun no los guarda.
-                </p>
-
                 <div class="attachment-list" *ngIf="archivosPublicacion.length > 0">
                   <div class="attachment-chip" *ngFor="let archivo of archivosPublicacion; let i = index">
                     <span>{{ archivo.name }}</span>
@@ -236,6 +232,17 @@
                   </div>
 
                   <p class="publication-content">{{ resumenContenido(publicacion.publicacion_contenido, 240) }}</p>
+
+                  <div class="saved-attachments saved-attachments-preview" *ngIf="publicacion.publicacion_adjuntos?.length">
+                    <div
+                      *ngFor="let adjunto of publicacion.publicacion_adjuntos"
+                      class="saved-attachment"
+                    >
+                      <img *ngIf="adjuntoEsImagen(adjunto)" [src]="urlAdjunto(adjunto)" [alt]="adjunto.nombre || 'Adjunto'">
+                      <span *ngIf="!adjuntoEsImagen(adjunto)" class="saved-attachment-icon">A</span>
+                      <span>{{ adjunto.nombre || 'Archivo adjunto' }}</span>
+                    </div>
+                  </div>
 
                   <div class="publication-stats">
                     <span class="stats-pill">{{ publicacion.comentarios_count || 0 }} Comentarios</span>

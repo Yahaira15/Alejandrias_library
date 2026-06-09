@@ -97,8 +97,12 @@ export class ForoService {
     return this.http.get(`${this.apiUrl}/foros/${foroId}/publicaciones`);
   }
 
-  crearPublicacion(foroId: number, data: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/foros/${foroId}/publicaciones`, data);
+  crearPublicacion(foroId: number, data: any, adjuntos: File[] = []): Observable<any> {
+    const request = adjuntos.length > 0
+      ? this.crearFormData(data, adjuntos)
+      : data;
+
+    return this.http.post(`${this.apiUrl}/foros/${foroId}/publicaciones`, request);
   }
 
   actualizarPublicacion(id: number, data: any): Observable<any> {
@@ -117,10 +121,13 @@ export class ForoService {
     return this.http.get(`${this.apiUrl}/publicaciones/${publicacionId}/comentarios`);
   }
 
-  crearComentarioPublicacion(publicacionId: number, contenido: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/publicaciones/${publicacionId}/comentarios`, {
-      comentario_contenido: contenido
-    });
+  crearComentarioPublicacion(publicacionId: number, contenido: string, adjuntos: File[] = []): Observable<any> {
+    const data = { comentario_contenido: contenido };
+    const request = adjuntos.length > 0
+      ? this.crearFormData(data, adjuntos)
+      : data;
+
+    return this.http.post(`${this.apiUrl}/publicaciones/${publicacionId}/comentarios`, request);
   }
 
   getRespuestasComentario(comentarioId: number): Observable<any> {
@@ -216,6 +223,32 @@ export class ForoService {
 
     const ruta = imagen.startsWith('/') ? imagen : `/${imagen}`;
     return `${baseUrl}${ruta.startsWith('/storage/') ? ruta : `/storage${ruta}`}`;
+  }
+
+  resolverArchivoAdjunto(url: string | null | undefined): string {
+    if (!url) return '';
+
+    const baseUrl = this.apiUrl.replace(/\/api$/, '');
+
+    if (/^(data:|blob:|https?:\/\/)/i.test(url)) {
+      return url;
+    }
+
+    return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+  }
+
+  private crearFormData(data: Record<string, any>, adjuntos: File[]): FormData {
+    const formData = new FormData();
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
+      }
+    });
+
+    adjuntos.forEach((archivo) => formData.append('adjuntos[]', archivo));
+
+    return formData;
   }
 
   private apiBaseUrl(): string {

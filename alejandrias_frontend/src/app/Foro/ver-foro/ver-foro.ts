@@ -271,10 +271,9 @@ export class VerForoComponent implements OnInit {
       return;
     }
 
-    const tieneAdjuntos = this.archivosPublicacion.length > 0;
     this.creandoPublicacion = true;
 
-    this.foroService.crearPublicacion(this.foroId, this.nuevaPublicacion).subscribe({
+    this.foroService.crearPublicacion(this.foroId, this.nuevaPublicacion, this.archivosPublicacion).subscribe({
       next: (publicacion) => {
         const visible = this.esContenidoVisible(publicacion);
         if (visible) {
@@ -284,6 +283,7 @@ export class VerForoComponent implements OnInit {
           publicacion_titulo: '',
           publicacion_contenido: ''
         };
+        this.archivosPublicacion = [];
         this.creandoPublicacion = false;
         this.mostrarFeedback(
           visible ? 'success' : 'error',
@@ -637,6 +637,14 @@ export class VerForoComponent implements OnInit {
   quitarAdjuntoPublicacion(index: number): void {
     this.archivosPublicacion = this.archivosPublicacion.filter((_, i) => i !== index);
     this.cdr.detectChanges();
+  }
+
+  urlAdjunto(adjunto: any): string {
+    return this.foroService.resolverArchivoAdjunto(adjunto?.url || adjunto?.path);
+  }
+
+  adjuntoEsImagen(adjunto: any): boolean {
+    return !!adjunto?.es_imagen || /^image\//i.test(adjunto?.mime || '');
   }
 
   trackByPublicacionId(index: number, publicacion: any): number {

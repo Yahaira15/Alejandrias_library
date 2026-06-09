@@ -33,6 +33,20 @@
 
         <p class="publication-body">{{ publicacion.publicacion_contenido }}</p>
 
+        <div class="saved-attachments" *ngIf="publicacion.publicacion_adjuntos?.length">
+          <a
+            *ngFor="let adjunto of publicacion.publicacion_adjuntos"
+            class="saved-attachment"
+            [href]="urlAdjunto(adjunto)"
+            target="_blank"
+            rel="noopener"
+          >
+            <img *ngIf="adjuntoEsImagen(adjunto)" [src]="urlAdjunto(adjunto)" [alt]="adjunto.nombre || 'Adjunto'">
+            <span *ngIf="!adjuntoEsImagen(adjunto)" class="saved-attachment-icon">A</span>
+            <span>{{ adjunto.nombre || 'Archivo adjunto' }}</span>
+          </a>
+        </div>
+
         <div class="comment-actions">
           <button
             type="button"
@@ -99,10 +113,6 @@
               Adjuntar fotos o archivos
             </button>
 
-            <p class="attachment-hint">
-              Por ahora la interfaz los muestra, pero el backend aun no los guarda.
-            </p>
-
             <div class="attachment-list" *ngIf="archivosComentario.length > 0">
               <div class="attachment-chip" *ngFor="let archivo of archivosComentario; let i = index">
                 <span>{{ archivo.name }}</span>
@@ -137,6 +147,20 @@
             </div>
 
             <p class="comment-content">{{ comentario.comentario_contenido }}</p>
+
+            <div class="saved-attachments" *ngIf="comentario.comentario_adjuntos?.length">
+              <a
+                *ngFor="let adjunto of comentario.comentario_adjuntos"
+                class="saved-attachment"
+                [href]="urlAdjunto(adjunto)"
+                target="_blank"
+                rel="noopener"
+              >
+                <img *ngIf="adjuntoEsImagen(adjunto)" [src]="urlAdjunto(adjunto)" [alt]="adjunto.nombre || 'Adjunto'">
+                <span *ngIf="!adjuntoEsImagen(adjunto)" class="saved-attachment-icon">A</span>
+                <span>{{ adjunto.nombre || 'Archivo adjunto' }}</span>
+              </a>
+            </div>
 
             <div class="comment-actions">
               <button

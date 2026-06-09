@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ApiForo;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesAdjuntos;
 use App\Models\Comentario;
 use App\Models\Publicacion;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Schema;
 
 class ComentarioController extends Controller
 {
+    use HandlesAdjuntos;
+
     public function index($publicacionId)
     {
         $publicacion = Publicacion::find($publicacionId);
@@ -94,10 +97,14 @@ class ComentarioController extends Controller
         $data = $request->validate([
             'comentario_contenido' => 'required|string|max:2000',
         ]);
+        $this->validarAdjuntos($request);
 
         $data['comentario_publicacion_id'] = $publicacionId;
         $data['comentario_usuario_id'] = $usuario->usuario_id;
         $data['comentario_fecha_creacion'] = now();
+        if (Schema::hasColumn('comentario', 'comentario_adjuntos')) {
+            $data['comentario_adjuntos'] = $this->guardarAdjuntos($request, 'adjuntos/comentarios');
+        }
 
         $moderationService = app(ContentModerationService::class);
         $moderationPayload = [

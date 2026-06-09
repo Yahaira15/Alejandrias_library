@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ApiForo;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesAdjuntos;
 use Illuminate\Http\Request;
 use App\Models\Foro;
 use App\Models\Publicacion;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Schema;
 
 class PublicacionController extends Controller
 {
+    use HandlesAdjuntos;
+
     public function index($foroId)
     {
         $foro = Foro::find($foroId);
@@ -89,6 +92,7 @@ class PublicacionController extends Controller
                 'publicacion_contenido' => 'required|string',
                 'publicacion_destacada' => 'nullable|boolean'
             ]);
+            $this->validarAdjuntos($request);
 
             $moderationService = app(ContentModerationService::class);
             $moderationPayload = [
@@ -111,6 +115,9 @@ class PublicacionController extends Controller
             $publicacion->publicacion_usuario_id = $usuario->usuario_id;
             $publicacion->publicacion_titulo = $request->publicacion_titulo;
             $publicacion->publicacion_contenido = $request->publicacion_contenido;
+            if (Schema::hasColumn('publicacion', 'publicacion_adjuntos')) {
+                $publicacion->publicacion_adjuntos = $this->guardarAdjuntos($request, 'adjuntos/publicaciones');
+            }
             $publicacion->publicacion_destacada = $request->boolean('publicacion_destacada');
             $publicacion->publicacion_fecha_creacion = now();
             $publicacion->publicacion_fecha_actualizacion = now();

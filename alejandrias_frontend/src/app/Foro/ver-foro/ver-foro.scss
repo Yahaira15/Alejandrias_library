@@ -16,7 +16,7 @@
   background: #afcbe6c3;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   z-index: 10;
 }
 
@@ -72,6 +72,7 @@
 }
 
 .logout-panel {
+  margin-top: auto;
   margin-bottom: 70px;
   display: flex;
   align-items: center;
@@ -499,12 +500,6 @@
   display: none;
 }
 
-.attachment-hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .attachment-list {
   display: flex;
   flex-wrap: wrap;
@@ -538,6 +533,54 @@
   font: inherit;
   line-height: 1;
   padding: 0;
+}
+
+.saved-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.saved-attachment {
+  max-width: min(100%, 260px);
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid rgba(126, 163, 204, 0.45);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #173f73;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.saved-attachment img {
+  width: 46px;
+  height: 46px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.saved-attachment span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.saved-attachment-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: #afcbe6;
+  color: #284358;
 }
 
 .btn {
