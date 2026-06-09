@@ -1,19 +1,36 @@
-<div class="publication-page">
-  <div *ngIf="feedbackMensaje" class="feedback-banner" [class.feedback-success]="feedbackTipo === 'success'" [class.feedback-error]="feedbackTipo === 'error'">
-    <div class="feedback-content">
-      <strong>Alejandria's Library dice</strong>
-      <span>{{ feedbackMensaje }}</span>
+<div class="layout">
+  <aside class="sidebar">
+    <h2 class="logo">Alejandria's <br> Library</h2>
+
+    <nav>
+      <button type="button" (click)="irAInicio()"><img src="iconos/home.png" alt="" width="20"> Inicio</button>
+      <button type="button" class="active" (click)="irAInicio()"><img src="iconos/foro.png" alt="" width="20"> Foros</button>
+      <button type="button" (click)="irAMisForos()"><img src="iconos/mis_foros.png" alt="" width="20"> Mis foros</button>
+      <button type="button" (click)="irAChatIa()"><img src="iconos/notificaciones.png" alt="" width="20"> Chat IA</button>
+      <button *ngIf="rol === 'lider' || rol === 'admin'" type="button" (click)="irACrearForo()"><img src="iconos/crear_foro.png" alt="" width="20"> Crear foro</button>
+    </nav>
+
+    <div class="logout-panel">
+      <img src="iconos/salida.png" alt="" width="30">
+      <button type="button" class="logout" (click)="logout()">Cerrar sesion</button>
     </div>
-    <button type="button" class="feedback-close" (click)="cerrarFeedback()">Cerrar</button>
-  </div>
+  </aside>
 
-  <div class="back-links" *ngIf="publicacion?.foro?.foro_id">
-    <a [routerLink]="['/foros', publicacion.foro.foro_id]" class="back-link">&#8592;</a>
-  </div>
+  <main class="content">
+    <div class="publication-page">
+      <div *ngIf="feedbackMensaje" class="feedback-banner" [class.feedback-success]="feedbackTipo === 'success'" [class.feedback-error]="feedbackTipo === 'error'">
+        <div class="feedback-content">
+          <strong>Alejandria's Library dice</strong>
+          <span>{{ feedbackMensaje }}</span>
+        </div>
+        <button type="button" class="feedback-close" (click)="cerrarFeedback()">Cerrar</button>
+      </div>
 
-  <div *ngIf="loading" class="loading">Cargando publicacion...</div>
+      <a *ngIf="publicacion?.foro?.foro_id" [routerLink]="['/foros', publicacion.foro.foro_id]" class="back-link">&#8592;</a>
 
-  <div *ngIf="publicacion && !loading" class="publication-shell">
+      <div *ngIf="loading" class="loading">Cargando publicacion...</div>
+
+      <div *ngIf="publicacion && !loading" class="publication-shell">
     <section class="publication-hero">
       <p class="page-title">Publicacion</p>
 
@@ -219,7 +236,9 @@
         </button>
       </div>
     </section>
-  </div>
+      </div>
+    </div>
+  </main>
 </div>
 
 <div class="modal-backdrop" *ngIf="reporteModalAbierto && reporteObjetivo" (click)="cerrarReporte()">

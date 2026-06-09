@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ForoService } from '../../services/foro';
 import { ReportePayload, ReporteService } from '../../services/reporte.service';
 
@@ -21,6 +21,7 @@ export class VerPublicacionComponent implements OnInit {
   archivosComentario: File[] = [];
   comentariosVisiblesCount = this.comentariosPorPagina;
   usuario: any = null;
+  rol = '';
   loading = false;
   loadingComentarios = false;
   creandoComentario = false;
@@ -42,6 +43,7 @@ export class VerPublicacionComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private foroService: ForoService,
     private reporteService: ReporteService,
     private cdr: ChangeDetectorRef
@@ -49,6 +51,7 @@ export class VerPublicacionComponent implements OnInit {
 
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+    this.rol = this.usuario?.usuario_rol || '';
     this.publicacionId = Number(this.route.snapshot.paramMap.get('publicacion_id'));
     this.cargarPublicacion();
     this.cargarComentarios();
@@ -433,6 +436,28 @@ export class VerPublicacionComponent implements OnInit {
   quitarAdjuntoComentario(index: number): void {
     this.archivosComentario = this.archivosComentario.filter((_, i) => i !== index);
     this.cdr.detectChanges();
+  }
+
+  irAInicio(): void {
+    this.router.navigate(['/foros']);
+  }
+
+  irAMisForos(): void {
+    this.router.navigate(['/mis-foros']);
+  }
+
+  irAChatIa(): void {
+    this.router.navigate(['/chat-ia']);
+  }
+
+  irACrearForo(): void {
+    this.router.navigate(['/foros/crear']);
+  }
+
+  logout(): void {
+    localStorage.removeItem('usuario');
+    localStorage.removeItem('token');
+    this.router.navigate(['/login']);
   }
 
   urlAdjunto(adjunto: any): string {
