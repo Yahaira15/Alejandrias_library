@@ -1,7 +1,7 @@
 ﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ForoService } from '../../services/foro';
 import { ReportePayload, ReporteService } from '../../services/reporte.service';
 
@@ -19,6 +19,7 @@ export class VerForoComponent implements OnInit {
   publicaciones: any[] = [];
   archivosPublicacion: File[] = [];
   usuario: any = null;
+  rol = '';
   loading = false;
   loadingPublicaciones = false;
   creandoPublicacion = false;
@@ -44,6 +45,7 @@ export class VerForoComponent implements OnInit {
   estaRegistradoForo = false;
   puntuandoForo = false;
   likePublicacionEnProcesoId: number | null = null;
+  filtroPublicaciones: 'todas' | 'recientes' | 'relevantes' = 'todas';
   readonly estrellas = [1, 2, 3, 4, 5];
 
   nuevaPublicacion = {
@@ -53,6 +55,7 @@ export class VerForoComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private foroService: ForoService,
     private reporteService: ReporteService,
     private cdr: ChangeDetectorRef
@@ -60,12 +63,35 @@ export class VerForoComponent implements OnInit {
 
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+    this.rol = this.usuario?.usuario_rol || '';
     this.foroId = Number(this.route.snapshot.paramMap.get('foro_id'));
     this.cargarForo();
     this.verificarRegistroForo();
     this.cargarPublicaciones();
     this.iniciarActualizacionLikes();
     this.cdr.detectChanges();
+  }
+
+  irAInicio(): void {
+    this.router.navigate(['/foros']);
+  }
+
+  irAMisForos(): void {
+    this.router.navigate(['/mis-foros']);
+  }
+
+  irAChatIa(): void {
+    this.router.navigate(['/chat-ia']);
+  }
+
+  irACrearForo(): void {
+    this.router.navigate(['/foros/crear']);
+  }
+
+  logout(): void {
+    localStorage.removeItem('usuario');
+    localStorage.removeItem('token');
+    this.router.navigate(['/login']);
   }
 
   ngOnDestroy(): void {
@@ -527,6 +553,48 @@ export class VerForoComponent implements OnInit {
       && this.estaRegistradoForo;
   }
 
+  get nombreCreadorForo(): string {
+    const usuarioForo = this.foro?.usuario || {};
+    const nombres = [
+      usuarioForo.usuario_nombre,
+      usuarioForo.usuario_apellido
+    ].filter(Boolean).join(' ').trim();
+
+    return usuarioForo.usuario_apodo
+      || nombres
+      || this.foro?.creador_nombre
+      || this.foro?.usuario_nombre
+      || 'Creador no disponible';
+  }
+
+  get totalPublicacionesForo(): number {
+    return this.publicaciones.length
+      || Number(this.foro?.publicaciones_count)
+      || Number(this.foro?.publicaciones?.length)
+      || 0;
+  }
+
+  get publicacionesFiltradas(): any[] {
+    const publicaciones = [...this.publicaciones];
+
+    if (this.filtroPublicaciones === 'recientes') {
+      return publicaciones.sort((a, b) => this.fechaPublicacionMs(b) - this.fechaPublicacionMs(a));
+    }
+
+    if (this.filtroPublicaciones === 'relevantes') {
+      return publicaciones.sort((a, b) => this.relevanciaPublicacion(b) - this.relevanciaPublicacion(a));
+    }
+
+    return publicaciones;
+  }
+
+  get mensajeRatingForo(): string {
+    if (!this.usuario) return 'Inicia sesion para calificar este foro.';
+    if (this.usuario.usuario_rol !== 'explorador') return 'Solo los exploradores pueden calificar foros.';
+    if (!this.estaRegistradoForo) return 'Registrate en el foro para calificarlo.';
+    return '';
+  }
+
   get puedeCrearPublicacion(): boolean {
     return !!this.usuario
       && this.nuevaPublicacion.publicacion_titulo.trim().length > 0
@@ -547,6 +615,25 @@ export class VerForoComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  obtenerImagenForo(foro: any): string {
+    const imagen = foro?.foro_imagen_url || foro?.foro_imagen || foro?.imagen || '';
+
+    if (!imagen || foro?.imagenFallida) {
+      return '';
+    }
+
+    return this.foroService.resolverImagenForo(imagen);
+  }
+
+  foroTieneImagen(foro: any): boolean {
+    return !!this.obtenerImagenForo(foro);
+  }
+
+  marcarImagenFallida(foro: any): void {
+    foro.imagenFallida = true;
+    this.cdr.detectChanges();
+  }
+
   quitarAdjuntoPublicacion(index: number): void {
     this.archivosPublicacion = this.archivosPublicacion.filter((_, i) => i !== index);
     this.cdr.detectChanges();
@@ -554,6 +641,19 @@ export class VerForoComponent implements OnInit {
 
   trackByPublicacionId(index: number, publicacion: any): number {
     return publicacion.publicacion_id;
+  }
+
+  private relevanciaPublicacion(publicacion: any): number {
+    const likes = Number(publicacion?.publicacion_likes || 0);
+    const comentarios = Number(publicacion?.comentarios_count || 0);
+    const fecha = this.fechaPublicacionMs(publicacion);
+
+    return (likes * 3) + (comentarios * 2) + (fecha / 1000000000000);
+  }
+
+  private fechaPublicacionMs(publicacion: any): number {
+    const fecha = new Date(publicacion?.publicacion_fecha_creacion || 0).getTime();
+    return Number.isNaN(fecha) ? 0 : fecha;
   }
 
   esPropietarioDePublicacion(publicacion: any): boolean {
