@@ -40,9 +40,6 @@ class AIProviderError(RuntimeError):
         self.kind = kind
         self.retryable = retryable
 
-# Memoria ligera en RAM para conservar continuidad entre turnos.
-MEMORIA_CONVERSACIONES = {}
-
 SYSTEM_PROMPT = """
 Eres un profesor experto dentro de Alejandrias Library.
 
@@ -133,27 +130,11 @@ def obtener_cliente():
 
 
 def obtener_historial(user_id):
-    if not user_id:
-        return []
-
-    return MEMORIA_CONVERSACIONES.get(str(user_id), [])
+    return []
 
 
 def guardar_historial(user_id, mensaje_usuario, respuesta_ia):
-    if not user_id:
-        return
-
-    clave = str(user_id)
-    if clave not in MEMORIA_CONVERSACIONES:
-        MEMORIA_CONVERSACIONES[clave] = []
-
-    MEMORIA_CONVERSACIONES[clave].append(
-        {
-            "usuario": str(mensaje_usuario or "").strip(),
-            "ia": str(respuesta_ia or "").strip(),
-        }
-    )
-    MEMORIA_CONVERSACIONES[clave] = MEMORIA_CONVERSACIONES[clave][-MAX_HISTORIAL:]
+    return
 
 
 def _extraer_texto_respuesta(respuesta):

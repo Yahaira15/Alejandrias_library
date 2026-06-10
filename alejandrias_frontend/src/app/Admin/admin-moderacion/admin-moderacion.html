@@ -50,6 +50,7 @@
             <td>{{ fecha(registro) }}</td>
             <td class="decision-cell">
               <div class="moderacion-actions">
+                <button type="button" *ngIf="rutaContenido(registro)" (click)="abrirContenido(registro)">Ver</button>
                 <button type="button" (click)="aprobar(registro)">Aprobar</button>
                 <button type="button" class="danger" (click)="rechazar(registro)">Ocultar</button>
               </div>

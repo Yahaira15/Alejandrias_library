@@ -158,8 +158,7 @@ class PublicacionController extends Controller
                     'notificacion_fecha' => now(),
 
                     'notificacion_url' =>
-                        '/foro/' . $foro->foro_id .
-                        '/publicacion/' . $publicacion->publicacion_id,
+                        '/publicaciones/' . $publicacion->publicacion_id,
 
                     'notificacion_referencia_id' =>
                         $publicacion->publicacion_id
@@ -169,7 +168,7 @@ class PublicacionController extends Controller
                 $foro,
                 'lider_publicacion_relevante',
                 'Nueva publicacion relevante en "' . $foro->foro_titulo . '"',
-                '/foro/' . $foro->foro_id . '/publicacion/' . $publicacion->publicacion_id,
+                '/publicaciones/' . $publicacion->publicacion_id,
                 $publicacion->publicacion_id,
                 $usuario->usuario_id
             );

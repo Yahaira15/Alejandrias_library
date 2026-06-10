@@ -31,6 +31,7 @@ export class VerPublicacionComponent implements OnInit {
   feedbackMensaje = '';
   feedbackTipo: 'success' | 'error' | '' = '';
   private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  private comentarioDestino: string | null = null;
   reporteModalAbierto = false;
   reporteObjetivo: { tipo: ReportePayload['reporte_tipo']; id: number; titulo: string } | null = null;
   reporteMotivo = '';
@@ -47,6 +48,10 @@ export class VerPublicacionComponent implements OnInit {
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
     this.publicacionId = Number(this.route.snapshot.paramMap.get('publicacion_id'));
+    this.route.fragment.subscribe((fragment) => {
+      this.comentarioDestino = fragment;
+      this.desplazarAComentario();
+    });
     this.cargarPublicacion();
     this.cargarComentarios();
     this.cdr.detectChanges();
@@ -91,6 +96,7 @@ export class VerPublicacionComponent implements OnInit {
         this.comentariosVisiblesCount = this.comentariosPorPagina;
         this.loadingComentarios = false;
         this.cdr.detectChanges();
+        this.desplazarAComentario();
       },
       error: (err) => {
         console.error('Error cargando comentarios:', err);
@@ -336,6 +342,30 @@ export class VerPublicacionComponent implements OnInit {
 
   trackByComentarioId(index: number, comentario: any): number {
     return comentario.comentario_id;
+  }
+
+  private desplazarAComentario(): void {
+    if (!this.comentarioDestino?.startsWith('comentario-')) {
+      return;
+    }
+
+    const comentarioId = Number(this.comentarioDestino.replace('comentario-', ''));
+    if (!comentarioId) {
+      return;
+    }
+
+    const indice = this.comentarios.findIndex(item => item.comentario_id === comentarioId);
+    if (indice >= 0) {
+      this.comentariosVisiblesCount = Math.max(this.comentariosVisiblesCount, indice + 1);
+      this.cdr.detectChanges();
+    }
+
+    setTimeout(() => {
+      document.getElementById(this.comentarioDestino || '')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 80);
   }
 
   esComentarioPropio(comentario: any): boolean {

@@ -292,7 +292,7 @@ class ContentModerationService
                 'nivel' => ($alerta['requiere_alerta'] ?? false) ? ($alerta['nivel'] ?? $this->nivelRiesgo($analysis)) : $this->nivelRiesgo($analysis),
                 'tipo' => ($alerta['requiere_alerta'] ?? false) ? ($alerta['tipo'] ?? $this->tipoRiesgo($analysis)) : $this->tipoRiesgo($analysis),
                 'fecha' => now()->toDateTimeString(),
-                'url' => '/admin/moderacion',
+                'url' => $moderacionId ? '/admin/moderacion?moderacion_id=' . $moderacionId : $this->urlContenido($tipoContenido, $referenciaId, $payload),
                 'referencia_id' => $moderacionId ?? $referenciaId,
             ]);
 
@@ -351,20 +351,17 @@ class ContentModerationService
         }
 
         if ($tipoContenido === 'foro' && $referenciaId) {
-            return '/foro/' . $referenciaId;
+            return '/foros/' . $referenciaId;
         }
 
         if ($tipoContenido === 'publicacion' && $referenciaId) {
-            $foroId = $payload['contexto']['foro_id'] ?? null;
-            return $foroId ? '/foro/' . $foroId . '/publicacion/' . $referenciaId : '/admin/publicaciones';
+            return '/publicaciones/' . $referenciaId;
         }
 
         if ($tipoContenido === 'comentario') {
             $publicacionId = $payload['contexto']['publicacion_id'] ?? null;
-            $foroId = $payload['contexto']['foro_id'] ?? null;
-
-            if ($foroId && $publicacionId) {
-                return '/foro/' . $foroId . '/publicacion/' . $publicacionId;
+            if ($publicacionId) {
+                return '/publicaciones/' . $publicacionId . ($referenciaId ? '#comentario-' . $referenciaId : '');
             }
         }
 

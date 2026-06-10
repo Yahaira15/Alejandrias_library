@@ -93,7 +93,7 @@ export class AdminLayout implements OnInit, OnDestroy {
   }
 
   abrirNotificacion(notificacion: NotificacionAdmin): void {
-    const destino = notificacion.notificacion_url || this.rutaPorTipo(notificacion);
+    const destino = this.notificacionService.resolverDestino(notificacion);
 
     if (!notificacion.notificacion_leida) {
       this.notificacionService.marcarLeida(notificacion.notificacion_id).subscribe({

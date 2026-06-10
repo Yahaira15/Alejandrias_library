@@ -159,7 +159,7 @@ class ForoController extends Controller
                     $foro,
                     'lider_foro_relevante',
                     'Nuevo foro relevante en tu categoria: "' . $foro->foro_titulo . '"',
-                    '/foro/' . $foro->foro_id,
+                    '/foros/' . $foro->foro_id,
                     $foro->foro_id,
                     $usuario->usuario_id
                 );

@@ -22,8 +22,8 @@ export interface ChatRespuesta {
   providedIn: 'root'
 })
 export class ChatIaService {
-  private apiUrl = 'http://127.0.0.1:8080/api/ia/chat/';
-  private alertaRiesgoUrl = 'http://127.0.0.1:8000/api/ia/chat-alerta-riesgo';
+  private apiUrl = `${this.apiBaseUrl()}/api/ia/chat`;
+  private alertaRiesgoUrl = `${this.apiBaseUrl()}/api/ia/chat-alerta-riesgo`;
 
   constructor(private http: HttpClient) {}
 
@@ -47,5 +47,21 @@ export class ChatIaService {
       next: () => {},
       error: () => {},
     });
+  }
+
+  private apiBaseUrl(): string {
+    const localBase = 'http://127.0.0.1:8000';
+
+    if (typeof window === 'undefined') {
+      return localBase;
+    }
+
+    const hostname = window.location.hostname;
+
+    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
+      return localBase;
+    }
+
+    return `${window.location.protocol}//${hostname}:8000`;
   }
 }

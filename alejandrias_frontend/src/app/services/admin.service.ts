@@ -45,6 +45,10 @@ export class AdminService {
     return this.http.get<any[]>(`${this.apiUrl}/moderacion${suffix}`);
   }
 
+  obtenerModeracion(id: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/moderacion/${id}`);
+  }
+
   aprobarModeracion(id: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/moderacion/${id}/aprobar`, {});
   }

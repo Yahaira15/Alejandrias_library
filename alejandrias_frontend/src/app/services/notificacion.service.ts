@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class NotificacionService {
 
-  private apiUrl = 'http://127.0.0.1:8000/api';
+  private apiUrl = `${this.apiBaseUrl()}/api`;
 
   constructor(private http: HttpClient) {}
 
@@ -35,4 +35,64 @@ export class NotificacionService {
     {}
   );
 }
+
+  resolverDestino(notificacion: any): string {
+    const url = this.normalizarUrl(notificacion?.notificacion_url || '');
+    if (url) return url;
+
+    const referenciaId = notificacion?.notificacion_referencia_id;
+    const tipo = String(notificacion?.notificacion_tipo || '');
+
+    if (tipo.startsWith('alerta_ia_')) {
+      return referenciaId ? `/admin/moderacion?moderacion_id=${referenciaId}` : '/admin/moderacion';
+    }
+
+    switch (tipo) {
+      case 'registro_foro':
+      case 'nuevo_miembro':
+        return referenciaId ? `/foros/${referenciaId}` : '/foros';
+      case 'nueva_publicacion':
+      case 'nuevo_comentario':
+      case 'lider_publicacion_relevante':
+      case 'lider_comentario_relevante':
+        return referenciaId ? `/publicaciones/${referenciaId}` : '/foros';
+      case 'nuevo_reporte':
+        return '/admin/reportes';
+      default:
+        return '/foros';
+    }
+  }
+
+  private normalizarUrl(url: string): string {
+    const limpia = String(url || '').trim();
+    if (!limpia) return '';
+
+    const publicacionVieja = limpia.match(/^\/foro\/(\d+)\/publicacion\/(\d+)(#.*)?$/);
+    if (publicacionVieja) {
+      return `/publicaciones/${publicacionVieja[2]}${publicacionVieja[3] || ''}`;
+    }
+
+    const foroViejo = limpia.match(/^\/foro\/(\d+)$/);
+    if (foroViejo) {
+      return `/foros/${foroViejo[1]}`;
+    }
+
+    return limpia;
+  }
+
+  private apiBaseUrl(): string {
+    const localBase = 'http://127.0.0.1:8000';
+
+    if (typeof window === 'undefined') {
+      return localBase;
+    }
+
+    const hostname = window.location.hostname;
+
+    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
+      return localBase;
+    }
+
+    return `${window.location.protocol}//${hostname}:8000`;
+  }
 }

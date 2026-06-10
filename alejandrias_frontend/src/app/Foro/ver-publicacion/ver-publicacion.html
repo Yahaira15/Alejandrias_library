@@ -115,7 +115,10 @@
       </div>
 
       <div class="comments-list">
-        <article *ngFor="let comentario of comentariosVisibles; trackBy: trackByComentarioId" class="comment-card">
+        <article
+          *ngFor="let comentario of comentariosVisibles; trackBy: trackByComentarioId"
+          class="comment-card"
+          [id]="'comentario-' + comentario.comentario_id">
           <div *ngIf="comentarioEditando?.comentario_id !== comentario.comentario_id; else editarComentarioBlock">
             <div class="comment-header">
               <div>

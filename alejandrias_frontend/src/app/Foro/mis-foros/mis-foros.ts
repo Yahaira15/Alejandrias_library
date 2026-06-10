@@ -389,7 +389,7 @@ export class MisForos implements OnInit, OnDestroy {
   
             // 🚀 Navegar
             this.router.navigateByUrl(
-              notificacion.notificacion_url
+              this.notificacionService.resolverDestino(notificacion)
             );
   
             this.mostrarPanelNotificaciones = false;

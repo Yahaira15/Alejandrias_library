@@ -15,6 +15,15 @@ function getApiPath(url: string): string | null {
     return url.replace(API_BASE_URL_ALT, '');
   }
 
+  try {
+    const parsedUrl = new URL(url, window.location.origin);
+    if (parsedUrl.pathname.startsWith('/api/')) {
+      return parsedUrl.pathname.replace('/api', '');
+    }
+  } catch {
+    return null;
+  }
+
   return null;
 }
 

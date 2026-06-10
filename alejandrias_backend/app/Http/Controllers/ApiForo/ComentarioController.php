@@ -164,11 +164,11 @@ class ComentarioController extends Controller
                     'notificacion_fecha' => now(),
 
                     'notificacion_url' =>
-                        '/foro/' . $foro->foro_id .
-                        '/publicacion/' . $publicacion->publicacion_id,
+                        '/publicaciones/' . $publicacion->publicacion_id .
+                        '#comentario-' . $comentario->comentario_id,
 
                     'notificacion_referencia_id' =>
-                        $publicacion->publicacion_id
+                        $comentario->comentario_id
                 ]);
             }
 
@@ -177,8 +177,8 @@ class ComentarioController extends Controller
                     $foro,
                     'lider_comentario_relevante',
                     'Nuevo comentario relevante en "' . $foro->foro_titulo . '"',
-                    '/foro/' . $foro->foro_id . '/publicacion/' . $publicacion->publicacion_id,
-                    $publicacion->publicacion_id,
+                    '/publicaciones/' . $publicacion->publicacion_id . '#comentario-' . $comentario->comentario_id,
+                    $comentario->comentario_id,
                     $usuario->usuario_id
                 );
             }
