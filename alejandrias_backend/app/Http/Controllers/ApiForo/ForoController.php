@@ -17,6 +17,7 @@ use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ForoController extends Controller
 {
@@ -87,6 +88,7 @@ class ForoController extends Controller
             ->withCount(['miembros', 'publicaciones', 'comentarios as comentarios_count_total'])
             ->get();
 
+        $foros = $this->priorizarForosPorIntereses($foros, $usuario);
         $foros = $this->adjuntarPuntuaciones($foros, $usuario);
 
         return response()->json($foros, 200);
@@ -855,6 +857,64 @@ class ForoController extends Controller
             : false;
 
         return $foro;
+    }
+
+    private function priorizarForosPorIntereses($foros, $usuario)
+    {
+        $categoriasPreferidas = $this->categoriasPreferidasPorIntereses($usuario);
+
+        if (empty($categoriasPreferidas)) {
+            return $foros;
+        }
+
+        return $foros
+            ->values()
+            ->sortBy(function ($foro, $indice) use ($categoriasPreferidas) {
+                $categoria = $this->normalizarClaveInteres($foro->categoria?->categoria_nombre ?? '');
+                $coincideIntereses = in_array($categoria, $categoriasPreferidas, true);
+
+                return [$coincideIntereses ? 0 : 1, $indice];
+            })
+            ->values();
+    }
+
+    private function categoriasPreferidasPorIntereses($usuario): array
+    {
+        if (!$usuario || !is_array($usuario->usuario_intereses)) {
+            return [];
+        }
+
+        $categoriasPorInteres = [
+            'programacion' => ['programacion', 'tecnologia'],
+            'matematicas' => ['matematicas'],
+            'historia' => ['historia', 'humanidades'],
+            'literatura' => ['literatura', 'humanidades'],
+            'biologia' => ['biologia', 'ciencias'],
+            'politica' => ['politica', 'humanidades'],
+            'idiomas' => ['idiomas', 'humanidades'],
+            'bienestar' => ['bienestar'],
+        ];
+
+        return collect($usuario->usuario_intereses)
+            ->filter(fn ($interes) => is_string($interes) && trim($interes) !== '')
+            ->flatMap(function (string $interes) use ($categoriasPorInteres) {
+                $clave = $this->normalizarClaveInteres($interes);
+
+                return $categoriasPorInteres[$clave] ?? [$clave];
+            })
+            ->map(fn (string $categoria) => $this->normalizarClaveInteres($categoria))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function normalizarClaveInteres(string $valor): string
+    {
+        return Str::of($valor)
+            ->ascii()
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]+/', '')
+            ->toString();
     }
 
     private function favoritoVacio(Foro $foro): Foro
