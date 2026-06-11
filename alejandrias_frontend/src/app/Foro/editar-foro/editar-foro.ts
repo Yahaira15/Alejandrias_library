@@ -17,6 +17,7 @@ import { ForoService } from '../../services/foro';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EditarForo implements OnInit {
+  private readonly foroImagenMaxBytes = 5 * 1024 * 1024;
   foroForm: FormGroup;
   categorias: any[] = [];
   foroId!: number;
@@ -211,6 +212,12 @@ export class EditarForo implements OnInit {
     }
 
     const file = input.files[0];
+    if (file.size > this.foroImagenMaxBytes) {
+      this.mostrarFeedback('error', 'La imagen del foro no puede superar los 5 MB.');
+      input.value = '';
+      return;
+    }
+
     if (!['image/png', 'image/jpeg'].includes(file.type)) {
       this.mostrarFeedback('error', 'Solo se permiten imagenes JPG y PNG.');
       input.value = '';

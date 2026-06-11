@@ -29,6 +29,9 @@ export class MisForos implements OnInit, OnDestroy {
   errorPrivado = '';
   registrandoForo = false;
   buscandoPrivado = false;
+  eliminandoForoId: number | null = null;
+  mensajeEliminacion: string = '';
+  tipoMensajeEliminacion: 'success' | 'error' | '' = '';
   reporteModalAbierto = false;
   reporteObjetivo: { tipo: ReportePayload['reporte_tipo']; id: number; titulo: string } | null = null;
   reporteMotivo = '';
@@ -244,18 +247,54 @@ export class MisForos implements OnInit, OnDestroy {
   }
 
   eliminarForo(id: number): void {
-    const confirmar = confirm('¿Estas seguro de que quieres eliminar este foro?');
+    const confirmar = confirm('¿Deseas eliminar este foro?');
     if (!confirmar) return;
+
+    this.eliminandoForoId = id;
+    this.cdr.detectChanges();
 
     this.foroService.deleteForo(id).subscribe({
       next: () => {
         this.foros = this.foros.filter(f => f.foro_id !== id);
+        this.mensajeEliminacion = 'Foro eliminado correctamente.';
+        this.tipoMensajeEliminacion = 'success';
+        this.eliminandoForoId = null;
         this.cdr.detectChanges();
+        
+        // Limpiar mensaje después de 5 segundos
+        setTimeout(() => {
+          this.mensajeEliminacion = '';
+          this.tipoMensajeEliminacion = '';
+          this.cdr.detectChanges();
+        }, 5000);
       },
       error: (err) => {
-        console.error('Error eliminando foro', err);
+        const mensajeError = this.extraerMensajeError(err);
+        this.mensajeEliminacion = mensajeError;
+        this.tipoMensajeEliminacion = 'error';
+        this.eliminandoForoId = null;
+        console.error('Error eliminando foro:', err);
+        this.cdr.detectChanges();
+        
+        // Limpiar mensaje después de 7 segundos
+        setTimeout(() => {
+          this.mensajeEliminacion = '';
+          this.tipoMensajeEliminacion = '';
+          this.cdr.detectChanges();
+        }, 7000);
       }
     });
+  }
+
+  private extraerMensajeError(err: any): string {
+    if (err?.error?.mensaje) return err.error.mensaje;
+    if (err?.error?.error) return err.error.error;
+    if (err?.error?.detalle) return err.error.detalle;
+    if (err?.message) return err.message;
+    if (err?.status === 403) return 'No tienes permiso para eliminar este foro';
+    if (err?.status === 404) return 'El foro no fue encontrado';
+    if (err?.status === 401) return 'Debes estar autenticado para eliminar foros';
+    return 'No se pudo eliminar el foro. Intenta de nuevo.';
   }
 
   dejarDeSeguirForo(foro: any): void {

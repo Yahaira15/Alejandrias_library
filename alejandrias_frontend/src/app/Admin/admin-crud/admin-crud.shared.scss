@@ -156,25 +156,61 @@
   color: #0b4772;
 }
 
-.admin-message,
-.admin-error {
-  width: min(740px, 100%);
-  margin: 0 0 12px 28px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  background: #faecd8;
-  color: #214f75;
+.admin-toast {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  z-index: 80;
+  width: min(560px, calc(100vw - 44px));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 8px;
+  box-sizing: border-box;
   font-weight: 700;
+  box-shadow: 0 18px 42px rgba(14, 25, 36, 0.22);
+  backdrop-filter: blur(10px);
+  animation: adminToastIn 0.2s ease-out;
 }
 
-.admin-error {
-  background: #f5cbc6;
-  color: #7b1710;
+.admin-toast div {
+  display: grid;
+  gap: 8px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
-.admin-message + .table-panel,
-.admin-error + .table-panel {
-  margin-top: 48px;
+.admin-toast strong {
+  font-size: 0.98rem;
+}
+
+.admin-toast span {
+  font-size: 0.95rem;
+}
+
+.admin-toast-success {
+  background: rgba(247, 252, 249, 0.97);
+  color: #245b3a;
+  border: 1px solid rgba(130, 190, 151, 0.48);
+}
+
+.admin-toast-error {
+  background: rgba(255, 246, 232, 0.97);
+  color: #7a3f00;
+  border: 1px solid rgba(230, 160, 42, 0.45);
+}
+
+@keyframes adminToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .table-panel {
@@ -303,5 +339,11 @@ td {
   .admin-form {
     grid-template-columns: 1fr;
     margin-left: 0;
+  }
+
+  .admin-toast {
+    top: 14px;
+    right: 14px;
+    width: calc(100vw - 28px);
   }
 }

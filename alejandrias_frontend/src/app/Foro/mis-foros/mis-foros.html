@@ -1,5 +1,15 @@
 <div class="layout">
 
+  <!-- TOAST ELIMINACIÓN -->
+  <div
+    *ngIf="mensajeEliminacion"
+    class="toast-eliminacion"
+    [class.success]="tipoMensajeEliminacion === 'success'"
+    [class.error]="tipoMensajeEliminacion === 'error'"
+  >
+    <span>{{ mensajeEliminacion }}</span>
+  </div>
+
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <h2 class="logo">Alejandría's <br>
@@ -165,7 +175,14 @@
 
             <div class="foro-menu-panel" *ngIf="foro.menuAbierto">
               <button type="button" *ngIf="rol === 'lider' || rol === 'admin'" (click)="editarForo(foro.foro_id)">Editar</button>
-              <button type="button" *ngIf="rol === 'lider' || rol === 'admin'" (click)="eliminarForo(foro.foro_id)">Eliminar</button>
+              <button 
+                type="button" 
+                *ngIf="rol === 'lider' || rol === 'admin'" 
+                (click)="eliminarForo(foro.foro_id)"
+                [disabled]="eliminandoForoId === foro.foro_id"
+              >
+                {{ eliminandoForoId === foro.foro_id ? 'Eliminando...' : 'Eliminar' }}
+              </button>
               <button type="button" *ngIf="rol === 'explorador'" (click)="abrirReporte('foro', foro.foro_id, foro.foro_titulo)">Reportar</button>
               <button type="button" *ngIf="rol === 'explorador'" (click)="dejarDeSeguirForo(foro)">Eliminar</button>
             </div>

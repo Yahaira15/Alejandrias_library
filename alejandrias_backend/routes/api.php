@@ -55,7 +55,6 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('/foros', [AdminController::class, 'foros']);
     Route::post('/foros', [AdminController::class, 'crearForo']);
     Route::put('/foros/{id}', [AdminController::class, 'actualizarForo']);
-    Route::delete('/foros/{id}', [ForoController::class, 'destroy']);
 
     Route::get('/categorias', [AdminController::class, 'categorias']);
     Route::post('/categorias', [CategoriaController::class, 'store']);
@@ -107,7 +106,6 @@ Route::get('/foros/{foro_id}', [ForoController::class, 'show']);
 
 Route::get('/categorias', [CategoriaController::class, 'index']);
 Route::get('/categorias/{categoria_id}', [CategoriaController::class, 'show']);
-Route::post('/categorias', [CategoriaController::class, 'store']);
 Route::get('/categorias/{categoria_id}/foros', [CategoriaController::class, 'foros']);
 Route::get('/categorias/{categoria_id}/subcategorias', [CategoriaController::class, 'subcategorias']);
 

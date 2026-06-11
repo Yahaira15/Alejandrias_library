@@ -14,11 +14,15 @@ import { ChangeDetectorRef } from '@angular/core';
   styleUrls: ['./perfil.scss']
 })
 export class Perfil implements OnInit {
+  private readonly fotoPerfilMaxBytes = 2 * 1024 * 1024;
 
   perfil: any = {};
   perfilOriginal: any = {}; // para cancelar cambios
   modoEdicion: boolean = false;
+  guardandoPerfil: boolean = false;
   mensaje: string = '';
+  mensajeTipo: 'success' | 'error' | '' = '';
+  private mensajeTimeout: ReturnType<typeof setTimeout> | null = null;
   seccionActiva: 'perfil' | 'logros' = 'perfil';
   modalSolicitudLider = false;
   logros: any = null;
@@ -318,6 +322,13 @@ export class Perfil implements OnInit {
 
     if (!archivo) return;
 
+    if (archivo.size > this.fotoPerfilMaxBytes) {
+      this.mostrarAviso('error', 'La foto de perfil no puede superar los 2 MB.');
+      input.value = '';
+      this.cdr.detectChanges();
+      return;
+    }
+
     const lector = new FileReader();
     lector.onload = () => {
       this.perfil.usuario_foto_perfil = lector.result as string;
@@ -426,12 +437,12 @@ export class Perfil implements OnInit {
 }
 
 actualizar() {
-
   this.errorPassword = '';
+
+  if (this.guardandoPerfil) return;
 
   // 🔐 Validación
   if (this.passwordNueva || this.confirmarPassword) {
-
     const error = this.validarPassword(this.passwordNueva);
 
     if (error) {
@@ -446,35 +457,110 @@ actualizar() {
   }
 
   const data: any = {
-    usuario_nombre: this.perfil.usuario_nombre,
-    usuario_apodo: this.perfil.usuario_apodo,
-    usuario_email: this.perfil.usuario_email,
+    usuario_nombre: this.perfil.usuario_nombre?.trim(),
+    usuario_apellido: this.perfil.usuario_apellido?.trim() || null,
+    usuario_apodo: this.perfil.usuario_apodo?.trim(),
+    usuario_email: this.perfil.usuario_email?.trim(),
     usuario_bio: this.perfil.usuario_bio,
-    usuario_foto_perfil: this.perfil.usuario_foto_perfil
+    usuario_foto_perfil: this.perfil.usuario_foto_perfil,
+    usuario_intereses: this.materiasFavoritas
+      .map((materia) => this.interesDesdeMateria(materia))
+      .filter((interes): interes is string => !!interes)
   };
 
   if (this.passwordNueva) {
     data.usuario_password = this.passwordNueva;
   }
 
-    this.perfilService.updatePerfil(data).subscribe({
-    next: () => {
-      this.mensaje = 'Perfil actualizado correctamente';
+  this.guardandoPerfil = true;
+  this.cdr.detectChanges();
+
+  this.perfilService.updatePerfil(data).subscribe({
+    next: (res: any) => {
+      if (!res?.usuario) {
+        this.mostrarAviso('error', 'Error: respuesta del servidor incompleta');
+        this.guardandoPerfil = false;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      // Actualizar perfil completamente desde la respuesta
+      this.perfil = { ...res.usuario };
+      this.cargarMateriasGuardadas();
+
+      this.mostrarAviso('success', 'Perfil actualizado correctamente');
       this.passwordNueva = '';
       this.confirmarPassword = '';
       this.perfilOriginal = { ...this.perfil };
       this.materiasOriginal = [...this.materiasFavoritas];
       localStorage.setItem(this.obtenerClaveMaterias(), JSON.stringify(this.materiasFavoritas));
       localStorage.setItem('usuario', JSON.stringify(this.perfil));
+      this.modoEdicion = false;
+      this.guardandoPerfil = false;
       this.sincronizarLogros();
+      this.cdr.detectChanges();
     },
-    error: () => {
-      this.mensaje = 'Error al actualizar';
+    error: (err) => {
+      this.mostrarAviso('error', this.mensajeErrorPerfil(err));
+      this.guardandoPerfil = false;
+      this.cdr.detectChanges();
     }
   });
 
-  this.modoEdicion = false;
 }
+
+  cerrarAviso(): void {
+    this.mensaje = '';
+    this.mensajeTipo = '';
+
+    if (this.mensajeTimeout) {
+      clearTimeout(this.mensajeTimeout);
+      this.mensajeTimeout = null;
+    }
+  }
+
+  private mostrarAviso(tipo: 'success' | 'error', mensaje: string): void {
+    this.mensajeTipo = tipo;
+    this.mensaje = mensaje;
+
+    if (this.mensajeTimeout) {
+      clearTimeout(this.mensajeTimeout);
+    }
+
+    this.mensajeTimeout = setTimeout(() => {
+      this.mensaje = '';
+      this.mensajeTipo = '';
+      this.mensajeTimeout = null;
+      this.cdr.detectChanges();
+    }, 6500);
+
+    this.cdr.detectChanges();
+  }
+
+  private interesDesdeMateria(materia: string): string | null {
+    const normalizada = this.normalizarTexto(materia);
+    const encontrado = Object.entries(this.interesesMap)
+      .find(([, nombre]) => this.normalizarTexto(nombre) === normalizada);
+
+    return encontrado?.[0] || null;
+  }
+
+  private normalizarTexto(valor: string): string {
+    return valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
+  private mensajeErrorPerfil(err: any): string {
+    const errores = err?.error?.errors;
+
+    if (errores && typeof errores === 'object') {
+      const primerError = Object.values(errores).flat()[0];
+      if (primerError) {
+        return String(primerError);
+      }
+    }
+
+    return err?.error?.message || err?.error?.error || err?.error?.detalle || 'Error al actualizar';
+  }
 
   // 🔹 eliminar cuenta
   eliminarCuenta() {

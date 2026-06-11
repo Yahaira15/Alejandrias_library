@@ -23,6 +23,7 @@ export interface AdminCrudConfig {
 
 @Directive()
 export abstract class AdminCrudBase implements OnInit, OnDestroy {
+  private readonly imagenMaxBytes = 5 * 1024 * 1024;
   abstract config: AdminCrudConfig;
   registros: any[] = [];
   formulario: any = {};
@@ -209,6 +210,13 @@ export abstract class AdminCrudBase implements OnInit, OnDestroy {
     const file = input.files?.[0];
 
     if (!file) {
+      return;
+    }
+
+    if (file.size > this.imagenMaxBytes) {
+      this.mostrarError('La imagen no puede superar los 5 MB.');
+      input.value = '';
+      this.cdr.detectChanges();
       return;
     }
 

@@ -10,6 +10,8 @@ use App\Services\Sanctions\SanctionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UsuarioController extends Controller
 {
@@ -191,21 +193,34 @@ class UsuarioController extends Controller
             $usuario = auth()->user();
 
             $request->validate([
-                'usuario_nombre' => 'required|string',
-                'usuario_apellido' => 'nullable|string',
-                'usuario_apodo' => 'required|string',
-                'usuario_email' => 'required|email',
+                'usuario_nombre' => 'required|string|max:255',
+                'usuario_apellido' => 'nullable|string|max:255',
+                'usuario_apodo' => [
+                    'required',
+                    'string',
+                    'max:100',
+                    Rule::unique('usuario', 'usuario_apodo')->ignore($usuario->usuario_id, 'usuario_id'),
+                ],
+                'usuario_email' => [
+                    'required',
+                    'email',
+                    Rule::unique('usuario', 'usuario_email')->ignore($usuario->usuario_id, 'usuario_id'),
+                ],
                 'usuario_bio' => 'nullable|string',
                 'usuario_foto_perfil' => 'nullable|string',
                 'usuario_intereses' => 'nullable|array',
                 'usuario_intereses.*' => 'string|in:' . implode(',', $this->interesesPermitidos),
-                'usuario_password' => 'nullable|min:6'
+                'usuario_password' => 'nullable|min:8'
+            ], [
+                'usuario_apodo.unique' => 'Este apodo ya esta en uso',
+                'usuario_email.unique' => 'Este correo ya esta registrado',
+                'usuario_password.min' => 'La contrasena debe tener minimo 8 caracteres',
             ]);
 
-            $usuario->usuario_nombre = $request->usuario_nombre;
-            $usuario->usuario_apellido = $request->usuario_apellido;
-            $usuario->usuario_apodo = $request->usuario_apodo;
-            $usuario->usuario_email = $request->usuario_email;
+            $usuario->usuario_nombre = trim($request->usuario_nombre);
+            $usuario->usuario_apellido = $request->filled('usuario_apellido') ? trim($request->usuario_apellido) : null;
+            $usuario->usuario_apodo = trim($request->usuario_apodo);
+            $usuario->usuario_email = trim($request->usuario_email);
             $usuario->usuario_bio = $request->usuario_bio;
             $usuario->usuario_foto_perfil = $request->usuario_foto_perfil;
 
@@ -224,6 +239,8 @@ class UsuarioController extends Controller
                 'usuario' => $usuario
             ]);
 
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error interno',

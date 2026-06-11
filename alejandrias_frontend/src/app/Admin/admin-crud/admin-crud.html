@@ -64,8 +64,18 @@
     </div>
   </form>
 
-  <p class="admin-message" *ngIf="mensaje">{{ mensaje }}</p>
-  <p class="admin-error" *ngIf="error">{{ error }}</p>
+  <div *ngIf="mensaje" class="admin-toast admin-toast-success">
+    <div>
+      <strong>Alejandria's Library dice</strong>
+      <span>{{ mensaje }}</span>
+    </div>
+  </div>
+  <div *ngIf="error" class="admin-toast admin-toast-error">
+    <div>
+      <strong>Alejandria's Library dice</strong>
+      <span>{{ error }}</span>
+    </div>
+  </div>
 
   <div class="table-panel">
     <div class="panel-tabs">

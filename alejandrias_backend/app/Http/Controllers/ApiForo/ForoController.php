@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Contracts\Encryption\DecryptException;
 use App\Models\Foro;
@@ -348,7 +349,40 @@ class ForoController extends Controller
                 return response()->json(['error' => 'No puedes eliminar este foro'], 403);
             }
 
-            $foro->delete();
+            DB::transaction(function () use ($foro, $id) {
+                $publicacionIds = DB::table('publicacion')
+                    ->where('publicacion_foro_id', $id)
+                    ->pluck('publicacion_id');
+
+                if ($publicacionIds->isNotEmpty()) {
+                    DB::table('moderacion_ia')
+                        ->whereIn('publicacion_id', $publicacionIds)
+                        ->orWhereIn('comentario_id', function ($query) use ($publicacionIds) {
+                            $query->select('comentario_id')
+                                ->from('comentario')
+                                ->whereIn('comentario_publicacion_id', $publicacionIds);
+                        })
+                        ->delete();
+
+                    DB::table('comentario')
+                        ->whereIn('comentario_publicacion_id', $publicacionIds)
+                        ->delete();
+
+                    DB::table('publicacion')
+                        ->whereIn('publicacion_id', $publicacionIds)
+                        ->delete();
+                }
+
+                DB::table('moderacion_ia')
+                    ->where('foro_id', $id)
+                    ->delete();
+
+                DB::table('foro_usuario')
+                    ->where('foro_id', $id)
+                    ->delete();
+
+                $foro->delete();
+            });
 
             return response()->json([
                 'mensaje' => 'Foro eliminado correctamente'

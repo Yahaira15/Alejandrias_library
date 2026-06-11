@@ -1,4 +1,17 @@
 <div class="perfil-page">
+  <div
+    *ngIf="mensaje"
+    class="profile-toast"
+    [class.profile-toast-success]="mensajeTipo === 'success'"
+    [class.profile-toast-error]="mensajeTipo === 'error'"
+  >
+    <div>
+      <strong>Alejandria's Library dice</strong>
+      <span>{{ mensaje }}</span>
+    </div>
+    <button type="button" (click)="cerrarAviso()">Cerrar</button>
+  </div>
+
   <aside class="perfil-sidebar">
     <h1>Alejandria's<br>Library</h1>
 
@@ -69,7 +82,6 @@
         <button type="button" (click)="abrirSolicitudLider()">Solicitar cambio</button>
       </section>
 
-      <p class="mensaje" *ngIf="mensaje">{{ mensaje }}</p>
     </section>
 
     <section class="perfil-content logros-content" *ngIf="!modoEdicion && seccionActiva === 'logros'">
@@ -358,13 +370,14 @@
           </p>
 
           <div class="buttons">
-            <button type="button" (click)="actualizar()">Guardar</button>
-            <button type="button" (click)="toggleEditar()">Cancelar</button>
-            <button type="button" class="delete-btn" (click)="eliminarCuenta()">Eliminar cuenta</button>
+            <button type="button" (click)="actualizar()" [disabled]="guardandoPerfil">
+              {{ guardandoPerfil ? 'Guardando...' : 'Guardar' }}
+            </button>
+            <button type="button" (click)="toggleEditar()" [disabled]="guardandoPerfil">Cancelar</button>
+            <button type="button" class="delete-btn" (click)="eliminarCuenta()" [disabled]="guardandoPerfil">Eliminar cuenta</button>
           </div>
         </div>
 
-        <p class="mensaje" *ngIf="mensaje">{{ mensaje }}</p>
       </div>
     </section>
   </main>
