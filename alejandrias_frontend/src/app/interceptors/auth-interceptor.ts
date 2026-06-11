@@ -3,16 +3,16 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
-const API_BASE_URL_ALT = 'http://localhost:8000/api';
-
 function getApiPath(url: string): string | null {
-  if (url.startsWith(API_BASE_URL)) {
-    return url.replace(API_BASE_URL, '');
-  }
+  try {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+    const parsedUrl = new URL(url, baseUrl);
 
-  if (url.startsWith(API_BASE_URL_ALT)) {
-    return url.replace(API_BASE_URL_ALT, '');
+    if (parsedUrl.port === '8000' && parsedUrl.pathname.startsWith('/api')) {
+      return parsedUrl.pathname.replace(/^\/api/, '') || '/';
+    }
+  } catch {
+    return null;
   }
 
   try {

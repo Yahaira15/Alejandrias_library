@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ApiForo;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\HandlesAdjuntos;
 use App\Models\Comentario;
 use App\Models\Publicacion;
 use Illuminate\Http\Request;
@@ -13,10 +14,13 @@ use App\Services\Gamification\GamificationService;
 use App\Services\Gamification\XpService;
 use App\Services\Notifications\LeaderNotificationService;
 use App\Services\Sanctions\SanctionService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class ComentarioController extends Controller
 {
+    use HandlesAdjuntos;
+
     public function index($publicacionId)
     {
         $publicacion = Publicacion::find($publicacionId);
@@ -53,6 +57,8 @@ class ComentarioController extends Controller
             ->with('usuario')
             ->orderBy('comentario_id', 'asc')
             ->get();
+
+        $comentarios = $this->adjuntarLikes($comentarios, Auth::guard('sanctum')->user());
 
         return response()->json($comentarios, 200);
     }
@@ -91,10 +97,14 @@ class ComentarioController extends Controller
         $data = $request->validate([
             'comentario_contenido' => 'required|string|max:2000',
         ]);
+        $this->validarAdjuntos($request);
 
         $data['comentario_publicacion_id'] = $publicacionId;
         $data['comentario_usuario_id'] = $usuario->usuario_id;
         $data['comentario_fecha_creacion'] = now();
+        if (Schema::hasColumn('comentario', 'comentario_adjuntos')) {
+            $data['comentario_adjuntos'] = $this->guardarAdjuntos($request, 'adjuntos/comentarios');
+        }
 
         $moderationService = app(ContentModerationService::class);
         $moderationPayload = [
@@ -213,6 +223,8 @@ class ComentarioController extends Controller
             ->orderBy('comentario_id', 'asc')
             ->get();
 
+        $respuestas = $this->adjuntarLikes($respuestas, Auth::guard('sanctum')->user());
+
         return response()->json($respuestas, 200);
     }
 
@@ -316,7 +328,65 @@ class ComentarioController extends Controller
             }
         }
 
-        return response()->json($comentario, 200);
+        return response()->json($this->adjuntarLike($comentario, Auth::guard('sanctum')->user()), 200);
+    }
+
+    public function toggleLike($id)
+    {
+        $usuario = Auth::guard('sanctum')->user();
+
+        if (!$usuario) {
+            return response()->json(['error' => 'No autenticado'], 401);
+        }
+
+        $comentario = Comentario::with('publicacion.foro')->find($id);
+
+        if (!$comentario) {
+            return response()->json(['error' => 'Comentario no encontrado'], 404);
+        }
+
+        $foro = $comentario->publicacion?->foro;
+        if ($foro?->foro_privado && !$this->usuarioRegistradoEnForo($foro, $usuario)) {
+            return response()->json(['error' => 'Debes registrarte en el foro antes de dar me gusta'], 403);
+        }
+
+        if (!Schema::hasTable('comentario_like')) {
+            return response()->json(['error' => 'La base de datos requiere migracion para likes'], 500);
+        }
+
+        $like = DB::table('comentario_like')
+            ->where('comentario_id', $comentario->comentario_id)
+            ->where('usuario_id', $usuario->usuario_id)
+            ->first();
+
+        if ($like) {
+            DB::table('comentario_like')
+                ->where('comentario_id', $comentario->comentario_id)
+                ->where('usuario_id', $usuario->usuario_id)
+                ->delete();
+            $liked = false;
+        } else {
+            DB::table('comentario_like')->insert([
+                'comentario_id' => $comentario->comentario_id,
+                'usuario_id' => $usuario->usuario_id,
+                'fecha_creacion' => now(),
+            ]);
+            $liked = true;
+        }
+
+        $likes = DB::table('comentario_like')
+            ->where('comentario_id', $comentario->comentario_id)
+            ->count();
+
+        if (Schema::hasColumn('comentario', 'comentario_likes')) {
+            $comentario->comentario_likes = $likes;
+            $comentario->save();
+        }
+
+        return response()->json([
+            'liked' => $liked,
+            'comentario_likes' => $likes,
+        ], 200);
     }
 
     public function update(Request $request, $id)
@@ -390,5 +460,68 @@ class ComentarioController extends Controller
         $comentario->delete();
 
         return response()->json(['message' => 'Comentario eliminado'], 200);
+    }
+
+    private function adjuntarLikes($comentarios, $usuario)
+    {
+        if (!Schema::hasTable('comentario_like')) {
+            return $comentarios->map(function ($comentario) {
+                $comentario->comentario_likes = (int) ($comentario->comentario_likes ?? 0);
+                $comentario->liked_by_me = false;
+                return $comentario;
+            });
+        }
+
+        $ids = $comentarios->pluck('comentario_id')->all();
+        $likesPorComentario = DB::table('comentario_like')
+            ->select('comentario_id', DB::raw('COUNT(*) as total'))
+            ->whereIn('comentario_id', $ids)
+            ->groupBy('comentario_id')
+            ->pluck('total', 'comentario_id');
+
+        $likesUsuario = collect();
+        if ($usuario) {
+            $likesUsuario = DB::table('comentario_like')
+                ->where('usuario_id', $usuario->usuario_id)
+                ->whereIn('comentario_id', $ids)
+                ->pluck('comentario_id')
+                ->flip();
+        }
+
+        return $comentarios->map(function ($comentario) use ($likesPorComentario, $likesUsuario) {
+            $comentario->comentario_likes = (int) ($likesPorComentario[$comentario->comentario_id] ?? $comentario->comentario_likes ?? 0);
+            $comentario->liked_by_me = $likesUsuario->has($comentario->comentario_id);
+            return $comentario;
+        });
+    }
+
+    private function adjuntarLike(Comentario $comentario, $usuario): Comentario
+    {
+        if (!Schema::hasTable('comentario_like')) {
+            $comentario->comentario_likes = (int) ($comentario->comentario_likes ?? 0);
+            $comentario->liked_by_me = false;
+            return $comentario;
+        }
+
+        $comentario->comentario_likes = DB::table('comentario_like')
+            ->where('comentario_id', $comentario->comentario_id)
+            ->count();
+        $comentario->liked_by_me = $usuario
+            ? DB::table('comentario_like')
+                ->where('comentario_id', $comentario->comentario_id)
+                ->where('usuario_id', $usuario->usuario_id)
+                ->exists()
+            : false;
+
+        return $comentario;
+    }
+
+    private function usuarioRegistradoEnForo($foro, $usuario): bool
+    {
+        return $foro->foro_creador_id == $usuario->usuario_id
+            || $usuario->usuario_rol === 'admin'
+            || $foro->miembros()
+                ->where('usuario.usuario_id', $usuario->usuario_id)
+                ->exists();
     }
 }

@@ -116,6 +116,59 @@
         </section>
     </div>
 
+    <div
+        *ngIf="modalTerminosAbierto"
+        class="modal-backdrop"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="terminos-title">
+        <section class="terms-modal">
+            <button
+                type="button"
+                class="modal-close"
+                aria-label="Cerrar"
+                (click)="cerrarModalTerminos()"
+                [disabled]="cargandoTerminos">
+                x
+            </button>
+
+            <h2 id="terminos-title">Terminos y privacidad</h2>
+            <p>
+                Para continuar debes aceptar el uso educativo de Alejandria's Library, las normas de convivencia,
+                la politica de privacidad y el tratamiento de datos personales necesarios para operar la plataforma.
+            </p>
+
+            <div class="terms-links" aria-label="Documentos legales">
+                <a routerLink="/legal" fragment="terminos" target="_blank" rel="noopener">Terminos y condiciones</a>
+                <a routerLink="/legal" fragment="privacidad" target="_blank" rel="noopener">Politica de privacidad</a>
+                <a routerLink="/legal" fragment="datos" target="_blank" rel="noopener">Tratamiento de datos</a>
+            </div>
+
+            <label class="checkbox-container terms-acceptance" for="aceptoTerminosLogin">
+                <input
+                    type="checkbox"
+                    id="aceptoTerminosLogin"
+                    [(ngModel)]="aceptoTerminos"
+                    name="aceptoTerminosLogin"
+                    [disabled]="cargandoTerminos">
+                <span class="checkmark"></span>
+                <span>He leido y acepto los terminos y condiciones</span>
+            </label>
+
+            <div *ngIf="errorTerminos" class="error-msg recovery-message">
+                {{ errorTerminos }}
+            </div>
+
+            <button class="terms-action" type="button" [disabled]="!aceptoTerminos || cargandoTerminos" (click)="aceptarTerminos()">
+                <span *ngIf="!cargandoTerminos">Aceptar y entrar</span>
+                <span *ngIf="cargandoTerminos" class="loading-label">
+                    <span class="spinner" aria-hidden="true"></span>
+                    Guardando
+                </span>
+            </button>
+        </section>
+    </div>
+
     <div class="img-fondo" aria-hidden="true">
         <img src="fondoLogin.png" alt="">
     </div>

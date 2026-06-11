@@ -6,7 +6,8 @@
        Library</h2>
 
     <nav>
-      <button class="active" (click)="irAInicio()"><img src="iconos/home.png" alt="home" width="20px"> Inicio</button>
+      <button (click)="irAInicio()"><img src="iconos/home.png" alt="home" width="20px"> Inicio</button>
+      <button class="active" (click)="irAInicio()"><img src="iconos/foro.png" alt="foro" width="20px"> Foros</button>
       <button (click)="irAMisForos()"><img src="iconos/mis_foros.png" alt="mis_foros" width="20px"> Mis foros</button>
       <button (click)="irAChatIa()"><img src="iconos/notificaciones.png" alt="chat_ia" width="20px"> Chat IA</button>
       <button (click)="abrirModalPrivado()"><img src="iconos/foro.png" alt="foro privado" width="20px"> Ingresar a foro privado</button>
@@ -204,6 +205,18 @@
           [class.sin-imagen]="!foroTieneImagen(foro)"
           (click)="verForo(foro)"
         >
+          <button
+            type="button"
+            class="favorito-btn"
+            [class.active]="foro.mi_favorito"
+            [disabled]="favoritoProcesandoId === foro.foro_id"
+            (click)="toggleFavorito(foro, $event)"
+            [attr.aria-label]="foro.mi_favorito ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+          >
+            <span *ngIf="foro.mi_favorito">&#9733;</span>
+            <span *ngIf="!foro.mi_favorito">&#9734;</span>
+          </button>
+
           <div class="foro-media" *ngIf="foroTieneImagen(foro)">
             <img
               [src]="obtenerImagenForo(foro)"

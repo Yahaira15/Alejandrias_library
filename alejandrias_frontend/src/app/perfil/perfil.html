@@ -16,7 +16,7 @@
     <h1>Alejandria's<br>Library</h1>
 
     <nav class="perfil-nav" aria-label="Menu de perfil">
-      <button type="button" class="nav-item" (click)="irALogros()">
+      <button type="button" class="nav-item" [class.active]="seccionActiva === 'logros'" (click)="irALogros()">
         <img src="iconos/logros.png" alt="">
         <span>Mis Logros</span>
       </button>
@@ -72,6 +72,30 @@
 
       <div class="foros-panel">
         <span>Foros Favoritos:</span>
+        <div class="foros-favoritos-grid">
+          <button
+            type="button"
+            class="foro-favorito-card"
+            *ngFor="let foro of forosFavoritos.slice(0, 6)"
+            (click)="irAForoFavorito(foro)"
+          >
+            <img
+              *ngIf="obtenerImagenForoFavorito(foro); else favoritoSinImagen"
+              [src]="obtenerImagenForoFavorito(foro)"
+              [alt]="foro.foro_titulo">
+            <ng-template #favoritoSinImagen>
+              <span class="foro-favorito-icon"><img src="iconos/libro.png" alt=""></span>
+            </ng-template>
+            <span>{{ foro.foro_titulo }}</span>
+          </button>
+
+          <div class="foro-favorito-slot" *ngFor="let slot of espaciosForosFavoritos" aria-hidden="true">
+            <img src="iconos/libro.png" alt="">
+          </div>
+        </div>
+        <p class="foros-favoritos-empty" *ngIf="!cargandoForosFavoritos && forosFavoritos.length === 0">
+          Marca foros como favoritos para verlos aqui.
+        </p>
       </div>
 
       <section *ngIf="perfil.usuario_rol !== 'lider' && perfil.usuario_rol !== 'admin'" class="leader-request-panel">
@@ -292,7 +316,7 @@
         </div>
 
         <p class="logros-empty" *ngIf="!logros && !cargandoLogros">
-          No se pudieron cargar los logros por ahora.
+          {{ logrosError || 'No se pudieron cargar los logros por ahora.' }}
         </p>
       </section>
     </section>

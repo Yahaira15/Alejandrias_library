@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap');
+
+:host {
+    display: block;
+    min-height: 100vh;
+    background: #fefeff;
+    color: #244f73;
+    font-family: 'Lora', serif;
+}
+
+.legal-page {
+    min-height: 100vh;
+    background: #fefeff;
+}
+
+.legal-hero {
+    min-height: 260px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    align-items: center;
+    gap: 36px;
+    padding: 44px clamp(24px, 7vw, 96px);
+    background: linear-gradient(rgba(77, 126, 178, 0.62), rgba(77, 126, 178, 0.62)), url('/fondo_home.png');
+    background-size: cover;
+    background-position: center 42%;
+    color: #fff;
+}
+
+.brand {
+    color: #fefeff;
+    font-size: 24px;
+    line-height: 1.05;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.legal-hero p {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.legal-hero h1 {
+    max-width: 760px;
+    margin: 0;
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.18;
+}
+
+.legal-nav {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid rgba(159, 181, 205, 0.45);
+    background: rgba(254, 254, 255, 0.94);
+    backdrop-filter: blur(8px);
+}
+
+.legal-nav a,
+.contact-link {
+    color: #2f628c;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.legal-nav a {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 14px;
+    border: 1.5px solid #9fb5cd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.legal-nav a:hover,
+.contact-link:hover {
+    text-decoration: underline;
+}
+
+.legal-section {
+    scroll-margin-top: 86px;
+    width: min(100% - 48px, 920px);
+    margin: 0 auto;
+    padding: 48px 0 18px;
+}
+
+.legal-section + .legal-section {
+    border-top: 1px solid rgba(159, 181, 205, 0.45);
+}
+
+.legal-section h2 {
+    margin: 0 0 26px;
+    color: #306289;
+    font-size: 30px;
+}
+
+.legal-section article {
+    margin-bottom: 24px;
+}
+
+.legal-section h3 {
+    margin: 0 0 10px;
+    color: #306289;
+    font-size: 20px;
+}
+
+.legal-section p,
+.legal-section li {
+    color: #3e678d;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.legal-section p {
+    margin: 0 0 10px;
+}
+
+.legal-section ul {
+    margin: 0;
+    padding-left: 22px;
+}
+
+@media (max-width: 640px) {
+    .legal-hero {
+        grid-template-columns: 1fr;
+        gap: 26px;
+        min-height: 300px;
+    }
+
+    .legal-section {
+        width: min(100% - 36px, 920px);
+    }
+}

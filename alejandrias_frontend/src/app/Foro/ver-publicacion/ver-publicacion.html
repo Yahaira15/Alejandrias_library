@@ -1,19 +1,36 @@
-<div class="publication-page">
-  <div *ngIf="feedbackMensaje" class="feedback-banner" [class.feedback-success]="feedbackTipo === 'success'" [class.feedback-error]="feedbackTipo === 'error'">
-    <div class="feedback-content">
-      <strong>Alejandria's Library dice</strong>
-      <span>{{ feedbackMensaje }}</span>
+<div class="layout">
+  <aside class="sidebar">
+    <h2 class="logo">Alejandria's <br> Library</h2>
+
+    <nav>
+      <button type="button" (click)="irAInicio()"><img src="iconos/home.png" alt="" width="20"> Inicio</button>
+      <button type="button" class="active" (click)="irAInicio()"><img src="iconos/foro.png" alt="" width="20"> Foros</button>
+      <button type="button" (click)="irAMisForos()"><img src="iconos/mis_foros.png" alt="" width="20"> Mis foros</button>
+      <button type="button" (click)="irAChatIa()"><img src="iconos/notificaciones.png" alt="" width="20"> Chat IA</button>
+      <button *ngIf="rol === 'lider' || rol === 'admin'" type="button" (click)="irACrearForo()"><img src="iconos/crear_foro.png" alt="" width="20"> Crear foro</button>
+    </nav>
+
+    <div class="logout-panel">
+      <img src="iconos/salida.png" alt="" width="30">
+      <button type="button" class="logout" (click)="logout()">Cerrar sesion</button>
     </div>
-    <button type="button" class="feedback-close" (click)="cerrarFeedback()">Cerrar</button>
-  </div>
+  </aside>
 
-  <div class="back-links" *ngIf="publicacion?.foro?.foro_id">
-    <a [routerLink]="['/foros', publicacion.foro.foro_id]" class="back-link">&#8592;</a>
-  </div>
+  <main class="content">
+    <div class="publication-page">
+      <div *ngIf="feedbackMensaje" class="feedback-banner" [class.feedback-success]="feedbackTipo === 'success'" [class.feedback-error]="feedbackTipo === 'error'">
+        <div class="feedback-content">
+          <strong>Alejandria's Library dice</strong>
+          <span>{{ feedbackMensaje }}</span>
+        </div>
+        <button type="button" class="feedback-close" (click)="cerrarFeedback()">Cerrar</button>
+      </div>
 
-  <div *ngIf="loading" class="loading">Cargando publicacion...</div>
+      <a *ngIf="publicacion?.foro?.foro_id" [routerLink]="['/foros', publicacion.foro.foro_id]" class="back-link">&#8592;</a>
 
-  <div *ngIf="publicacion && !loading" class="publication-shell">
+      <div *ngIf="loading" class="loading">Cargando publicacion...</div>
+
+      <div *ngIf="publicacion && !loading" class="publication-shell">
     <section class="publication-hero">
       <p class="page-title">Publicacion</p>
 
@@ -28,11 +45,37 @@
         <div class="publication-author-row">
           <span>{{ publicacion.usuario?.usuario_nombre }} {{ publicacion.usuario?.usuario_apellido }}</span>
           <span>{{ publicacion.comentarios_count || comentarios.length }} comentarios</span>
+          <span>{{ publicacion.publicacion_likes || 0 }} me gusta</span>
         </div>
 
         <p class="publication-body">{{ publicacion.publicacion_contenido }}</p>
 
+        <div class="saved-attachments" *ngIf="publicacion.publicacion_adjuntos?.length">
+          <a
+            *ngFor="let adjunto of publicacion.publicacion_adjuntos"
+            class="saved-attachment"
+            [href]="urlAdjunto(adjunto)"
+            target="_blank"
+            rel="noopener"
+          >
+            <img *ngIf="adjuntoEsImagen(adjunto)" [src]="urlAdjunto(adjunto)" [alt]="adjunto.nombre || 'Adjunto'">
+            <span *ngIf="!adjuntoEsImagen(adjunto)" class="saved-attachment-icon">A</span>
+            <span>{{ adjunto.nombre || 'Archivo adjunto' }}</span>
+          </a>
+        </div>
+
         <div class="comment-actions">
+          <button
+            type="button"
+            class="heart-button"
+            [class.heart-active]="publicacion.liked_by_me"
+            [disabled]="!usuario || likePublicacionEnProceso"
+            (click)="toggleLikePublicacion()"
+            [attr.aria-label]="publicacion.liked_by_me ? 'Quitar me gusta' : 'Dar me gusta'"
+          >
+            <span>{{ publicacion.liked_by_me ? '♥' : '♡' }}</span>
+            {{ publicacion.publicacion_likes || 0 }}
+          </button>
           <button type="button" class="btn btn-secondary" (click)="abrirReporte('publicacion', publicacion.publicacion_id, publicacion.publicacion_titulo)">
             Reportar publicacion
           </button>
@@ -87,10 +130,6 @@
               Adjuntar fotos o archivos
             </button>
 
-            <p class="attachment-hint">
-              Por ahora la interfaz los muestra, pero el backend aun no los guarda.
-            </p>
-
             <div class="attachment-list" *ngIf="archivosComentario.length > 0">
               <div class="attachment-chip" *ngFor="let archivo of archivosComentario; let i = index">
                 <span>{{ archivo.name }}</span>
@@ -129,7 +168,32 @@
 
             <p class="comment-content">{{ comentario.comentario_contenido }}</p>
 
+            <div class="saved-attachments" *ngIf="comentario.comentario_adjuntos?.length">
+              <a
+                *ngFor="let adjunto of comentario.comentario_adjuntos"
+                class="saved-attachment"
+                [href]="urlAdjunto(adjunto)"
+                target="_blank"
+                rel="noopener"
+              >
+                <img *ngIf="adjuntoEsImagen(adjunto)" [src]="urlAdjunto(adjunto)" [alt]="adjunto.nombre || 'Adjunto'">
+                <span *ngIf="!adjuntoEsImagen(adjunto)" class="saved-attachment-icon">A</span>
+                <span>{{ adjunto.nombre || 'Archivo adjunto' }}</span>
+              </a>
+            </div>
+
             <div class="comment-actions">
+              <button
+                type="button"
+                class="heart-button"
+                [class.heart-active]="comentario.liked_by_me"
+                [disabled]="!usuario || likeComentarioEnProcesoId === comentario.comentario_id"
+                (click)="toggleLikeComentario(comentario)"
+                [attr.aria-label]="comentario.liked_by_me ? 'Quitar me gusta' : 'Dar me gusta'"
+              >
+                <span>{{ comentario.liked_by_me ? '♥' : '♡' }}</span>
+                {{ comentario.comentario_likes || 0 }}
+              </button>
               <ng-container *ngIf="esComentarioPropio(comentario)">
                 <button (click)="iniciarEdicionComentario(comentario)" class="btn btn-secondary">Editar comentario</button>
                 <button (click)="eliminarComentario(comentario.comentario_id)" class="btn btn-danger" [disabled]="eliminandoComentarioId === comentario.comentario_id">
@@ -175,7 +239,9 @@
         </button>
       </div>
     </section>
-  </div>
+      </div>
+    </div>
+  </main>
 </div>
 
 <div class="modal-backdrop" *ngIf="reporteModalAbierto && reporteObjetivo" (click)="cerrarReporte()">

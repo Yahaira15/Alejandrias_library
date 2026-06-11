@@ -8,6 +8,7 @@ use App\Models\Categoria;
 use App\Models\Subcategoria;
 use App\Models\Publicacion;
 use App\Models\Comentario;
+use App\Models\PuntuacionForo;
 
 class Foro extends Model
 {
@@ -95,6 +96,12 @@ class Foro extends Model
         return $this->belongsToMany(Usuario::class, 'foro_usuario', 'foro_id', 'usuario_id');
     }
 
+    public function usuariosFavoritos()
+    {
+        return $this->belongsToMany(Usuario::class, 'foro_favorito', 'foro_id', 'usuario_id')
+            ->withPivot('fecha_creacion');
+    }
+
     public function publicaciones()
     {
         return $this->hasMany(Publicacion::class, 'publicacion_foro_id', 'foro_id');
@@ -110,5 +117,10 @@ class Foro extends Model
             'foro_id',
             'publicacion_id'
         );
+    }
+
+    public function puntuaciones()
+    {
+        return $this->hasMany(PuntuacionForo::class, 'foro_id', 'foro_id');
     }
 }

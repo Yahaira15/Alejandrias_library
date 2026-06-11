@@ -27,7 +27,8 @@ class Usuario extends Authenticatable
         'usuario_bloqueado',
         'usuario_nivel_id',
         'usuario_experiencia',
-        'usuario_puntos'
+        'usuario_puntos',
+        'usuario_acepto_terminos'
     ];
 
     protected $casts = [
@@ -51,6 +52,12 @@ class Usuario extends Authenticatable
     public function forosCreados()
     {
         return $this->hasMany(Foro::class, 'foro_creador_id', 'usuario_id');
+    }
+
+    public function forosFavoritos()
+    {
+        return $this->belongsToMany(Foro::class, 'foro_favorito', 'usuario_id', 'foro_id')
+            ->withPivot('fecha_creacion');
     }
 
     public function sanciones()

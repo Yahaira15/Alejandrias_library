@@ -30,13 +30,14 @@ export class Register implements OnInit {
   errorMensaje = '';
   mostrarPassword = false;
   rol = 'explorador';
-  pasoActual: 1 | 2 | 3 = 1;
+  pasoActual: 1 | 2 | 3 | 4 = 1;
   cargandoRegistro = false;
   enviandoCodigo = false;
   codigoVerificacion = '';
   codigoIngresado = '';
   codigoEnviadoA = '';
   codigoExpiraEn: number | null = null;
+  aceptoTerminos = false;
 
   readonly intereses: Interes[] = [
     { id: 'programacion', nombre: 'Programacion', icono: 'intereses/laptop.png' },
@@ -195,6 +196,11 @@ export class Register implements OnInit {
 
     if (this.cargandoRegistro) return;
 
+    if (!this.aceptoTerminos) {
+      this.errorMensaje = 'Debes aceptar los terminos y condiciones para registrarte';
+      return;
+    }
+
     if (!this.codigoVerificacion || !this.codigoExpiraEn) {
       this.errorMensaje = 'Solicita un codigo de verificacion antes de finalizar';
       return;
@@ -225,6 +231,7 @@ export class Register implements OnInit {
       usuario_password: this.usuario.usuario_password,
       usuario_rol: this.rol,
       usuario_intereses: this.usuario.usuario_intereses,
+      usuario_acepto_terminos: 'Acepto',
     };
 
     this.http.post('http://127.0.0.1:8000/api/register', body)
@@ -248,7 +255,36 @@ export class Register implements OnInit {
       });
   }
 
-  volverAPaso(paso: 1 | 2): void {
+  irAPasoLegal(): void {
+    this.errorMensaje = '';
+    this.errores = {};
+
+    if (this.cargandoRegistro) return;
+
+    if (!this.codigoVerificacion || !this.codigoExpiraEn) {
+      this.errorMensaje = 'Solicita un codigo de verificacion antes de continuar';
+      return;
+    }
+
+    if (Date.now() > this.codigoExpiraEn) {
+      this.errorMensaje = 'El codigo vencio. Solicita uno nuevo';
+      return;
+    }
+
+    if (this.codigoEnviadoA !== this.usuario.usuario_email.trim()) {
+      this.errorMensaje = 'El correo cambio. Solicita un nuevo codigo de verificacion';
+      return;
+    }
+
+    if (this.codigoIngresado.trim() !== this.codigoVerificacion) {
+      this.errorMensaje = 'El codigo ingresado no coincide';
+      return;
+    }
+
+    this.pasoActual = 4;
+  }
+
+  volverAPaso(paso: 1 | 2 | 3): void {
     if (this.cargandoRegistro || this.enviandoCodigo) return;
 
     this.errorMensaje = '';

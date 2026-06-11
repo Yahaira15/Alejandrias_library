@@ -1,7 +1,7 @@
 ﻿import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ForoService } from '../../services/foro';
 import { ReportePayload, ReporteService } from '../../services/reporte.service';
 
@@ -19,6 +19,7 @@ export class VerForoComponent implements OnInit {
   publicaciones: any[] = [];
   archivosPublicacion: File[] = [];
   usuario: any = null;
+  rol = '';
   loading = false;
   loadingPublicaciones = false;
   creandoPublicacion = false;
@@ -29,6 +30,7 @@ export class VerForoComponent implements OnInit {
   feedbackMensaje = '';
   feedbackTipo: 'success' | 'error' | '' = '';
   private feedbackTimeout: ReturnType<typeof setTimeout> | null = null;
+  private likesRefreshInterval: ReturnType<typeof setInterval> | null = null;
   modalPasswordAbierto = false;
   usuarioPassword = '';
   passwordForoRevelada = '';
@@ -40,6 +42,11 @@ export class VerForoComponent implements OnInit {
   reporteMotivo = '';
   reporteDescripcion = '';
   enviandoReporte = false;
+  estaRegistradoForo = false;
+  puntuandoForo = false;
+  likePublicacionEnProcesoId: number | null = null;
+  filtroPublicaciones: 'todas' | 'recientes' | 'relevantes' = 'todas';
+  readonly estrellas = [1, 2, 3, 4, 5];
 
   nuevaPublicacion = {
     publicacion_titulo: '',
@@ -48,6 +55,7 @@ export class VerForoComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private foroService: ForoService,
     private reporteService: ReporteService,
     private cdr: ChangeDetectorRef
@@ -55,10 +63,47 @@ export class VerForoComponent implements OnInit {
 
   ngOnInit(): void {
     this.usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+    this.rol = this.usuario?.usuario_rol || '';
     this.foroId = Number(this.route.snapshot.paramMap.get('foro_id'));
     this.cargarForo();
+    this.verificarRegistroForo();
     this.cargarPublicaciones();
+    this.iniciarActualizacionLikes();
     this.cdr.detectChanges();
+  }
+
+  irAInicio(): void {
+    this.router.navigate(['/foros']);
+  }
+
+  irAMisForos(): void {
+    this.router.navigate(['/mis-foros']);
+  }
+
+  irAChatIa(): void {
+    this.router.navigate(['/chat-ia']);
+  }
+
+  irACrearForo(): void {
+    this.router.navigate(['/foros/crear']);
+  }
+
+  logout(): void {
+    localStorage.removeItem('usuario');
+    localStorage.removeItem('token');
+    this.router.navigate(['/login']);
+  }
+
+  ngOnDestroy(): void {
+    if (this.feedbackTimeout) {
+      clearTimeout(this.feedbackTimeout);
+      this.feedbackTimeout = null;
+    }
+
+    if (this.likesRefreshInterval) {
+      clearInterval(this.likesRefreshInterval);
+      this.likesRefreshInterval = null;
+    }
   }
 
   cargarForo(): void {
@@ -99,15 +144,136 @@ export class VerForoComponent implements OnInit {
     });
   }
 
+  private iniciarActualizacionLikes(): void {
+    if (this.likesRefreshInterval) {
+      clearInterval(this.likesRefreshInterval);
+    }
+
+    this.likesRefreshInterval = setInterval(() => {
+      this.refrescarLikesPublicaciones();
+    }, 5000);
+  }
+
+  private refrescarLikesPublicaciones(): void {
+    if (!this.foroId || this.loadingPublicaciones) {
+      return;
+    }
+
+    this.foroService.getPublicaciones(this.foroId).subscribe({
+      next: (data) => {
+        const actualizadas = Array.isArray(data) ? data : [];
+        const porId = new Map(actualizadas.map((publicacion: any) => [publicacion.publicacion_id, publicacion]));
+
+        this.publicaciones = this.publicaciones.map((publicacion) => {
+          const actualizada: any = porId.get(publicacion.publicacion_id);
+
+          if (!actualizada) {
+            return publicacion;
+          }
+
+          return {
+            ...publicacion,
+            publicacion_likes: actualizada.publicacion_likes ?? publicacion.publicacion_likes ?? 0,
+            liked_by_me: actualizada.liked_by_me ?? publicacion.liked_by_me ?? false,
+            comentarios_count: actualizada.comentarios_count ?? publicacion.comentarios_count ?? 0
+          };
+        });
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.warn('No se pudieron refrescar los likes de publicaciones:', err)
+    });
+  }
+
+  verificarRegistroForo(): void {
+    if (!this.usuario) {
+      this.estaRegistradoForo = false;
+      return;
+    }
+
+    this.foroService.verificarRegistroForo(this.foroId).subscribe({
+      next: (data) => {
+        this.estaRegistradoForo = !!data?.registrado;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.estaRegistradoForo = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  puntuarForo(puntuacion: number): void {
+    if (!this.puedePuntuarForo || this.puntuandoForo) {
+      return;
+    }
+
+    this.puntuandoForo = true;
+    this.foroService.puntuarForo(this.foroId, puntuacion).subscribe({
+      next: (res) => {
+        this.actualizarPuntuacionForo(res);
+        this.puntuandoForo = false;
+        this.mostrarFeedback('success', 'Puntuacion guardada.');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.puntuandoForo = false;
+        this.mostrarFeedback('error', err?.error?.error || 'No se pudo guardar la puntuacion.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  eliminarPuntuacionForo(): void {
+    if (this.foro?.mi_puntuacion == null || this.puntuandoForo) {
+      return;
+    }
+
+    this.puntuandoForo = true;
+    this.foroService.eliminarPuntuacionForo(this.foroId).subscribe({
+      next: (res) => {
+        this.actualizarPuntuacionForo(res);
+        this.puntuandoForo = false;
+        this.mostrarFeedback('success', 'Puntuacion eliminada.');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.puntuandoForo = false;
+        this.mostrarFeedback('error', err?.error?.error || 'No se pudo eliminar la puntuacion.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleLikePublicacion(publicacion: any): void {
+    if (!this.usuario || this.likePublicacionEnProcesoId === publicacion.publicacion_id) {
+      return;
+    }
+
+    this.likePublicacionEnProcesoId = publicacion.publicacion_id;
+    this.foroService.toggleLikePublicacion(publicacion.publicacion_id).subscribe({
+      next: (res) => {
+        publicacion.liked_by_me = !!res?.liked;
+        publicacion.publicacion_likes = res?.publicacion_likes ?? publicacion.publicacion_likes ?? 0;
+        this.likePublicacionEnProcesoId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.likePublicacionEnProcesoId = null;
+        this.mostrarFeedback('error', err?.error?.error || 'No se pudo actualizar el me gusta.');
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   crearPublicacion(): void {
     if (!this.puedeCrearPublicacion) {
       return;
     }
 
-    const tieneAdjuntos = this.archivosPublicacion.length > 0;
     this.creandoPublicacion = true;
 
-    this.foroService.crearPublicacion(this.foroId, this.nuevaPublicacion).subscribe({
+    this.foroService.crearPublicacion(this.foroId, this.nuevaPublicacion, this.archivosPublicacion).subscribe({
       next: (publicacion) => {
         const visible = this.esContenidoVisible(publicacion);
         if (visible) {
@@ -117,6 +283,7 @@ export class VerForoComponent implements OnInit {
           publicacion_titulo: '',
           publicacion_contenido: ''
         };
+        this.archivosPublicacion = [];
         this.creandoPublicacion = false;
         this.mostrarFeedback(
           visible ? 'success' : 'error',
@@ -379,6 +546,55 @@ export class VerForoComponent implements OnInit {
         || (this.usuario.usuario_id === this.foro.foro_creador_id && this.usuario.usuario_rol === 'lider')
       );
   }
+
+  get puedePuntuarForo(): boolean {
+    return !!this.usuario
+      && this.usuario.usuario_rol === 'explorador'
+      && this.estaRegistradoForo;
+  }
+
+  get nombreCreadorForo(): string {
+    const usuarioForo = this.foro?.usuario || {};
+    const nombres = [
+      usuarioForo.usuario_nombre,
+      usuarioForo.usuario_apellido
+    ].filter(Boolean).join(' ').trim();
+
+    return usuarioForo.usuario_apodo
+      || nombres
+      || this.foro?.creador_nombre
+      || this.foro?.usuario_nombre
+      || 'Creador no disponible';
+  }
+
+  get totalPublicacionesForo(): number {
+    return this.publicaciones.length
+      || Number(this.foro?.publicaciones_count)
+      || Number(this.foro?.publicaciones?.length)
+      || 0;
+  }
+
+  get publicacionesFiltradas(): any[] {
+    const publicaciones = [...this.publicaciones];
+
+    if (this.filtroPublicaciones === 'recientes') {
+      return publicaciones.sort((a, b) => this.fechaPublicacionMs(b) - this.fechaPublicacionMs(a));
+    }
+
+    if (this.filtroPublicaciones === 'relevantes') {
+      return publicaciones.sort((a, b) => this.relevanciaPublicacion(b) - this.relevanciaPublicacion(a));
+    }
+
+    return publicaciones;
+  }
+
+  get mensajeRatingForo(): string {
+    if (!this.usuario) return 'Inicia sesion para calificar este foro.';
+    if (this.usuario.usuario_rol !== 'explorador') return 'Solo los exploradores pueden calificar foros.';
+    if (!this.estaRegistradoForo) return 'Registrate en el foro para calificarlo.';
+    return '';
+  }
+
   get puedeCrearPublicacion(): boolean {
     return !!this.usuario
       && this.nuevaPublicacion.publicacion_titulo.trim().length > 0
@@ -399,13 +615,53 @@ export class VerForoComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  obtenerImagenForo(foro: any): string {
+    const imagen = foro?.foro_imagen_url || foro?.foro_imagen || foro?.imagen || '';
+
+    if (!imagen || foro?.imagenFallida) {
+      return '';
+    }
+
+    return this.foroService.resolverImagenForo(imagen);
+  }
+
+  foroTieneImagen(foro: any): boolean {
+    return !!this.obtenerImagenForo(foro);
+  }
+
+  marcarImagenFallida(foro: any): void {
+    foro.imagenFallida = true;
+    this.cdr.detectChanges();
+  }
+
   quitarAdjuntoPublicacion(index: number): void {
     this.archivosPublicacion = this.archivosPublicacion.filter((_, i) => i !== index);
     this.cdr.detectChanges();
   }
 
+  urlAdjunto(adjunto: any): string {
+    return this.foroService.resolverArchivoAdjunto(adjunto?.url || adjunto?.path);
+  }
+
+  adjuntoEsImagen(adjunto: any): boolean {
+    return !!adjunto?.es_imagen || /^image\//i.test(adjunto?.mime || '');
+  }
+
   trackByPublicacionId(index: number, publicacion: any): number {
     return publicacion.publicacion_id;
+  }
+
+  private relevanciaPublicacion(publicacion: any): number {
+    const likes = Number(publicacion?.publicacion_likes || 0);
+    const comentarios = Number(publicacion?.comentarios_count || 0);
+    const fecha = this.fechaPublicacionMs(publicacion);
+
+    return (likes * 3) + (comentarios * 2) + (fecha / 1000000000000);
+  }
+
+  private fechaPublicacionMs(publicacion: any): number {
+    const fecha = new Date(publicacion?.publicacion_fecha_creacion || 0).getTime();
+    return Number.isNaN(fecha) ? 0 : fecha;
   }
 
   esPropietarioDePublicacion(publicacion: any): boolean {
@@ -447,6 +703,35 @@ export class VerForoComponent implements OnInit {
     if (!contenido) return '';
     if (contenido.length <= limite) return contenido;
     return `${contenido.slice(0, limite).trim()}...`;
+  }
+
+  claseEstrella(valor: number | null | undefined, estrella: number): string {
+    const puntuacion = Number(valor ?? 0);
+    if (puntuacion >= estrella) return 'full';
+    if (puntuacion >= estrella - 0.5) return 'half';
+    return 'empty';
+  }
+
+  puntuacionSeleccionada(valor: number): boolean {
+    return this.foro?.mi_puntuacion != null && Number(this.foro.mi_puntuacion) === valor;
+  }
+
+  get puntuacionUsuarioTexto(): string {
+    return this.foro?.mi_puntuacion != null
+      ? `${Number(this.foro.mi_puntuacion)}/5`
+      : 'Sin puntuacion';
+  }
+
+  private actualizarPuntuacionForo(res: any): void {
+    if (!this.foro) return;
+
+    this.foro = {
+      ...this.foro,
+      foro_puntuacion_promedio: res?.foro_puntuacion_promedio ?? 0,
+      foro_puntuacion_promedio_redondeada: res?.foro_puntuacion_promedio_redondeada ?? 0,
+      foro_puntuaciones_count: res?.foro_puntuaciones_count ?? 0,
+      mi_puntuacion: res?.mi_puntuacion ?? null
+    };
   }
 
   private esContenidoVisible(item: any): boolean {

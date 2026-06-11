@@ -19,6 +19,7 @@ use App\Http\Controllers\ApiGamification\GamificationController;
 
 Route::post('/register', [UsuarioController::class, 'register']);
 Route::post('/login', [UsuarioController::class, 'login']);
+Route::post('/aceptar-terminos', [UsuarioController::class, 'aceptarTerminos']);
 Route::post('/recuperar-password', [UsuarioController::class, 'recuperarPassword']);
 Route::get('/verificar-apodo/{apodo}', [UsuarioController::class, 'verificarApodo']);
 Route::middleware('auth:sanctum')->group(function () {
@@ -94,11 +95,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/foros/{id}', [ForoController::class, 'update']);
     Route::delete('/foros/{id}', [ForoController::class, 'destroy']);
     Route::get('/mis-foros', [ForoController::class, 'misForos']);
+    Route::get('/foros-favoritos', [ForoController::class, 'forosFavoritos']);
     Route::post('/foros/privado/buscar', [ForoController::class, 'buscarPrivadoPorPassword']);
     Route::post('/foros/{id}/registrarse', [ForoController::class, 'registrar']);
     Route::get('/foros/{id}/registro', [ForoController::class, 'verificarRegistro']);
     Route::delete('/foros/{id}/registro', [ForoController::class, 'eliminarRegistro']);
+    Route::post('/foros/{id}/favorito', [ForoController::class, 'toggleFavorito']);
     Route::post('/foros/{id}/password', [ForoController::class, 'revelarPassword']);
+    Route::post('/foros/{id}/puntuacion', [ForoController::class, 'puntuar']);
+    Route::delete('/foros/{id}/puntuacion', [ForoController::class, 'eliminarPuntuacion']);
+    Route::post('/publicaciones/{id}/like', [PublicacionController::class, 'toggleLike']);
+    Route::post('/comentarios/{id}/like', [ComentarioController::class, 'toggleLike']);
 });
 Route::get('/foros-publicos', [ForoController::class, 'forosPublicos']);
 Route::get('/foros', [ForoController::class, 'index']);

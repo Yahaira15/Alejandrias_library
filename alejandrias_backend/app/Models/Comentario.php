@@ -18,6 +18,8 @@ class Comentario extends Model
         'comentario_publicacion_id',
         'comentario_padre_id',
         'comentario_contenido',
+        'comentario_adjuntos',
+        'comentario_likes',
         'comentario_fecha_creacion',
         'estado_moderacion',
         'ia_riesgo',
@@ -26,6 +28,7 @@ class Comentario extends Model
     ];
 
     protected $casts = [
+        'comentario_adjuntos' => 'array',
         'comentario_fecha_creacion' => 'datetime',
         'ia_riesgo' => 'float',
         'ia_fecha_analisis' => 'datetime',
@@ -49,5 +52,10 @@ class Comentario extends Model
     public function respuestas()
     {
         return $this->hasMany(Comentario::class, 'comentario_padre_id', 'comentario_id');
+    }
+
+    public function likes()
+    {
+        return $this->belongsToMany(Usuario::class, 'comentario_like', 'comentario_id', 'usuario_id');
     }
 }

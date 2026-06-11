@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { PerfilService } from '../services/perfil';
+import { ForoService } from '../services/foro';
 import { GamificacionService, MisionUsuario, RachaUsuario, RankingUsuario } from '../services/gamificacion.service';
 import { EmailjsLiderService } from '../services/emailjs-lider.service';
 import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, Location } from '@angular/common';
 import { ChangeDetectorRef } from '@angular/core';
@@ -36,6 +38,7 @@ export class Perfil implements OnInit {
   reclamandoRacha = false;
   reclamandoMisiones = new Set<number>();
   rankingTab: 'global' | 'semanal' = 'global';
+  logrosError = '';
   rutaLogrosActiva: 'lider' | 'explorador' = 'explorador';
   enviandoSolicitudLider = false;
   solicitudLiderMensaje = '';
@@ -50,6 +53,8 @@ export class Perfil implements OnInit {
   errorPassword = '';
   materiasFavoritas: string[] = [];
   materiasOriginal: string[] = [];
+  forosFavoritos: any[] = [];
+  cargandoForosFavoritos = false;
   materiasDisponibles: string[] = [
     'Programacion',
     'Matematicas',
@@ -77,6 +82,7 @@ export class Perfil implements OnInit {
 
   constructor(
     private perfilService: PerfilService,
+    private foroService: ForoService,
     private gamificacionService: GamificacionService,
     private emailjsLiderService: EmailjsLiderService,
     private router: Router,
@@ -91,6 +97,10 @@ export class Perfil implements OnInit {
 
   get nombreUsuarioPerfil(): string {
     return this.perfil.usuario_nombre || this.perfil.usuario_apodo || this.perfil.usuario_email || '';
+  }
+
+  get espaciosForosFavoritos(): number[] {
+    return Array.from({ length: Math.max(0, 6 - this.forosFavoritos.slice(0, 6).length) }, (_, index) => index);
   }
 
   cargarPerfilLocal() {
@@ -112,13 +122,46 @@ export class Perfil implements OnInit {
       this.perfil = { ...this.perfil, ...res };
       this.perfilOriginal = { ...this.perfil };
       this.cargarMateriasGuardadas();
+      this.cargarForosFavoritos();
       this.cargarLogros();
       this.cdr.detectChanges();
     });
   }
 
+  cargarForosFavoritos() {
+    this.cargandoForosFavoritos = true;
+
+    this.foroService.getForosFavoritos().subscribe({
+      next: (res: any) => {
+        this.forosFavoritos = this.normalizarForosFavoritos(res);
+        this.cargandoForosFavoritos = false;
+        this.cdr.detectChanges();
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error cargando foros favoritos', error);
+        this.forosFavoritos = [];
+        this.cargandoForosFavoritos = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private normalizarForosFavoritos(res: any): any[] {
+    const posiblesListas = [
+      res,
+      res?.data,
+      res?.data?.data,
+      res?.foros,
+      res?.favoritos,
+      res?.foros_favoritos
+    ];
+
+    return posiblesListas.find((lista) => Array.isArray(lista)) ?? [];
+  }
+
   cargarLogros() {
     this.cargandoLogros = true;
+    this.logrosError = '';
 
     this.gamificacionService.getPanel().subscribe({
       next: (res: any) => {
@@ -132,7 +175,9 @@ export class Perfil implements OnInit {
         this.cargandoLogros = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
+        this.logros = null;
+        this.logrosError = this.mensajeErrorLogros(error);
         this.cargandoLogros = false;
         this.cdr.detectChanges();
       }
@@ -141,6 +186,7 @@ export class Perfil implements OnInit {
 
   sincronizarLogros() {
     this.cargandoLogros = true;
+    this.logrosError = '';
 
     this.gamificacionService.getPanel().subscribe({
       next: (res: any) => {
@@ -152,7 +198,8 @@ export class Perfil implements OnInit {
         this.cargandoLogros = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
+        this.logrosError = this.mensajeErrorLogros(error);
         this.cargandoLogros = false;
         this.cdr.detectChanges();
       }
@@ -161,6 +208,7 @@ export class Perfil implements OnInit {
 
   cargarLogrosDemo() {
     this.cargandoLogros = true;
+    this.logrosError = '';
 
     this.perfilService.cargarLogrosDemo().subscribe({
       next: (res: any) => {
@@ -168,11 +216,24 @@ export class Perfil implements OnInit {
         this.cargandoLogros = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
+        this.logrosError = this.mensajeErrorLogros(error);
         this.cargandoLogros = false;
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private mensajeErrorLogros(error: HttpErrorResponse): string {
+    if (error.status === 0) {
+      return 'No se pudo conectar con el servidor local. Revisa que Laravel este activo en el puerto 8000.';
+    }
+
+    if (error.status === 401) {
+      return 'Tu sesion no esta activa. Inicia sesion otra vez para cargar tus logros.';
+    }
+
+    return error.error?.error || error.error?.message || 'No se pudieron cargar los logros por ahora.';
   }
 
   catalogoPorRuta(ruta: 'lider' | 'explorador') {
@@ -361,6 +422,16 @@ export class Perfil implements OnInit {
 
   irAMisForos() {
     this.router.navigate(['/mis-foros']);
+  }
+
+  irAForoFavorito(foro: any) {
+    if (!foro?.foro_id) return;
+    this.router.navigate(['/foros', foro.foro_id]);
+  }
+
+  obtenerImagenForoFavorito(foro: any): string {
+    const imagen = foro?.foro_imagen_url || foro?.foro_imagen || foro?.imagen || '';
+    return imagen ? this.foroService.resolverImagenForo(imagen) : '';
   }
 
   irAAdmin() {

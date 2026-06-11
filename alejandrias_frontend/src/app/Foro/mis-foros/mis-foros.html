@@ -129,7 +129,12 @@
 
         </div>
           <p>{{ apodoUsuario }}</p>
-         <img [routerLink]="['/perfil']" src="iconos/foto_perfil.png" alt="Foto de perfil" width="35px">
+         <img
+          class="profile-avatar"
+          [class.default-avatar]="!fotoPerfilUsuario"
+          [routerLink]="['/perfil']"
+          [src]="fotoPerfilUsuario || 'iconos/foto_perfil.png'"
+          alt="Foto de perfil">
       </div>
     </header>
 
@@ -158,6 +163,18 @@
           [class.sin-imagen]="!foroTieneImagen(foro)"
           (click)="verForo(foro)"
         >
+          <button
+            type="button"
+            class="favorito-btn"
+            [class.active]="foro.mi_favorito"
+            [disabled]="favoritoProcesandoId === foro.foro_id"
+            (click)="toggleFavorito(foro, $event)"
+            [attr.aria-label]="foro.mi_favorito ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+          >
+            <span *ngIf="foro.mi_favorito">&#9733;</span>
+            <span *ngIf="!foro.mi_favorito">&#9734;</span>
+          </button>
+
           <div class="foro-media" *ngIf="foroTieneImagen(foro)">
             <img
               [src]="obtenerImagenForo(foro)"

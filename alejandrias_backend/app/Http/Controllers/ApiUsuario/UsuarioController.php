@@ -56,6 +56,7 @@ class UsuarioController extends Controller
                 'usuario_rol' => 'required|in:explorador,lider',
                 'usuario_intereses' => 'required|array|min:1',
                 'usuario_intereses.*' => 'string|in:' . implode(',', $this->interesesPermitidos),
+                'usuario_acepto_terminos' => 'required|in:Acepto,No acepto',
             ], [
                 'usuario_email.unique' => 'Este correo ya esta registrado',
                 'usuario_apodo.unique' => 'Este apodo ya esta en uso',
@@ -73,6 +74,7 @@ class UsuarioController extends Controller
                 'usuario_password' => Hash::make($request->usuario_password),
                 'usuario_rol' => $request->usuario_rol,
                 'usuario_intereses' => $request->usuario_intereses,
+                'usuario_acepto_terminos' => $request->usuario_acepto_terminos,
             ]);
 
             return response()->json([
@@ -121,6 +123,20 @@ class UsuarioController extends Controller
                 ], 403);
             }
 
+            if ($usuario->usuario_acepto_terminos === null) {
+                return response()->json([
+                    'codigo' => 'terminos_pendientes',
+                    'mensaje' => 'Debes aceptar los terminos y condiciones para continuar'
+                ], 409);
+            }
+
+            if ($usuario->usuario_acepto_terminos === 'No acepto') {
+                return response()->json([
+                    'codigo' => 'terminos_rechazados',
+                    'mensaje' => 'No puedes iniciar sesion sin aceptar los terminos y condiciones'
+                ], 403);
+            }
+
             $usuario->tokens()->delete();
             $token = $usuario->createToken('auth_token')->plainTextToken;
             app(XpService::class)->dailyAccess($usuario);
@@ -137,6 +153,60 @@ class UsuarioController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error en el login',
+                'detalle' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function aceptarTerminos(Request $request)
+    {
+        try {
+            $request->validate([
+                'login' => 'required',
+                'usuario_password' => 'required'
+            ]);
+
+            if (filter_var($request->login, FILTER_VALIDATE_EMAIL)) {
+                $usuario = Usuario::where('usuario_email', $request->login)->first();
+            } else {
+                $usuario = Usuario::where('usuario_apodo', $request->login)->first();
+            }
+
+            if (!$usuario || !Hash::check($request->usuario_password, $usuario->usuario_password)) {
+                return response()->json([
+                    'mensaje' => 'Credenciales incorrectas'
+                ], 401);
+            }
+
+            $sanctionService = app(SanctionService::class);
+            $sanctionService->expireOldSanctions($usuario->usuario_id);
+            $usuario->refresh();
+
+            if ($usuario->usuario_bloqueado || $sanctionService->hasActiveBlock($usuario, 'login')) {
+                return response()->json([
+                    'mensaje' => 'Usuario suspendido o baneado'
+                ], 403);
+            }
+
+            $usuario->usuario_acepto_terminos = 'Acepto';
+            $usuario->save();
+
+            $usuario->tokens()->delete();
+            $token = $usuario->createToken('auth_token')->plainTextToken;
+            app(XpService::class)->dailyAccess($usuario);
+
+            return response()->json([
+                'mensaje' => 'Terminos aceptados',
+                'usuario' => $usuario,
+                'token' => $token
+            ], 200)
+                ->header('Access-Control-Allow-Origin', '*')
+                ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+                ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al aceptar terminos',
                 'detalle' => $e->getMessage()
             ], 500);
         }
