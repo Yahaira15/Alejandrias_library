@@ -3,8 +3,7 @@
     <h2 class="logo">Alejandria's <br> Library</h2>
 
     <nav>
-      <button type="button" (click)="irAInicio()"><img src="iconos/home.png" alt="" width="20"> Inicio</button>
-      <button type="button" class="active" (click)="irAInicio()"><img src="iconos/foro.png" alt="" width="20"> Foros</button>
+      <button type="button" class="active" (click)="irAInicio()"><img src="iconos/home.png" alt="" width="20"> Inicio</button>
       <button type="button" (click)="irAMisForos()"><img src="iconos/mis_foros.png" alt="" width="20"> Mis foros</button>
       <button type="button" (click)="irAChatIa()"><img src="iconos/notificaciones.png" alt="" width="20"> Chat IA</button>
       <button *ngIf="rol === 'lider' || rol === 'admin'" type="button" (click)="irACrearForo()"><img src="iconos/crear_foro.png" alt="" width="20"> Crear foro</button>
@@ -26,7 +25,7 @@
         <button type="button" class="feedback-close" (click)="cerrarFeedback()">Cerrar</button>
       </div>
 
-      <a [routerLink]="['/foros']" class="back-link" aria-label="Volver a foros">&larr;</a>
+      <a [routerLink]="['/home']" class="back-link" aria-label="Volver a inicio">&larr;</a>
 
       <div *ngIf="loading" class="loading">Cargando foro...</div>
 

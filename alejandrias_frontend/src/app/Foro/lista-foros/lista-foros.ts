@@ -243,7 +243,7 @@ export class ListaForos implements OnInit, OnDestroy {
   }
 
   irAInicio(): void {
-    this.router.navigate(['/foros']);
+    this.router.navigate(['/home']);
   }
 
   irAMisForos(): void {

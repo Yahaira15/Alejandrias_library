@@ -3,7 +3,6 @@ import { Login } from './Login/login/login';
 import { Register } from './Login/register/register';
 import { Intereses } from './Login/intereses/intereses';
 import { CrearForo } from './Foro/crear-foro/crear-foro';
-import { ListaForos } from './Foro/lista-foros/lista-foros';
 import { MisForos } from './Foro/mis-foros/mis-foros';
 import { EditarForo } from './Foro/editar-foro/editar-foro';
 import { authGuard } from './guards/auth-guard';
@@ -37,7 +36,7 @@ export const routes: Routes = [
     { path: 'foros/:foro_id', component: VerForoComponent, canActivate: [authGuard] },
     { path: 'publicaciones/:publicacion_id', component: VerPublicacionComponent, canActivate: [authGuard, publicacionRegistroGuard] },
     { path: '', redirectTo: 'home', pathMatch: 'full'},
-    { path: 'foros', component: ListaForos, canActivate: [authGuard] },
+    { path: 'foros', redirectTo: 'home', pathMatch: 'full' },
     { path: 'mis-foros', component: MisForos, canActivate: [authGuard] },
     { path: 'foros/editar/:id', component: EditarForo, canActivate: [authGuard] },
     { path: 'perfil', component: Perfil, canActivate: [authGuard] },

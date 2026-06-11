@@ -445,7 +445,7 @@ export class VerPublicacionComponent implements OnInit {
   }
 
   irAInicio(): void {
-    this.router.navigate(['/foros']);
+    this.router.navigate(['/home']);
   }
 
   irAMisForos(): void {

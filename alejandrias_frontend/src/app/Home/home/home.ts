@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { ListaForos } from '../../Foro/lista-foros/lista-foros';
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, ListaForos],
   templateUrl: './home.html',
   styleUrl: './home.scss',
 })
@@ -33,6 +34,10 @@ export class Home {
   ];
 
   constructor(private router: Router) {}
+
+  get usuarioAutenticado(): boolean {
+    return typeof localStorage !== 'undefined' && !!localStorage.getItem('token');
+  }
 
   irARegistro(rol: string) {
   this.router.navigate(['/register'], { queryParams: { rol } });

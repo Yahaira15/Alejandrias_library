@@ -125,7 +125,7 @@ export class EditarForo implements OnInit {
     this.foroService.actualizarForo(this.foroId, data).subscribe({
       next: () => {
         this.mostrarFeedback('success', 'Foro actualizado correctamente.');
-        setTimeout(() => this.router.navigate(['/foros']), 700);
+        setTimeout(() => this.router.navigate(['/home']), 700);
       },
       error: (err) => {
         console.error('Error al actualizar foro:', err);
@@ -244,7 +244,7 @@ export class EditarForo implements OnInit {
   }
 
   volver() {
-    this.router.navigate(['/foros']);
+    this.router.navigate(['/home']);
   }
 
   regresar() {

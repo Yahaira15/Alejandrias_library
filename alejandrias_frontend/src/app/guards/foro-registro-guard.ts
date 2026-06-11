@@ -9,7 +9,7 @@ export const foroRegistroGuard: CanActivateFn = (route) => {
   const foroId = Number(route.paramMap.get('foro_id'));
 
   if (!foroId) {
-    router.navigate(['/foros']);
+    router.navigate(['/home']);
     return false;
   }
 
@@ -19,11 +19,11 @@ export const foroRegistroGuard: CanActivateFn = (route) => {
         return true;
       }
 
-      router.navigate(['/foros']);
+      router.navigate(['/home']);
       return false;
     }),
     catchError(() => {
-      router.navigate(['/foros']);
+      router.navigate(['/home']);
       return of(false);
     })
   );

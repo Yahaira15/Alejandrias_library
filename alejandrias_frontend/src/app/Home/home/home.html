@@ -1,3 +1,6 @@
+<app-lista-foros *ngIf="usuarioAutenticado; else portadaPublica"></app-lista-foros>
+
+<ng-template #portadaPublica>
 <div class="layout">
     <header class="navbar">
         <h2 class="logo">Alejandria's<br>Library</h2>
@@ -9,8 +12,8 @@
         </nav>
 
         <div class="login">
-            <button type="button" class="ghost-button" (click)="irALogin()">Iniciar Sesión</button>
-            <button type="button" class="outline-button" (click)="irARegistro('explorador')">Registrarse</button>
+            <button id="login" type="button" class="ghost-button" (click)="irALogin()">Iniciar Sesión</button>
+            <button id="boton-registro" type="button" class="outline-button" (click)="irARegistro('explorador')">Registrarse</button>
         </div>
     </header>
 
@@ -138,3 +141,4 @@
         </nav>
     </footer>
 </div>
+</ng-template>

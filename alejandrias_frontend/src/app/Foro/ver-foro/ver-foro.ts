@@ -73,7 +73,7 @@ export class VerForoComponent implements OnInit {
   }
 
   irAInicio(): void {
-    this.router.navigate(['/foros']);
+    this.router.navigate(['/home']);
   }
 
   irAMisForos(): void {

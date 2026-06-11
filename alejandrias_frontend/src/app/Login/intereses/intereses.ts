@@ -84,7 +84,7 @@ export class Intereses implements OnInit {
         const usuarioActual = JSON.parse(localStorage.getItem('usuario') || '{}') as UsuarioPerfil;
         localStorage.setItem('usuario', JSON.stringify({ ...usuarioActual, ...res.usuario }));
         this.cargando = false;
-        this.router.navigate(['/foros']);
+        this.router.navigate(['/home']);
       },
       error: (err) => {
         this.cargando = false;

@@ -49,7 +49,7 @@
                 {{ errorMensaje }}
             </div>
 
-            <button type="submit" [disabled]="form.invalid || cargandoLogin">
+            <button id="iniciar" type="submit" [disabled]="form.invalid || cargandoLogin">
                 <span *ngIf="!cargandoLogin">Iniciar Sesion</span>
                 <span *ngIf="cargandoLogin" class="loading-label">
                     <span class="spinner" aria-hidden="true"></span>

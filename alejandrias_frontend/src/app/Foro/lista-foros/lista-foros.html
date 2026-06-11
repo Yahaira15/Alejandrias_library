@@ -6,8 +6,7 @@
        Library</h2>
 
     <nav>
-      <button (click)="irAInicio()"><img src="iconos/home.png" alt="home" width="20px"> Inicio</button>
-      <button class="active" (click)="irAInicio()"><img src="iconos/foro.png" alt="foro" width="20px"> Foros</button>
+      <button class="active" (click)="irAInicio()"><img src="iconos/home.png" alt="home" width="20px"> Inicio</button>
       <button (click)="irAMisForos()"><img src="iconos/mis_foros.png" alt="mis_foros" width="20px"> Mis foros</button>
       <button (click)="irAChatIa()"><img src="iconos/notificaciones.png" alt="chat_ia" width="20px"> Chat IA</button>
       <button (click)="abrirModalPrivado()"><img src="iconos/foro.png" alt="foro privado" width="20px"> Ingresar a foro privado</button>
@@ -157,7 +156,7 @@
       <div class="section-heading">
         <div>
           <p class="section-kicker">Explora la biblioteca</p>
-          <h2>Foros destacados</h2>
+          <h2 id="home" >Inicio</h2>
         </div>
         <button type="button" class="clear-search" *ngIf="hayFiltrosActivos" (click)="limpiarBusqueda()">
           Limpiar busqueda

@@ -244,7 +244,7 @@ export class Login {
     if (res.usuario?.usuario_rol === 'admin') {
       this.router.navigate(['/admin']);
     } else {
-      this.router.navigate([intereses.length > 0 ? '/foros' : '/intereses']);
+      this.router.navigate([intereses.length > 0 ? '/home' : '/intereses']);
     }
   }
 }

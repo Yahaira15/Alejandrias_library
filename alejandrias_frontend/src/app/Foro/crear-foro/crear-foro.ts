@@ -85,7 +85,7 @@ export class CrearForo implements OnInit {
     this.foroService.crearForo(data).subscribe({
       next: () => {
         this.mostrarFeedback('success', 'Foro creado correctamente.');
-        setTimeout(() => this.router.navigate(['/foros']), 700);
+        setTimeout(() => this.router.navigate(['/home']), 700);
       },
       error: (err) => {
         console.error('Error al crear foro:', err);
@@ -199,7 +199,7 @@ export class CrearForo implements OnInit {
   }
 
   regresar() {
-    this.router.navigate(['/foros']);
+    this.router.navigate(['/home']);
   }
 
   private crearPayloadForo(): FormData {

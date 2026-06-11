@@ -9,7 +9,7 @@ export const publicacionRegistroGuard: CanActivateFn = (route) => {
   const publicacionId = Number(route.paramMap.get('publicacion_id'));
 
   if (!publicacionId) {
-    router.navigate(['/foros']);
+    router.navigate(['/home']);
     return false;
   }
 
@@ -19,11 +19,11 @@ export const publicacionRegistroGuard: CanActivateFn = (route) => {
         return true;
       }
 
-      router.navigate(['/foros']);
+      router.navigate(['/home']);
       return false;
     }),
     catchError(() => {
-      router.navigate(['/foros']);
+      router.navigate(['/home']);
       return of(false);
     })
   );

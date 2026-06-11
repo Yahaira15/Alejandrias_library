@@ -50,16 +50,16 @@ export class NotificacionService {
     switch (tipo) {
       case 'registro_foro':
       case 'nuevo_miembro':
-        return referenciaId ? `/foros/${referenciaId}` : '/foros';
+        return referenciaId ? `/foros/${referenciaId}` : '/home';
       case 'nueva_publicacion':
       case 'nuevo_comentario':
       case 'lider_publicacion_relevante':
       case 'lider_comentario_relevante':
-        return referenciaId ? `/publicaciones/${referenciaId}` : '/foros';
+        return referenciaId ? `/publicaciones/${referenciaId}` : '/home';
       case 'nuevo_reporte':
         return '/admin/reportes';
       default:
-        return '/foros';
+        return '/home';
     }
   }
 
