@@ -1,50 +1,73 @@
-<section class="chat-shell">
-  <header class="chat-header">
-    <div>
-      <p class="chat-kicker">AlejandrIA</p>
-      <h1>Bienvenido a AlejandrIA</h1>
-      <p class="chat-subtitle">Base funcional para conversaciones de texto dentro del proyecto.</p>
-    </div>
+<div class="layout">
+  <aside class="sidebar">
+    <h2 class="logo">Alejandria's <br> Library</h2>
 
-    <div class="chat-actions">
-      <a routerLink="/foros" class="btn btn-secondary">Volver</a>
-      <button type="button" class="btn btn-ghost" (click)="limpiarChat()">Limpiar</button>
-    </div>
-  </header>
+    <nav>
+      <a routerLink="/home"><img src="iconos/home.png" alt=""> Inicio</a>
+      <a routerLink="/mis-foros"><img src="iconos/mis_foros.png" alt=""> Mis foros</a>
+      <a class="active" routerLink="/chat-ia"><img src="iconos/notificaciones.png" alt=""> Chat IA</a>
+    </nav>
+  </aside>
 
-  <section class="chat-board">
-    <div class="chat-messages" #mensajesContainer>
-      <article
-        *ngFor="let mensaje of mensajes; trackBy: trackByIndex"
-        class="chat-message"
-        [class.chat-message-user]="mensaje.rol === 'usuario'"
-        [class.chat-message-ai]="mensaje.rol === 'asistente'">
-        <p class="chat-role">{{ mensaje.rol === 'usuario' ? 'Tu' : 'IA' }}</p>
-        <p class="chat-text">{{ mensaje.texto }}</p>
-      </article>
+  <main class="content">
+    <header class="chat-header">
+      <div>
+        <p class="chat-kicker">Asistente de aprendizaje</p>
+        <h1>AlejandrIA</h1>
+        <p class="chat-subtitle">Pregunta, resume ideas o prepara tus aportes antes de publicarlos en la biblioteca.</p>
+      </div>
 
-      <article *ngIf="cargando" class="chat-message chat-message-ai chat-message-loading">
-        <p class="chat-role">IA</p>
-        <p class="chat-text">...</p>
-      </article>
-    </div>
+      <button type="button" class="btn btn-secondary" (click)="limpiarChat()">Limpiar chat</button>
+    </header>
 
-    <p *ngIf="error" class="chat-error">{{ error }}</p>
+    <section class="chat-board" aria-label="Conversacion con AlejandrIA">
+      <div class="chat-messages" #mensajesContainer>
+        <article
+          *ngFor="let mensaje of mensajes; trackBy: trackByIndex"
+          class="chat-message"
+          [class.chat-message-user]="mensaje.rol === 'usuario'"
+          [class.chat-message-ai]="mensaje.rol === 'asistente'">
+          <span class="chat-avatar" aria-hidden="true">
+            {{ mensaje.rol === 'usuario' ? 'Tu' : 'IA' }}
+          </span>
+          <div class="chat-bubble">
+            <p class="chat-role">{{ mensaje.rol === 'usuario' ? 'Tu' : 'AlejandrIA' }}</p>
+            <p class="chat-text">{{ mensaje.texto }}</p>
+          </div>
+        </article>
 
-    <div class="chat-input">
-      <textarea
-        [(ngModel)]="mensajeActual"
-        rows="2"
-        placeholder="Escribe tu mensaje..."
-        (keydown)="onKeydown($event)"></textarea>
+        <article *ngIf="cargando" class="chat-message chat-message-ai chat-message-loading">
+          <span class="chat-avatar" aria-hidden="true">IA</span>
+          <div class="chat-bubble">
+            <p class="chat-role">AlejandrIA</p>
+            <p class="chat-text">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+            </p>
+          </div>
+        </article>
+      </div>
 
-      <button
-        type="button"
-        class="btn btn-primary"
-        [disabled]="cargando || !mensajeActual.trim()"
-        (click)="enviarMensaje()">
-        <img src="iconos/send.png" alt="Enviar">
-      </button>
-    </div>
-  </section>
-</section>
+      <p *ngIf="error" class="chat-error">{{ error }}</p>
+
+      <div class="chat-input">
+        <textarea
+          [(ngModel)]="mensajeActual"
+          rows="2"
+          placeholder="Escribe tu mensaje..."
+          (keydown)="onKeydown($event)"
+          aria-label="Mensaje para AlejandrIA"></textarea>
+
+        <button
+          type="button"
+          class="send-button"
+          [disabled]="cargando || !mensajeActual.trim()"
+          (click)="enviarMensaje()"
+          aria-label="Enviar mensaje">
+          <img src="iconos/send.png" alt="">
+        </button>
+      </div>
+    </section>
+  </main>
+</div>
