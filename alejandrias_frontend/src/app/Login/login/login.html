@@ -6,7 +6,7 @@
             <div class="input-group">
                 <label for="login">Usuario</label>
                 <input
-                    id="login"
+                    id="usuario"
                     type="text"
                     [(ngModel)]="loginData.login"
                     (input)="errorMensaje = ''"
@@ -45,7 +45,7 @@
                 Olvide mi contrasena
             </button>
 
-            <div *ngIf="errorMensaje" class="error-msg">
+            <div *ngIf="errorMensaje" class="error-msg" id="error">
                 {{ errorMensaje }}
             </div>
 
