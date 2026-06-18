@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_BASE_URL, API_URL } from '../api.config';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
-  private baseUrl = this.apiBaseUrl();
-  private apiUrl = `${this.baseUrl}/api/admin`;
+  private baseUrl = API_BASE_URL;
+  private apiUrl = `${API_URL}/admin`;
 
   constructor(private http: HttpClient) {}
 
@@ -103,19 +104,4 @@ export class AdminService {
     return `${this.baseUrl}${ruta.startsWith('/storage/') ? ruta : `/storage${ruta}`}`;
   }
 
-  private apiBaseUrl(): string {
-    const localBase = 'http://127.0.0.1:8000';
-
-    if (typeof window === 'undefined') {
-      return localBase;
-    }
-
-    const hostname = window.location.hostname;
-
-    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
-      return localBase;
-    }
-
-    return `${window.location.protocol}//${hostname}:8000`;
-  }
 }

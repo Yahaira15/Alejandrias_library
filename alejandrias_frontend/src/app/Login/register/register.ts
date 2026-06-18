@@ -4,6 +4,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { EmailjsVerificacionService } from '../../services/emailjs-verificacion.service';
+import { API_URL } from '../../api.config';
 
 interface Interes {
   id: string;
@@ -94,7 +95,7 @@ export class Register implements OnInit {
     this.apodoVerificando = true;
     this.cdr.detectChanges();
 
-    this.http.get<{ disponible: boolean }>(`http://localhost:8000/api/verificar-apodo/${encodeURIComponent(apodo)}`)
+    this.http.get<{ disponible: boolean }>(`${API_URL}/verificar-apodo/${encodeURIComponent(apodo)}`)
       .subscribe({
         next: res => {
           if (consultaActual !== this.apodoConsultaId) return;
@@ -234,7 +235,7 @@ export class Register implements OnInit {
       usuario_acepto_terminos: 'Acepto',
     };
 
-    this.http.post('http://127.0.0.1:8000/api/register', body)
+    this.http.post(`${API_URL}/register`, body)
       .subscribe({
         next: () => {
           this.cargandoRegistro = false;

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { API_URL } from '../api.config';
 
 export interface RachaUsuario {
   dias_consecutivos: number;
@@ -42,7 +43,7 @@ export interface RankingUsuario {
 
 @Injectable({ providedIn: 'root' })
 export class GamificacionService {
-  private apiUrl = 'http://127.0.0.1:8000/api';
+  private apiUrl = API_URL;
 
   constructor(private http: HttpClient) {}
 

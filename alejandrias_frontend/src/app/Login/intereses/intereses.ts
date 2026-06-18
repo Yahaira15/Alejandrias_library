@@ -3,6 +3,7 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { API_URL } from '../../api.config';
 
 interface Interes {
   id: string;
@@ -77,7 +78,7 @@ export class Intereses implements OnInit {
 
     this.cargando = true;
 
-    this.http.put<{ usuario: UsuarioPerfil }>('http://127.0.0.1:8000/api/perfil/intereses', {
+    this.http.put<{ usuario: UsuarioPerfil }>(`${API_URL}/perfil/intereses`, {
       usuario_intereses: this.seleccionados,
     }).subscribe({
       next: (res) => {

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_URL } from '../api.config';
 
 export interface ChatMensaje {
   rol: 'usuario' | 'asistente';
@@ -22,8 +23,8 @@ export interface ChatRespuesta {
   providedIn: 'root'
 })
 export class ChatIaService {
-  private apiUrl = `${this.apiBaseUrl()}/api/ia/chat`;
-  private alertaRiesgoUrl = `${this.apiBaseUrl()}/api/ia/chat-alerta-riesgo`;
+  private apiUrl = `${API_URL}/ia/chat`;
+  private alertaRiesgoUrl = `${API_URL}/ia/chat-alerta-riesgo`;
 
   constructor(private http: HttpClient) {}
 
@@ -49,19 +50,4 @@ export class ChatIaService {
     });
   }
 
-  private apiBaseUrl(): string {
-    const localBase = 'http://127.0.0.1:8000';
-
-    if (typeof window === 'undefined') {
-      return localBase;
-    }
-
-    const hostname = window.location.hostname;
-
-    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
-      return localBase;
-    }
-
-    return `${window.location.protocol}//${hostname}:8000`;
-  }
 }

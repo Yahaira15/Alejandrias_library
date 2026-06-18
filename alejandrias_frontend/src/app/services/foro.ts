@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, tap } from 'rxjs';
+import { API_URL } from '../api.config';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ForoService {
 
-  private apiUrl = `${this.apiBaseUrl()}/api`;
+  private apiUrl = API_URL;
 
   private cacheForos: any[] | null = null;
   private cacheCategorias: any[] | null = null;
@@ -249,21 +250,5 @@ export class ForoService {
     adjuntos.forEach((archivo) => formData.append('adjuntos[]', archivo));
 
     return formData;
-  }
-
-  private apiBaseUrl(): string {
-    const localBase = 'http://127.0.0.1:8000';
-
-    if (typeof window === 'undefined') {
-      return localBase;
-    }
-
-    const hostname = window.location.hostname;
-
-    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
-      return localBase;
-    }
-
-    return `${window.location.protocol}//${hostname}:8000`;
   }
 }

@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { EmailjsRecuperacionService } from '../../services/emailjs-recuperacion.service';
+import { API_URL } from '../../api.config';
 
 interface LoginResponse {
   usuario: {
@@ -71,7 +72,7 @@ export class Login {
     this.cargandoLogin = true;
     this.cdr.detectChanges();
 
-    this.http.post<LoginResponse>('http://localhost:8000/api/login', this.loginData)
+    this.http.post<LoginResponse>(`${API_URL}/login`, this.loginData)
       .subscribe({
         next: (res) => {
           this.cargandoLogin = false;
@@ -146,7 +147,7 @@ export class Login {
     this.cargandoTerminos = true;
     this.cdr.detectChanges();
 
-    this.http.post<LoginResponse>('http://localhost:8000/api/aceptar-terminos', this.loginData)
+    this.http.post<LoginResponse>(`${API_URL}/aceptar-terminos`, this.loginData)
       .subscribe({
         next: (res) => {
           this.cargandoTerminos = false;
@@ -193,7 +194,7 @@ export class Login {
     this.cargandoRecuperacion = true;
     this.cdr.detectChanges();
 
-    this.http.post<RecuperacionResponse>('http://localhost:8000/api/recuperar-password', { usuario_email: usuarioEmail })
+    this.http.post<RecuperacionResponse>(`${API_URL}/recuperar-password`, { usuario_email: usuarioEmail })
       .subscribe({
         next: (res) => {
           this.emailjsRecuperacionService.enviarPasswordTemporal({

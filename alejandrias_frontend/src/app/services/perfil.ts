@@ -1,29 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { API_URL } from '../api.config';
 
 @Injectable({ providedIn: 'root' })
 export class PerfilService {
 
   constructor(private http: HttpClient) {}
 
-  private apiBaseUrl(): string {
-    const localBase = 'http://127.0.0.1:8000';
-
-    if (typeof window === 'undefined') {
-      return localBase;
-    }
-
-    const hostname = window.location.hostname;
-
-    if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
-      return localBase;
-    }
-
-    return `${window.location.protocol}//${hostname}:8000`;
-  }
-
   private get apiUrl(): string {
-    return `${this.apiBaseUrl()}/api`;
+    return API_URL;
   }
 
   getPerfil() {
