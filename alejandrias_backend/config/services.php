@@ -38,6 +38,7 @@ return [
     'ia' => [
         'url' => env('IA_SERVICE_URL', 'http://127.0.0.1:8080'),
         'timeout' => env('IA_SERVICE_TIMEOUT', 12),
+        'forum_context_limit' => env('IA_FORUM_CONTEXT_LIMIT', 80),
     ],
 
 ];

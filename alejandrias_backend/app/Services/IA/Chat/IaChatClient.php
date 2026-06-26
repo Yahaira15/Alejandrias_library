@@ -26,6 +26,8 @@ class IaChatClient
                 'endpoint' => $endpoint,
                 'status' => $response->status(),
                 'duracion_ms' => $durationMs,
+                'foros_enviados' => count(data_get($payload, 'data.foros', [])),
+                'origen' => $response->json('origen'),
             ]);
 
             if ($response->successful()) {

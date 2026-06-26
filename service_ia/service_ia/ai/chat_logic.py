@@ -30,6 +30,7 @@ def _texto_foro(foro):
             str(foro.get("titulo", "")),
             str(foro.get("descripcion", "")),
             str(foro.get("categoria", "")),
+            str(foro.get("subcategoria", "")),
         ]
     )
 

@@ -8,7 +8,12 @@ import unicodedata
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from .chat_logic import construir_respuesta_foros, es_peticion_de_foros
+from .chat_logic import (
+    clasificar_peticion_foro,
+    construir_respuesta_foros,
+    es_peticion_de_foros,
+    recomendar_foros,
+)
 from .gemini_client import AIProviderError, generar_texto
 from .moderation import (
     construir_prompt_moderacion,
@@ -18,6 +23,7 @@ from .moderation import (
     normalizar_resultado_moderacion,
 )
 from .orchestrator import preparar_ejecucion
+from .prompt_builder import construir_prompt_recomendador
 from .response_formatter import formatear_respuesta
 
 
@@ -223,6 +229,96 @@ def _respuesta_chat_respaldo(contexto):
     )
 
 
+def _normalizar_recomendaciones_foros(respuesta, foros_disponibles):
+    if not isinstance(respuesta, list):
+        raise ValueError("Gemini no devolvio una lista JSON de recomendaciones.")
+
+    foros_por_id = {
+        str(foro.get("foro_id") or foro.get("id")): foro
+        for foro in foros_disponibles
+        if isinstance(foro, dict) and (foro.get("foro_id") or foro.get("id"))
+    }
+    recomendaciones = []
+    vistos = set()
+
+    for item in respuesta:
+        if not isinstance(item, dict):
+            continue
+
+        foro_id = item.get("foro_id") or item.get("id")
+        foro_key = str(foro_id)
+        foro_real = foros_por_id.get(foro_key)
+        if not foro_real or foro_key in vistos:
+            continue
+
+        coincidencia = str(item.get("coincidencia") or "media").lower()
+        if coincidencia not in {"alta", "media", "baja"}:
+            coincidencia = "media"
+
+        razon = "Coincide con lo que buscas."
+        if item.get("razon"):
+            razon = " ".join(str(item["razon"]).split())[:220]
+
+        recomendaciones.append(
+            {
+                "foro_id": foro_real.get("foro_id") or foro_real.get("id"),
+                "titulo": foro_real.get("titulo") or item.get("titulo") or "Foro recomendado",
+                "coincidencia": coincidencia,
+                "razon": razon,
+            }
+        )
+        vistos.add(foro_key)
+
+        if len(recomendaciones) == 3:
+            break
+
+    if not recomendaciones:
+        raise ValueError("Gemini no recomendo foros existentes del contexto real.")
+
+    return recomendaciones
+
+
+def _mensaje_recomendaciones_foros(recomendaciones):
+    lineas = ["Estos foros reales pueden servirte:"]
+    for indice, item in enumerate(recomendaciones, start=1):
+        lineas.append(
+            f"{indice}. {item['titulo']} ({item['coincidencia']}): {item['razon']}"
+        )
+    return "\n".join(lineas)
+
+
+def _respuesta_recomendaciones_respaldo(contexto):
+    recomendaciones = []
+    foros = [foro for foro in contexto.get("foros") or [] if isinstance(foro, dict)]
+
+    for foro_real in recomendar_foros(contexto, foros, limite=3):
+        titulo = foro_real.get("titulo") or foro_real.get("foro_titulo")
+        texto_foro = " ".join(
+            str(foro_real.get(clave, ""))
+            for clave in ["titulo", "descripcion", "categoria", "subcategoria"]
+        ).lower()
+        mensaje = str(contexto.get("mensaje") or "").lower()
+        coincidencias = sum(1 for token in mensaje.split() if len(token) > 3 and token in texto_foro)
+        coincidencia = "alta" if coincidencias >= 2 else "media" if coincidencias == 1 else "baja"
+        razon = (
+            "Coincide directamente con tu busqueda."
+            if coincidencia == "alta"
+            else "Se relaciona parcialmente con lo que buscas."
+            if coincidencia == "media"
+            else "Puede ampliar tus temas de aprendizaje."
+        )
+        recomendaciones.append(
+            {
+                "foro_id": foro_real.get("foro_id") or foro_real.get("id"),
+                "titulo": titulo,
+                "coincidencia": coincidencia,
+                "razon": razon,
+            }
+        )
+
+    return [item for item in recomendaciones if item.get("foro_id") and item.get("titulo")]
+
+
 @csrf_exempt
 def ia_view(request):
     if request.method == "GET":
@@ -255,12 +351,23 @@ def ia_view(request):
     contexto = ejecucion["contexto"]
     prompt = ejecucion["prompt"]
 
-    try:
-        texto = generar_texto(prompt)
-        respuesta = formatear_respuesta(texto)
+    logger.info(
+        "Recomendador IA iniciado",
+        extra={
+            "pregunta": contexto.get("mensaje"),
+            "intereses": contexto.get("intereses"),
+            "foros_recibidos": len(contexto.get("foros") or []),
+        },
+    )
 
-        if isinstance(respuesta, dict) and respuesta.get("error"):
-            raise ValueError("La IA no devolvio JSON valido")
+    try:
+        texto = generar_texto(prompt, response_mime_type="application/json")
+        logger.info("Respuesta RAW Gemini recomendador:\n%s", texto)
+        respuesta = _normalizar_recomendaciones_foros(
+            formatear_respuesta(texto),
+            contexto.get("foros") or [],
+        )
+        logger.info("Respuesta parseada recomendador: %s", respuesta)
 
         return JsonResponse(
             {
@@ -278,7 +385,7 @@ def ia_view(request):
                 "ok": True,
                 "tipo": tipo,
                 "origen": "respaldo",
-                "data": _respuesta_respaldo(contexto),
+                "data": _respuesta_recomendaciones_respaldo(contexto),
                 "detalle": _detalle_fallo_modelo(exc),
             },
             status=200,
@@ -328,6 +435,56 @@ def chat_view(request):
             },
             status=200,
         )
+
+    tipo_peticion_foro = clasificar_peticion_foro(contexto) if es_peticion_de_foros(contexto) else None
+    if tipo_peticion_foro == "recomendar":
+        logger.info(
+            "Chat IA solicita recomendacion de foros",
+            extra={
+                "pregunta": contexto.get("mensaje"),
+                "foros_recibidos": len(contexto.get("foros") or []),
+            },
+        )
+        try:
+            prompt_recomendador = construir_prompt_recomendador(contexto)
+            texto = generar_texto(prompt_recomendador, response_mime_type="application/json")
+            logger.info("Respuesta RAW Gemini recomendador desde chat:\n%s", texto)
+            recomendaciones = _normalizar_recomendaciones_foros(
+                formatear_respuesta(texto),
+                contexto.get("foros") or [],
+            )
+            logger.info("Respuesta parseada recomendador desde chat: %s", recomendaciones)
+
+            return JsonResponse(
+                {
+                    "ok": True,
+                    "tipo": tipo,
+                    "origen": "modelo",
+                    "data": {
+                        "mensaje": _mensaje_recomendaciones_foros(recomendaciones),
+                        "recomendaciones": recomendaciones,
+                    },
+                },
+                status=200,
+            )
+        except Exception as exc:
+            logger.exception("Fallo recomendador de foros desde chat para tipo %s", tipo)
+            recomendaciones = _respuesta_recomendaciones_respaldo(contexto)
+            return JsonResponse(
+                {
+                    "ok": True,
+                    "tipo": tipo,
+                    "origen": "respaldo",
+                    "data": {
+                        "mensaje": _mensaje_recomendaciones_foros(recomendaciones)
+                        if recomendaciones
+                        else _respuesta_chat_respaldo(contexto),
+                        "recomendaciones": recomendaciones,
+                    },
+                    "detalle": _detalle_fallo_modelo(exc),
+                },
+                status=200,
+            )
 
     prompt = ejecucion["prompt"]
 

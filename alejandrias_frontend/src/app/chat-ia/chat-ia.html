@@ -33,6 +33,16 @@
           <div class="chat-bubble">
             <p class="chat-role">{{ mensaje.rol === 'usuario' ? 'Tu' : 'AlejandrIA' }}</p>
             <p class="chat-text">{{ mensaje.texto }}</p>
+            <div class="forum-recommendations" *ngIf="mensaje.recomendaciones?.length">
+              <a
+                *ngFor="let foro of mensaje.recomendaciones"
+                class="forum-recommendation"
+                [routerLink]="['/foros', foro.foro_id]">
+                <span class="forum-title">{{ foro.titulo }}</span>
+                <span class="forum-match">{{ foro.coincidencia }}</span>
+                <span class="forum-reason">{{ foro.razon }}</span>
+              </a>
+            </div>
           </div>
         </article>
 

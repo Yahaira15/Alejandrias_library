@@ -1,11 +1,17 @@
-class SimpleCorsMiddleware:
-    allowed_origins = {
-        "http://localhost:4200",
-        "http://127.0.0.1:4200",
-    }
+import os
 
+
+class SimpleCorsMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
+        self.allowed_origins = {
+            origin.strip()
+            for origin in os.getenv(
+                "CORS_ALLOWED_ORIGINS",
+                "http://localhost:4200,http://127.0.0.1:4200",
+            ).split(",")
+            if origin.strip()
+        }
 
     def __call__(self, request):
         if request.method == "OPTIONS":

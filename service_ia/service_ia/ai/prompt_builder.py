@@ -54,19 +54,25 @@ def _serializar_historial(historial):
 def construir_prompt_recomendador(contexto):
     intereses = contexto.get("intereses") or []
     foros = contexto.get("foros") or []
+    mensaje = contexto.get("mensaje") or ""
 
     return f"""
 {PROMPT_BASE_RECOMENDADOR}
 
 REGLAS:
-- Debes recomendar EXACTAMENTE 3 foros si existen al menos 3.
+- Debes recomendar hasta 3 foros reales relacionados con la pregunta o intereses del usuario.
 - No repitas foros.
-- Prioriza coincidencias con intereses.
-- Si un foro coincide directamente con un interes, asigna coincidencia "alta".
-- Explica cada razon en maximo 15 palabras.
-- Asigna un nivel a cada foro: basico, intermedio o avanzado.
+- Usa solamente foros de FOROS DISPONIBLES.
+- Conserva el foro_id exacto de cada foro recomendado.
+- Prioriza coincidencias con la pregunta, intereses, titulo, descripcion, categoria y subcategoria.
+- Si un foro coincide directamente, asigna coincidencia "alta"; si es parcial, "media"; si es tangencial, "baja".
+- Explica cada razon en maximo 18 palabras.
 - Responde SOLO con JSON valido.
 - No uses markdown ni bloques de codigo.
+- No agregues texto fuera del JSON.
+
+PREGUNTA DEL USUARIO:
+{json.dumps(mensaje, ensure_ascii=False)}
 
 INTERESES:
 {json.dumps(intereses, ensure_ascii=False)}
@@ -77,8 +83,8 @@ FOROS DISPONIBLES:
 FORMATO ESPERADO:
 [
   {{
+    "foro_id": 12,
     "titulo": "string",
-    "nivel": "basico|intermedio|avanzado",
     "coincidencia": "alta|media|baja",
     "razon": "string"
   }}

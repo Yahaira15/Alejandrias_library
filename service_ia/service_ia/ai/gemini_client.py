@@ -5,7 +5,7 @@ import random
 import time
 import sys
 
-from dotenv import load_dotenv
+from .env_loader import load_env
 
 try:
     from google import genai
@@ -21,8 +21,8 @@ BASE_DIR = Path(__file__).resolve().parents[1]
 PROJECT_ENV_PATH = BASE_DIR / ".env"
 ROOT_ENV_PATH = BASE_DIR.parent / ".env"
 
-load_dotenv(PROJECT_ENV_PATH)
-load_dotenv(ROOT_ENV_PATH)
+load_env(PROJECT_ENV_PATH)
+load_env(ROOT_ENV_PATH)
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 FALLBACK_MODELS = [
@@ -358,6 +358,12 @@ def generar_texto(
                 kind="cuota_excedida",
                 message=f"Gemini rechazo la solicitud por cuota/rate limit: {error_texto}",
                 retryable=True,
+            )
+        if "401" in error_texto or "UNAUTHENTICATED" in error_texto:
+            raise AIProviderError(
+                kind="configuracion_api_key",
+                message=f"Gemini rechazo la credencial configurada: {error_texto}",
+                retryable=False,
             )
         if "503" in error_texto or "UNAVAILABLE" in error_texto:
             raise AIProviderError(

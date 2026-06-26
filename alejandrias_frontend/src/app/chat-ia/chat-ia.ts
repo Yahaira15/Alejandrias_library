@@ -62,6 +62,7 @@ export class ChatIaComponent {
           {
             rol: 'asistente',
             texto: respuesta?.data?.mensaje || 'No recibi una respuesta valida.',
+            recomendaciones: respuesta?.data?.recomendaciones || [],
             fecha: new Date().toISOString(),
           }
         ];

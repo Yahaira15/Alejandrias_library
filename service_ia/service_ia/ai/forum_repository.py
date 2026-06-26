@@ -6,7 +6,7 @@ from time import time
 from urllib.error import URLError
 from urllib.request import urlopen
 
-from dotenv import load_dotenv
+from .env_loader import load_env
 
 try:
     import psycopg
@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 REPO_DIR = BASE_DIR.parent.parent
-load_dotenv(BASE_DIR / ".env")
-load_dotenv(BASE_DIR.parent / ".env")
-load_dotenv(REPO_DIR / "alejandrias_backend" / ".env")
+load_env(BASE_DIR / ".env")
+load_env(BASE_DIR.parent / ".env")
+load_env(REPO_DIR / "alejandrias_backend" / ".env")
 
 DEFAULT_BACKEND_API_URL = os.getenv("ALEJANDRIAS_BACKEND_API_URL", "http://127.0.0.1:8000/api").rstrip("/")
 CACHE_TTL_SEGUNDOS = int(os.getenv("FOROS_CACHE_TTL", "60"))
@@ -54,13 +54,18 @@ def _normalizar_foro(foro):
     categoria = foro.get("categoria") if isinstance(foro.get("categoria"), dict) else {}
     usuario = foro.get("usuario") if isinstance(foro.get("usuario"), dict) else {}
 
+    subcategoria = foro.get("subcategoria") if isinstance(foro.get("subcategoria"), dict) else {}
+
     return {
-        "id": foro.get("foro_id") or foro.get("id"),
+        "foro_id": foro.get("foro_id") or foro.get("id"),
         "titulo": foro.get("foro_titulo") or foro.get("titulo") or "",
         "descripcion": foro.get("foro_descripcion") or foro.get("descripcion") or "",
         "categoria": categoria.get("categoria_nombre") or foro.get("categoria_nombre") or "",
+        "subcategoria": subcategoria.get("subcategoria_nombre") or foro.get("subcategoria_nombre") or "",
         "creador": usuario.get("usuario_apodo") or usuario.get("apodo") or "",
         "privado": bool(foro.get("foro_privado")),
+        "estado": foro.get("foro_estado_moderacion") or "permitido",
+        "visibilidad": foro.get("foro_visibilidad") or "visible",
     }
 
 
@@ -89,12 +94,18 @@ def _obtener_foros_desde_postgres():
             f.foro_titulo AS titulo,
             f.foro_descripcion AS descripcion,
             f.foro_privado AS privado,
+            f.foro_estado_moderacion AS estado,
+            f.foro_visibilidad AS visibilidad,
             c.categoria_nombre AS categoria,
+            s.subcategoria_nombre AS subcategoria,
             u.usuario_apodo AS creador
         FROM foro f
         LEFT JOIN categoria c ON c.categoria_id = f.foro_categoria_id
+        LEFT JOIN subcategoria s ON s.subcategoria_id = f.subcategoria_id
         LEFT JOIN usuario u ON u.usuario_id = f.foro_creador_id
         WHERE COALESCE(f.foro_privado, false) = false
+          AND COALESCE(f.foro_visibilidad, 'visible') = 'visible'
+          AND COALESCE(f.foro_estado_moderacion, 'permitido') = 'permitido'
         ORDER BY f.foro_fecha_creacion DESC NULLS LAST, f.foro_id DESC
         LIMIT 50
     """
@@ -105,12 +116,15 @@ def _obtener_foros_desde_postgres():
                 cursor.execute(query)
                 return [
                     {
-                        "id": foro.get("id"),
+                        "foro_id": foro.get("id"),
                         "titulo": foro.get("titulo") or "",
                         "descripcion": foro.get("descripcion") or "",
                         "categoria": foro.get("categoria") or "",
+                        "subcategoria": foro.get("subcategoria") or "",
                         "creador": foro.get("creador") or "",
                         "privado": bool(foro.get("privado")),
+                        "estado": foro.get("estado") or "permitido",
+                        "visibilidad": foro.get("visibilidad") or "visible",
                     }
                     for foro in cursor.fetchall()
                     if foro.get("titulo")

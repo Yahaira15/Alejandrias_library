@@ -7,6 +7,14 @@ export interface ChatMensaje {
   rol: 'usuario' | 'asistente';
   texto: string;
   fecha: string;
+  recomendaciones?: ForoRecomendado[];
+}
+
+export interface ForoRecomendado {
+  foro_id: number;
+  titulo: string;
+  coincidencia: 'alta' | 'media' | 'baja';
+  razon: string;
 }
 
 export interface ChatRespuesta {
@@ -15,6 +23,7 @@ export interface ChatRespuesta {
   origen: string;
   data: {
     mensaje: string;
+    recomendaciones?: ForoRecomendado[];
   };
   detalle?: string;
 }

@@ -141,7 +141,10 @@ class OrquestacionIATests(SimpleTestCase):
         }
         self.assertFalse(es_peticion_de_foros(contexto))
 
-    @patch(VIEW_GENERAR_TEXTO, return_value="Te recomiendo Historia de Roma.")
+    @patch(
+        VIEW_GENERAR_TEXTO,
+        return_value='[{"foro_id":1,"titulo":"Historia de Roma","coincidencia":"alta","razon":"Coincide con Roma antigua."}]',
+    )
     @patch(ORCHESTRATOR_FOROS)
     def test_chat_view_envia_foros_existentes_a_gemini(self, obtener_foros_existentes, generar_texto):
         obtener_foros_existentes.return_value = [
@@ -162,10 +165,13 @@ class OrquestacionIATests(SimpleTestCase):
         )
 
         response = chat_view(request)
+        payload = json.loads(response.content.decode("utf-8"))
 
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'"origen": "modelo"', response.content)
-        self.assertIn(b"Historia de Roma", response.content)
+        self.assertEqual(payload["data"]["recomendaciones"][0]["foro_id"], 1)
+        self.assertEqual(payload["data"]["recomendaciones"][0]["titulo"], "Historia de Roma")
+        self.assertEqual(payload["data"]["recomendaciones"][0]["coincidencia"], "alta")
         generar_texto.assert_called_once()
 
     @patch(VIEW_GENERAR_TEXTO)
