@@ -93,7 +93,7 @@ def _detalle_fallo_modelo(error):
                 "Se activo la respuesta de respaldo mientras se recupera."
             )
         if error.kind == "configuracion_api_key":
-            return "Falta GEMINI_API_KEY en el entorno del servicio IA."
+            return str(error)
         if error.kind == "dependencia_faltante":
             return "Falta la dependencia google-genai en el entorno activo."
         return str(error)
