@@ -526,7 +526,7 @@ Para producción en VPS:
 ```bash
 # Usar Gunicorn
 pip install gunicorn
-gunicorn service_ia.wsgi:application --bind 0.0.0.0:8000
+python -m gunicorn service_ia.wsgi:application --bind 0.0.0.0:${PORT:-8000}
 ```
 
 ---
