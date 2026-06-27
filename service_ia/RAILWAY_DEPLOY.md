@@ -18,7 +18,7 @@ El archivo `railway.json` ya define esos comandos.
 ```env
 DEBUG=False
 DJANGO_SECRET_KEY=change_me
-DJANGO_ALLOWED_HOSTS=tu-servicio.up.railway.app
+DJANGO_ALLOWED_HOSTS=tu-servicio.up.railway.app,.up.railway.app
 GEMINI_API_KEY=tu_api_key_valida
 GEMINI_MODEL=gemini-2.5-flash
 ALEJANDRIAS_BACKEND_API_URL=https://tu-backend-laravel.up.railway.app/api
@@ -65,3 +65,4 @@ IA_FORUM_CONTEXT_LIMIT=80
 - Angular no consulta Supabase ni Gemini directamente.
 - Laravel envia a Django los foros reales visibles/permitidos.
 - Si Gemini falla, Django devuelve recomendaciones estructuradas usando los foros reales recibidos.
+- Si el healthcheck responde HTTP 400, revisa `DJANGO_ALLOWED_HOSTS`; normalmente falta el dominio publico de Railway.
