@@ -7,7 +7,7 @@ Este servicio debe desplegarse como un servicio independiente con `service_ia` c
 Railway debe usar:
 
 ```bash
-pip install -r requirements.txt && python manage.py collectstatic --noinput
+/opt/venv/bin/python -m pip install --upgrade pip && /opt/venv/bin/python -m pip install -r requirements.txt && /opt/venv/bin/python manage.py collectstatic --noinput
 /opt/venv/bin/python -m gunicorn service_ia.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile -
 ```
 
