@@ -8,7 +8,7 @@ Railway debe usar:
 
 ```bash
 pip install -r requirements.txt && python manage.py collectstatic --noinput
-python -m gunicorn service_ia.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120 --access-logfile - --error-logfile -
+/opt/venv/bin/python -m gunicorn service_ia.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile -
 ```
 
 El archivo `railway.json` ya define esos comandos.
