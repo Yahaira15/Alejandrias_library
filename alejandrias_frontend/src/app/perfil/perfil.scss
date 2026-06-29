@@ -8,6 +8,8 @@
 .perfil-page {
   display: flex;
   min-height: 100vh;
+  padding-left: 250px;
+  box-sizing: border-box;
   background:
     linear-gradient(90deg, rgba(210, 235, 250, 0.95) 0 18%, rgba(235, 247, 255, 0.78) 36%, rgba(238, 247, 253, 0.5) 100%),
     url('/fondo_home.png') right center / cover no-repeat;
@@ -82,23 +84,24 @@
 }
 
 .perfil-sidebar {
-  width: 190px;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  width: 210px;
   min-height: 100vh;
-  padding: 30px 14px 28px;
+  padding: 20px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  background: rgba(178, 216, 238, 0.82);
-  box-shadow: 9px 0 20px rgba(65, 118, 151, 0.18);
-  backdrop-filter: blur(12px);
+  background: #afcbe6c3;
 }
 
 .perfil-sidebar h1 {
-  margin: 0 12px 42px;
-  color: #2d5c7e;
-  font-size: 24px;
-  line-height: 0.94;
+  margin: 0 0 50px;
+  color: #306289;
+  font-size: 28px;
+  line-height: 1.05;
   text-align: left;
   font-weight: 700;
 }
@@ -106,7 +109,8 @@
 .perfil-nav {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 40px;
+  align-items: flex-start;
 }
 
 .nav-item,
@@ -123,31 +127,46 @@
 .logout-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   width: 100%;
-  min-height: 46px;
-  padding: 0 12px;
-  border-radius: 8px;
+  min-height: 42px;
+  padding: 0;
+  border-radius: 12px;
   background: transparent;
-  color: #2d5c7e;
-  font-size: 15px;
+  color: #306289;
+  font-size: 16px;
+  font-weight: 700;
   text-align: left;
 }
 
+.nav-item {
+  margin-left: 10px;
+}
+
+.nav-item:hover,
+.logout-btn:hover {
+  color: #284358;
+}
+
 .nav-item.active {
-  background: rgba(255, 255, 255, 0.52);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
+  background: #faedd9;
+  color: #284358;
+  padding: 10px 12px;
+  box-shadow: 0 8px 20px rgba(48, 98, 137, 0.14);
 }
 
 .nav-item img,
 .logout-btn img {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .logout-btn {
   margin-top: auto;
+  margin-bottom: 70px;
+  font-size: 20px;
 }
 
 .perfil-main {
@@ -1442,12 +1461,14 @@
 @media (max-width: 760px) {
   .perfil-page {
     flex-direction: column;
+    padding-left: 0;
     background:
       linear-gradient(rgba(229, 244, 253, 0.78), rgba(229, 244, 253, 0.78)),
       url('/fondo_home.png') center / cover no-repeat;
   }
 
   .perfil-sidebar {
+    position: static;
     width: 100%;
     min-height: auto;
     padding: 18px 20px 14px;
@@ -1464,12 +1485,15 @@
     justify-content: center;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
   }
 
   .nav-item,
   .logout-btn {
     width: auto;
     font-size: 13px;
+    margin-left: 0;
+    padding: 0 10px;
   }
 
   .logout-btn {
