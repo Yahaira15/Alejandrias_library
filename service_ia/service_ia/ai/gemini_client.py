@@ -4,6 +4,10 @@ from pathlib import Path
 import random
 import time
 import sys
+import json
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 from .env_loader import load_env
 
@@ -127,6 +131,80 @@ def obtener_cliente():
 
     logger.info("Cliente Gemini inicializado con API key")
     return genai.Client(api_key=api_key)
+
+
+def _construir_config_rest(config):
+    generation_config = {}
+
+    if config.get("response_mime_type"):
+        generation_config["responseMimeType"] = config["response_mime_type"]
+    if config.get("response_json_schema"):
+        generation_config["responseSchema"] = config["response_json_schema"]
+
+    return generation_config
+
+
+def _generar_con_rest(api_key, modelo, prompt_final, config):
+    body = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{"text": prompt_final}],
+            }
+        ],
+    }
+
+    generation_config = _construir_config_rest(config)
+    if generation_config:
+        body["generationConfig"] = generation_config
+
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{quote(modelo, safe='')}:generateContent"
+    )
+    request = Request(
+        url,
+        data=json.dumps(body).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=60) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except HTTPError as exc:
+        detalle = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"{exc.code} {exc.reason}: {detalle}") from exc
+    except URLError as exc:
+        raise RuntimeError(str(exc)) from exc
+
+
+def _extraer_texto_respuesta_rest(respuesta):
+    partes = []
+    for candidato in respuesta.get("candidates", []) or []:
+        contenido = candidato.get("content") or {}
+        for parte in contenido.get("parts", []) or []:
+            texto = parte.get("text")
+            if texto:
+                partes.append(str(texto))
+
+    return "\n".join(partes).strip()
+
+
+def _extraer_metadata_seguridad_rest(respuesta):
+    return {
+        "prompt_feedback": respuesta.get("promptFeedback"),
+        "candidates": [
+            {
+                "finish_reason": candidato.get("finishReason"),
+                "safety_ratings": candidato.get("safetyRatings"),
+            }
+            for candidato in respuesta.get("candidates", []) or []
+        ],
+    }
 
 
 def obtener_historial(user_id):
@@ -261,7 +339,21 @@ def generar_texto(
     if not prompt_limpio:
         raise ValueError("El prompt no puede estar vacio")
 
-    client = obtener_cliente()
+    client = None
+    api_key = _obtener_api_key()
+    usar_rest = genai is None
+
+    if usar_rest:
+        if not api_key:
+            raise AIProviderError(
+                kind="configuracion_api_key",
+                message="No se encontro GEMINI_API_KEY en el entorno del servicio IA.",
+                retryable=False,
+            )
+        logger.warning("google-genai no esta disponible; usando Gemini REST con x-goog-api-key.")
+    else:
+        client = obtener_cliente()
+
     prompt_final = prompt_limpio
 
     if foros:
@@ -301,7 +393,10 @@ def generar_texto(
                 if config:
                     kwargs["config"] = config
 
-                respuesta = client.models.generate_content(**kwargs)
+                if usar_rest:
+                    respuesta = _generar_con_rest(api_key, modelo, prompt_final, config)
+                else:
+                    respuesta = client.models.generate_content(**kwargs)
                 logger.info(
                     "Respuesta Gemini recibida para modelo %s en intento %s tras %.3fs",
                     modelo,
@@ -377,8 +472,12 @@ def generar_texto(
             retryable=False,
         )
 
-    texto = _extraer_texto_respuesta(respuesta)
-    metadata_seguridad = _extraer_metadata_seguridad(respuesta)
+    if usar_rest:
+        texto = _extraer_texto_respuesta_rest(respuesta)
+        metadata_seguridad = _extraer_metadata_seguridad_rest(respuesta)
+    else:
+        texto = _extraer_texto_respuesta(respuesta)
+        metadata_seguridad = _extraer_metadata_seguridad(respuesta)
     logger.info("Texto RAW extraido de Gemini:\n%s", texto)
     logger.info("Metadata de seguridad Gemini/Vertex extraida: %s", metadata_seguridad)
 
