@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { ListaForos } from '../../Foro/lista-foros/lista-foros';
+import { obtenerTokenSesion } from '../../services/auth-session';
 
 @Component({
   selector: 'app-home',
@@ -36,7 +37,7 @@ export class Home {
   constructor(private router: Router) {}
 
   get usuarioAutenticado(): boolean {
-    return typeof localStorage !== 'undefined' && !!localStorage.getItem('token');
+    return !!obtenerTokenSesion();
   }
 
   irARegistro(rol: string) {

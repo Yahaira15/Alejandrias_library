@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { RouterModule } from '@angular/router';
 import { EmailjsRecuperacionService } from '../../services/emailjs-recuperacion.service';
 import { API_URL } from '../../api.config';
+import { guardarTokenSesion } from '../../services/auth-session';
 
 interface LoginResponse {
   usuario: {
@@ -238,7 +239,7 @@ export class Login {
 
   private completarInicioSesion(res: LoginResponse): void {
     localStorage.setItem('usuario', JSON.stringify(res.usuario));
-    localStorage.setItem('token', res.token);
+    guardarTokenSesion(res.token);
 
     const intereses = this.normalizarIntereses(res.usuario?.usuario_intereses);
 

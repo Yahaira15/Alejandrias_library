@@ -257,6 +257,15 @@ class UsuarioController extends Controller
         return response()->json(auth()->user(), 200);
     }
 
+    public function logout(Request $request)
+    {
+        $request->user()?->currentAccessToken()?->delete();
+
+        return response()->json([
+            'mensaje' => 'Sesion cerrada'
+        ]);
+    }
+
     public function update(Request $request)
     {
         try {

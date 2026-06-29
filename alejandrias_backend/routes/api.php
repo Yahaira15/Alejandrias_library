@@ -23,6 +23,7 @@ Route::post('/aceptar-terminos', [UsuarioController::class, 'aceptarTerminos']);
 Route::post('/recuperar-password', [UsuarioController::class, 'recuperarPassword']);
 Route::get('/verificar-apodo/{apodo}', [UsuarioController::class, 'verificarApodo']);
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [UsuarioController::class, 'logout']);
     Route::get('/perfil', [UsuarioController::class, 'perfil']);
     Route::put('/perfil', [UsuarioController::class, 'update']);
     Route::put('/perfil/intereses', [UsuarioController::class, 'updateIntereses']);

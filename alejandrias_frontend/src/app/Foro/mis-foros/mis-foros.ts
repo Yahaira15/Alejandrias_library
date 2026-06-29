@@ -7,6 +7,7 @@ import { NotificacionService } from '../../services/notificacion.service';
 import { ReportePayload, ReporteService } from '../../services/reporte.service';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { limpiarTokenSesion } from '../../services/auth-session';
 
 @Component({
   selector: 'app-mis-foros',
@@ -601,7 +602,7 @@ export class MisForos implements OnInit, OnDestroy {
 
   logout(): void {
     localStorage.removeItem('usuario');
-    localStorage.removeItem('token');
+    limpiarTokenSesion();
     this.router.navigate(['/login']);
   }
 

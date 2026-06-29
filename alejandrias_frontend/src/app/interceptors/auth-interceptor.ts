@@ -2,6 +2,7 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
+import { obtenerTokenSesion } from '../services/auth-session';
 
 function getApiPath(url: string): string | null {
   try {
@@ -73,7 +74,7 @@ function isAuthenticationFailure(error: any): boolean {
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const router = inject(Router);
-  const token = localStorage.getItem('token');
+  const token = obtenerTokenSesion();
   const apiPath = getApiPath(req.url);
   const isBackendApiRequest = apiPath !== null;
   const isProtectedApiRequest = isBackendApiRequest && !isPublicApiRequest(req.method, apiPath);

@@ -8,6 +8,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, Location } from '@angular/common';
 import { ChangeDetectorRef } from '@angular/core';
+import { limpiarTokenSesion } from '../services/auth-session';
 
 @Component({
   selector: 'app-perfil',
@@ -639,13 +640,14 @@ actualizar() {
 
     this.perfilService.deleteCuenta().subscribe(() => {
       localStorage.clear();
+      limpiarTokenSesion();
       this.router.navigate(['/login']);
     });
   }
 
   logout() {
     localStorage.removeItem('usuario');
-    localStorage.removeItem('token'); 
+    limpiarTokenSesion();
     this.router.navigate(['/login']);
   }
 }

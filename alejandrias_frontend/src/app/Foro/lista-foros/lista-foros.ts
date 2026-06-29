@@ -7,6 +7,7 @@ import { ReportePayload, ReporteService } from '../../services/reporte.service';
 import { Router, RouterLink } from '@angular/router';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { limpiarTokenSesion } from '../../services/auth-session';
 
 @Component({
   selector: 'app-lista-foros',
@@ -704,7 +705,7 @@ export class ListaForos implements OnInit, OnDestroy {
 
   logout(): void {
     localStorage.removeItem('usuario');
-    localStorage.removeItem('token');
+    limpiarTokenSesion();
     this.router.navigate(['/login']);
   }
 }

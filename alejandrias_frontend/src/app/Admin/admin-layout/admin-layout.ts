@@ -4,6 +4,7 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { NotificacionService } from '../../services/notificacion.service';
+import { limpiarTokenSesion } from '../../services/auth-session';
 
 interface NotificacionAdmin {
   notificacion_id: number;
@@ -123,7 +124,7 @@ export class AdminLayout implements OnInit, OnDestroy {
 
   logout(): void {
     localStorage.removeItem('usuario');
-    localStorage.removeItem('token');
+    limpiarTokenSesion();
     this.router.navigate(['/login']);
   }
 

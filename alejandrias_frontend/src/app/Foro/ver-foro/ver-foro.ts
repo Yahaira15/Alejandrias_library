@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ForoService } from '../../services/foro';
 import { ReportePayload, ReporteService } from '../../services/reporte.service';
+import { limpiarTokenSesion } from '../../services/auth-session';
 
 @Component({
   selector: 'app-ver-foro',
@@ -90,7 +91,7 @@ export class VerForoComponent implements OnInit {
 
   logout(): void {
     localStorage.removeItem('usuario');
-    localStorage.removeItem('token');
+    limpiarTokenSesion();
     this.router.navigate(['/login']);
   }
 
